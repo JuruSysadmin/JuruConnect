@@ -16,17 +16,15 @@ defmodule AppWeb.DashboardLiveTest do
     })
     {:ok, token, _claims} = Guardian.encode_and_sign(user)
 
-    conn =
-      conn
-      |> Phoenix.ConnTest.build_conn()
-      |> AppWeb.Router.call(AppWeb.Router.init([]))
-      |> Plug.Conn.put_session("guardian_default_token", token)
+    # Simula uma sessão autenticada
+    conn = %{conn | private: Map.put(conn.private, :phoenix_session, %{"guardian_default_token" => token})}
 
     {:ok, conn: conn, user: user}
   end
 
   test "exibe o nome de usuário na sidebar quando autenticado", %{conn: conn, user: user} do
-    {:ok, _view, html} = live(conn, "/hello")
+    {:ok, token, _claims} = Guardian.encode_and_sign(user)
+    {:ok, _view, html} = live(conn, "/hello?token=#{token}")
     assert html =~ user.username
   end
 end

@@ -4,9 +4,9 @@ defmodule AppWeb.DashboardLive do
   alias AppWeb.Auth.Guardian
 
   @impl true
-  def mount(_params, session, socket) do
+  def mount(params, session, socket) do
     user =
-      with token when not is_nil(token) <- session["guardian_default_token"],
+      with token when not is_nil(token) <- get_token(params, session),
            {:ok, claims} <- Guardian.decode_and_verify(token),
            {:ok, user} <- Guardian.resource_from_claims(claims) do
         user
@@ -35,6 +35,9 @@ defmodule AppWeb.DashboardLive do
        ]
      )}
   end
+
+  defp get_token(%{"token" => token}, _session), do: token
+  defp get_token(_params, session), do: session["guardian_default_token"]
 
   @impl true
   def handle_info(:tick, socket) do
@@ -209,6 +212,19 @@ defmodule AppWeb.DashboardLive do
             Help & Support
           </a>
         </nav>
+        <%= if @current_user do %>
+          <div class="mt-auto p-4 border-t border-gray-100 bg-white">
+            <div class="flex items-center space-x-2">
+              <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700">
+                <%= String.first(@current_user.username) %>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900"><%= @current_user.username %></div>
+                <div class="text-xs text-gray-500">Usuário logado</div>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
       <!-- Main Content Area -->
       <div class="flex-1 ml-64 flex flex-col items-center py-12 px-4 sm:px-8 bg-white">

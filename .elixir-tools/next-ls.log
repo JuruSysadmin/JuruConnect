@@ -77012,3 +77012,4095 @@ Got: [session: ["guardian_default_token"]]
 18:50:36.181 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 2ms
 
 18:50:52.482 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 218µs
+
+18:51:03.357 [debug] handled notification client -> server textDocument/didOpen in 233µs
+
+18:51:03.366 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+18:51:03.669 [debug] handled notification client -> server textDocument/didOpen in 147µs
+
+18:51:03.686 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:51:03.706 [debug] handled notification client -> server textDocument/didOpen in 137µs
+
+18:51:03.708 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:51:03.855 [debug] handled notification client -> server textDocument/didOpen in 706µs
+
+18:51:03.891 [debug] handled notification client -> server textDocument/didClose in 90µs
+
+18:51:04.106 [debug] handled notification client -> server textDocument/didOpen in 369µs
+
+18:51:04.159 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+18:51:04.621 [debug] handled notification client -> server textDocument/didOpen in 278µs
+
+18:51:04.664 [debug] handled notification client -> server textDocument/didClose in 191µs
+
+18:51:04.772 [debug] handled notification client -> server textDocument/didOpen in 25ms
+
+18:51:04.783 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:51:04.916 [debug] handled notification client -> server textDocument/didOpen in 616µs
+
+18:51:04.916 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:04.996 [debug] handled notification client -> server textDocument/didOpen in 218µs
+
+18:51:04.996 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:05.070 [debug] handled notification client -> server textDocument/didOpen in 275µs
+
+18:51:05.070 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:51:05.168 [debug] handled notification client -> server textDocument/didOpen in 137µs
+
+18:51:05.170 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:51:05.222 [debug] handled notification client -> server textDocument/didOpen in 646µs
+
+18:51:05.223 [debug] handled notification client -> server textDocument/didClose in 91µs
+
+18:51:05.337 [debug] handled notification client -> server textDocument/didOpen in 274µs
+
+18:51:05.337 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:51:06.264 [debug] handled notification client -> server textDocument/didChange in 480µs
+
+18:51:06.269 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:51:06.274 id=6722 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:06.275 [debug] sent notification server -> client $/progress
+
+18:51:06.339 [debug] sent notification server -> client window/logMessage
+
+18:51:06.340 [info] Compiling 1 file (.ex)
+
+
+18:51:06.349 id=6754 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:06.350 [debug] sent notification server -> client $/progress
+
+18:51:06.509 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 341µs
+
+18:51:06.618 [debug] sent notification server -> client $/progress
+
+18:51:06.876 [debug] sent notification server -> client window/logMessage
+
+18:51:06.876 [info] Generated app app
+
+
+18:51:06.877 [debug] sent notification server -> client $/progress
+
+18:51:06.877 [debug] sent notification server -> client window/logMessage
+
+18:51:06.877 [info] Compiled JuruConnect!
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.885 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.886 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.886 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.886 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.887 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.888 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.888 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.888 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.888 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:06.888 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.049 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:07.878 [debug] handled notification client -> server textDocument/didOpen in 221µs
+
+18:51:07.879 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:51:07.951 [debug] handled notification client -> server textDocument/didOpen in 125µs
+
+18:51:07.962 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:51:07.985 [debug] handled notification client -> server textDocument/didOpen in 316µs
+
+18:51:07.985 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:51:08.045 [debug] handled notification client -> server textDocument/didOpen in 533µs
+
+18:51:08.045 [debug] handled notification client -> server textDocument/didClose in 122µs
+
+18:51:08.125 [debug] handled notification client -> server textDocument/didOpen in 393µs
+
+18:51:08.125 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:51:08.172 [debug] handled notification client -> server textDocument/didOpen in 190µs
+
+18:51:08.193 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:51:08.221 [debug] handled notification client -> server textDocument/didOpen in 431µs
+
+18:51:08.223 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:51:08.303 [debug] handled notification client -> server textDocument/didOpen in 336µs
+
+18:51:08.304 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:08.327 [debug] handled notification client -> server textDocument/didOpen in 189µs
+
+18:51:08.328 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:51:08.342 [debug] handled notification client -> server textDocument/didOpen in 206µs
+
+18:51:08.344 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:08.403 [debug] handled notification client -> server textDocument/didOpen in 228µs
+
+18:51:08.404 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:51:08.427 [debug] handled notification client -> server textDocument/didOpen in 898µs
+
+18:51:08.427 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:51:08.545 [debug] handled notification client -> server textDocument/didOpen in 324µs
+
+18:51:08.546 [debug] handled notification client -> server textDocument/didClose in 93µs
+
+18:51:12.755 [debug] handled notification client -> server textDocument/didSave in 18ms
+
+18:51:12.756 id=5476 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:12.757 [debug] sent notification server -> client $/progress
+
+18:51:12.812 [debug] sent notification server -> client $/progress
+
+18:51:12.812 [debug] sent notification server -> client window/logMessage
+
+18:51:12.812 [info] Compiled JuruConnect!
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.818 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.820 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.820 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.820 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.820 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.820 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.821 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:12.956 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:13.015 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 206µs
+
+18:51:29.197 [debug] handled notification client -> server textDocument/didOpen in 222µs
+
+18:51:29.232 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:51:29.339 [debug] handled notification client -> server textDocument/didOpen in 123µs
+
+18:51:29.343 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:51:29.363 [debug] handled notification client -> server textDocument/didOpen in 146µs
+
+18:51:29.366 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:29.383 [debug] handled notification client -> server textDocument/didOpen in 493µs
+
+18:51:29.384 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:51:29.518 [debug] handled notification client -> server textDocument/didOpen in 279µs
+
+18:51:29.519 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:51:29.676 [debug] handled notification client -> server textDocument/didOpen in 205µs
+
+18:51:29.683 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:51:29.765 [debug] handled notification client -> server textDocument/didOpen in 686µs
+
+18:51:29.765 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:51:29.881 [debug] handled notification client -> server textDocument/didOpen in 299µs
+
+18:51:29.907 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:51:30.044 [debug] handled notification client -> server textDocument/didOpen in 209µs
+
+18:51:30.057 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:51:30.157 [debug] handled notification client -> server textDocument/didOpen in 476µs
+
+18:51:30.176 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+18:51:30.396 [debug] handled notification client -> server textDocument/didOpen in 248µs
+
+18:51:30.396 [debug] handled notification client -> server textDocument/didClose in 104µs
+
+18:51:30.425 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:51:30.425 [debug] handled notification client -> server textDocument/didClose in 116µs
+
+18:51:30.624 [debug] handled notification client -> server textDocument/didOpen in 408µs
+
+18:51:30.627 [debug] handled notification client -> server textDocument/didClose in 97µs
+
+18:51:30.910 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:51:30.913 id=7651 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:30.914 [debug] sent notification server -> client $/progress
+
+18:51:30.984 [debug] sent notification server -> client $/progress
+
+18:51:30.984 [debug] sent notification server -> client window/logMessage
+
+18:51:30.984 [info] Compiled JuruConnect!
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.989 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.990 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.990 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.990 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:30.993 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.081 id=7683 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:31.081 [debug] sent notification server -> client $/progress
+
+18:51:31.109 [debug] handled notification client -> server textDocument/didSave in 41ms
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.116 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.176 [debug] sent notification server -> client $/progress
+
+18:51:31.176 [debug] sent notification server -> client window/logMessage
+
+18:51:31.176 [info] Compiled JuruConnect!
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.184 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.185 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.188 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.334 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:31.404 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 285µs
+
+18:51:32.899 [debug] handled notification client -> server textDocument/didOpen in 239µs
+
+18:51:32.924 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+18:51:33.020 [debug] handled notification client -> server textDocument/didOpen in 116µs
+
+18:51:33.021 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:51:33.037 [debug] handled notification client -> server textDocument/didOpen in 132µs
+
+18:51:33.043 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:51:33.069 [debug] handled notification client -> server textDocument/didOpen in 509µs
+
+18:51:33.070 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:51:33.120 [debug] handled notification client -> server textDocument/didOpen in 367µs
+
+18:51:33.120 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:51:33.168 [debug] handled notification client -> server textDocument/didOpen in 208µs
+
+18:51:33.168 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:51:33.188 [debug] handled notification client -> server textDocument/didOpen in 450µs
+
+18:51:33.188 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:51:33.203 [debug] handled notification client -> server textDocument/didOpen in 309µs
+
+18:51:33.204 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:51:33.229 [debug] handled notification client -> server textDocument/didOpen in 268µs
+
+18:51:33.229 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:51:33.243 [debug] handled notification client -> server textDocument/didOpen in 446µs
+
+18:51:33.245 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+18:51:33.297 [debug] handled notification client -> server textDocument/didOpen in 309µs
+
+18:51:33.298 [debug] handled notification client -> server textDocument/didClose in 77µs
+
+18:51:33.383 [debug] handled notification client -> server textDocument/didOpen in 16ms
+
+18:51:33.383 [debug] handled notification client -> server textDocument/didClose in 86µs
+
+18:51:33.423 [debug] handled notification client -> server textDocument/didOpen in 317µs
+
+18:51:33.424 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:51:51.958 [debug] handled notification client -> server textDocument/didOpen in 300µs
+
+18:51:51.958 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+18:51:52.135 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:51:52.136 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:51:52.136 [debug] handled notification client -> server textDocument/didOpen in 84µs
+
+18:51:52.175 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:52.193 [debug] handled notification client -> server textDocument/didOpen in 101µs
+
+18:51:52.202 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:51:52.223 [debug] handled notification client -> server textDocument/didOpen in 437µs
+
+18:51:52.225 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:51:52.320 [debug] handled notification client -> server textDocument/didOpen in 272µs
+
+18:51:52.320 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:51:52.545 [debug] handled notification client -> server textDocument/didOpen in 230µs
+
+18:51:52.553 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:51:52.601 [debug] handled notification client -> server textDocument/didOpen in 453µs
+
+18:51:52.629 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:51:52.675 [debug] handled notification client -> server textDocument/didOpen in 471µs
+
+18:51:52.678 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:51:52.742 [debug] handled notification client -> server textDocument/didOpen in 180µs
+
+18:51:52.748 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:51:52.789 [debug] handled notification client -> server textDocument/didOpen in 176µs
+
+18:51:52.790 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:51:53.126 [debug] handled notification client -> server textDocument/didOpen in 283µs
+
+18:51:53.126 [debug] handled notification client -> server textDocument/didClose in 103µs
+
+18:51:53.179 [debug] handled notification client -> server textDocument/didOpen in 649µs
+
+18:51:53.179 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:51:53.383 [debug] handled notification client -> server textDocument/didOpen in 279µs
+
+18:51:53.402 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:51:56.395 [debug] handled notification client -> server textDocument/didOpen in 634µs
+
+18:51:58.336 [debug] handled notification client -> server textDocument/didChange in 14ms
+
+18:51:59.155 [debug] handled notification client -> server textDocument/didSave in 3ms
+
+18:51:59.157 id=5508 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:59.158 [debug] sent notification server -> client $/progress
+
+18:51:59.227 [debug] sent notification server -> client window/logMessage
+
+18:51:59.227 [info] Compiling 1 file (.ex)
+
+
+18:51:59.230 id=7715 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:59.230 [debug] sent notification server -> client $/progress
+
+18:51:59.238 [debug] sent notification server -> client window/logMessage
+
+18:51:59.238 [info]     error: cannot invoke remote function Mix.env/0 inside a guard
+    │
+ 39 │   defp get_token(%{"token" => token}, _session) when Mix.env() == :test, do: token
+    │                                                          ^
+    │
+    └─ lib/app_web/live/dashboard_live.ex:39:58: AppWeb.DashboardLive.get_token/2
+
+
+
+18:51:59.240 [debug] sent notification server -> client window/logMessage
+
+18:51:59.240 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (CompileError) lib/app_web/live/dashboard_live.ex: cannot compile module AppWeb.DashboardLive (errors have been logged)
+
+
+
+18:51:59.241 [debug] sent notification server -> client $/progress
+
+18:51:59.241 [debug] sent notification server -> client window/logMessage
+
+18:51:59.241 [info] Compiled JuruConnect!
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.247 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.248 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.250 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.349 [debug] sent notification server -> client $/progress
+
+18:51:59.390 id=6786 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:59.391 [debug] sent notification server -> client $/progress
+
+18:51:59.406 [debug] handled notification client -> server textDocument/didSave in 24ms
+
+18:51:59.411 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.412 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.453 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 224µs
+
+18:51:59.461 [debug] sent notification server -> client window/logMessage
+
+18:51:59.461 [info] Compiling 1 file (.ex)
+
+
+18:51:59.464 id=7747 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:59.465 [debug] sent notification server -> client $/progress
+
+18:51:59.475 [debug] sent notification server -> client window/logMessage
+
+18:51:59.475 [info]     error: cannot invoke remote function Mix.env/0 inside a guard
+    │
+ 39 │   defp get_token(%{"token" => token}, _session) when Mix.env() == :test, do: token
+    │                                                          ^
+    │
+    └─ lib/app_web/live/dashboard_live.ex:39:58: AppWeb.DashboardLive.get_token/2
+
+
+
+18:51:59.475 [debug] sent notification server -> client window/logMessage
+
+18:51:59.475 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (CompileError) lib/app_web/live/dashboard_live.ex: cannot compile module AppWeb.DashboardLive (errors have been logged)
+
+
+
+18:51:59.476 [debug] sent notification server -> client window/logMessage
+
+18:51:59.476 [debug] sent notification server -> client $/progress
+
+18:51:59.476 [info] Compiled JuruConnect!
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.481 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.482 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.482 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.482 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.487 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.583 [debug] sent notification server -> client $/progress
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.635 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:51:59.920 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 578µs
+
+18:51:59.952 [debug] handled notification client -> server textDocument/didSave in 5ms
+
+18:51:59.956 id=6818 [debug] sent request server -> client window/workDoneProgress/create
+
+18:51:59.956 [debug] sent notification server -> client $/progress
+
+18:52:00.014 [debug] sent notification server -> client window/logMessage
+
+18:52:00.014 [info] Compiling 1 file (.ex)
+
+
+18:52:00.018 id=5540 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:00.019 [debug] sent notification server -> client $/progress
+
+18:52:00.039 [debug] sent notification server -> client window/logMessage
+
+18:52:00.039 [info]     error: cannot invoke remote function Mix.env/0 inside a guard
+    │
+ 39 │   defp get_token(%{"token" => token}, _session) when Mix.env() == :test, do: token
+    │                                                          ^
+    │
+    └─ lib/app_web/live/dashboard_live.ex:39:58: AppWeb.DashboardLive.get_token/2
+
+
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (CompileError) lib/app_web/live/dashboard_live.ex: cannot compile module AppWeb.DashboardLive (errors have been logged)
+
+
+
+18:52:00.040 [debug] sent notification server -> client $/progress
+
+18:52:00.040 [debug] sent notification server -> client window/logMessage
+
+18:52:00.040 [info] Compiled JuruConnect!
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.044 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.045 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.046 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.047 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.047 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.047 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.047 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.047 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.072 [debug] handled notification client -> server textDocument/didClose in 92µs
+
+18:52:00.129 [debug] handled notification client -> server textDocument/didOpen in 231µs
+
+18:52:00.129 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:52:00.148 [debug] sent notification server -> client $/progress
+
+18:52:00.198 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.198 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.198 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.198 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.199 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:00.217 [debug] handled notification client -> server textDocument/didOpen in 119µs
+
+18:52:00.218 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:52:00.272 [debug] handled notification client -> server textDocument/didOpen in 129µs
+
+18:52:00.283 [debug] handled notification client -> server textDocument/didClose in 129µs
+
+18:52:00.299 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:52:00.299 [debug] handled notification client -> server textDocument/didClose in 135µs
+
+18:52:00.301 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 189µs
+
+18:52:00.425 [debug] handled notification client -> server textDocument/didOpen in 278µs
+
+18:52:00.426 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:00.484 [debug] handled notification client -> server textDocument/didOpen in 623µs
+
+18:52:00.484 [debug] handled notification client -> server textDocument/didClose in 108µs
+
+18:52:00.509 [debug] handled notification client -> server textDocument/didOpen in 886µs
+
+18:52:00.515 [debug] handled notification client -> server textDocument/didClose in 105µs
+
+18:52:00.585 [debug] handled notification client -> server textDocument/didOpen in 501µs
+
+18:52:00.589 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:52:00.612 [debug] handled notification client -> server textDocument/didOpen in 379µs
+
+18:52:00.612 [debug] handled notification client -> server textDocument/didClose in 104µs
+
+18:52:00.635 [debug] handled notification client -> server textDocument/didOpen in 392µs
+
+18:52:00.636 [debug] handled notification client -> server textDocument/didClose in 112µs
+
+18:52:00.738 [debug] handled notification client -> server textDocument/didOpen in 258µs
+
+18:52:00.739 [debug] handled notification client -> server textDocument/didClose in 108µs
+
+18:52:00.766 [debug] handled notification client -> server textDocument/didOpen in 693µs
+
+18:52:00.766 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:52:00.863 [debug] handled notification client -> server textDocument/didOpen in 291µs
+
+18:52:00.864 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:52:03.361 [debug] handled notification client -> server textDocument/didOpen in 295µs
+
+18:52:03.361 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:52:03.540 [debug] handled notification client -> server textDocument/didOpen in 154µs
+
+18:52:03.573 [debug] handled notification client -> server textDocument/didOpen in 17ms
+
+18:52:03.573 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:52:03.586 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:52:03.611 [debug] handled notification client -> server textDocument/didOpen in 120µs
+
+18:52:03.617 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:03.655 [debug] handled notification client -> server textDocument/didOpen in 484µs
+
+18:52:03.661 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:52:03.810 [debug] handled notification client -> server textDocument/didOpen in 260µs
+
+18:52:03.811 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:04.095 [debug] handled notification client -> server textDocument/didOpen in 204µs
+
+18:52:04.096 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:52:04.227 [debug] handled notification client -> server textDocument/didOpen in 485µs
+
+18:52:04.248 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:52:04.303 [debug] handled notification client -> server textDocument/didOpen in 269µs
+
+18:52:04.318 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:52:04.348 [debug] handled notification client -> server textDocument/didOpen in 173µs
+
+18:52:04.354 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:04.395 [debug] handled notification client -> server textDocument/didOpen in 378µs
+
+18:52:04.397 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:04.484 [debug] handled notification client -> server textDocument/didOpen in 128µs
+
+18:52:04.519 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:52:04.549 [debug] handled notification client -> server textDocument/didOpen in 587µs
+
+18:52:04.549 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:52:04.730 [debug] handled notification client -> server textDocument/didOpen in 227µs
+
+18:52:04.738 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:52:04.832 [debug] handled notification client -> server textDocument/didOpen in 578µs
+
+18:52:06.862 [debug] handled notification client -> server textDocument/didChange in 656µs
+
+18:52:07.681 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:52:07.683 id=6850 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:07.683 [debug] sent notification server -> client $/progress
+
+18:52:07.746 [debug] sent notification server -> client window/logMessage
+
+18:52:07.746 [info] Compiling 1 file (.ex)
+
+
+18:52:07.750 id=7779 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:07.751 [debug] sent notification server -> client $/progress
+
+18:52:07.837 [debug] sent notification server -> client window/logMessage
+
+18:52:07.837 [info] Generated app app
+
+
+18:52:07.839 [debug] sent notification server -> client $/progress
+
+18:52:07.839 [debug] sent notification server -> client window/logMessage
+
+18:52:07.839 [info] Compiled JuruConnect!
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.845 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.846 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.846 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.846 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.850 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.851 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.851 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.851 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.851 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.929 [debug] sent notification server -> client $/progress
+
+18:52:07.977 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 200µs
+
+18:52:07.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.992 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:07.994 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.223 [debug] handled notification client -> server textDocument/didSave in 30ms
+
+18:52:08.224 id=6882 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:08.224 [debug] sent notification server -> client $/progress
+
+18:52:08.246 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 258µs
+
+18:52:08.292 [debug] sent notification server -> client $/progress
+
+18:52:08.292 [debug] sent notification server -> client window/logMessage
+
+18:52:08.292 [info] Compiled JuruConnect!
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.298 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.300 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.300 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.300 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.300 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.301 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.301 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.301 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.301 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.302 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.302 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.302 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.302 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.432 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:08.556 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 244µs
+
+18:52:09.931 [debug] handled notification client -> server textDocument/didOpen in 313µs
+
+18:52:09.931 [debug] handled notification client -> server textDocument/didClose in 86µs
+
+18:52:10.073 [debug] handled notification client -> server textDocument/didOpen in 173µs
+
+18:52:10.076 [debug] handled notification client -> server textDocument/didClose in 78µs
+
+18:52:10.131 [debug] handled notification client -> server textDocument/didOpen in 200µs
+
+18:52:10.132 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+18:52:10.147 [debug] handled notification client -> server textDocument/didOpen in 673µs
+
+18:52:10.148 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:52:10.184 [debug] handled notification client -> server textDocument/didOpen in 615µs
+
+18:52:10.184 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:52:10.236 [debug] handled notification client -> server textDocument/didOpen in 204µs
+
+18:52:10.237 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:52:10.253 [debug] handled notification client -> server textDocument/didOpen in 466µs
+
+18:52:10.254 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:52:10.269 [debug] handled notification client -> server textDocument/didOpen in 265µs
+
+18:52:10.270 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:52:10.338 [debug] handled notification client -> server textDocument/didOpen in 204µs
+
+18:52:10.338 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:10.361 [debug] handled notification client -> server textDocument/didOpen in 216µs
+
+18:52:10.363 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:52:10.469 [debug] handled notification client -> server textDocument/didOpen in 141µs
+
+18:52:10.471 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+18:52:10.595 [debug] handled notification client -> server textDocument/didOpen in 248µs
+
+18:52:10.597 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:52:11.541 [debug] handled notification client -> server textDocument/didOpen in 237µs
+
+18:52:11.542 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:52:11.666 [debug] handled notification client -> server textDocument/didOpen in 329µs
+
+18:52:11.748 [debug] handled notification client -> server textDocument/didClose in 81µs
+
+18:52:11.812 [debug] handled notification client -> server textDocument/didOpen in 127µs
+
+18:52:11.819 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:52:11.855 [debug] handled notification client -> server textDocument/didOpen in 508µs
+
+18:52:11.856 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:52:11.891 [debug] handled notification client -> server textDocument/didOpen in 291µs
+
+18:52:11.891 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:11.972 [debug] handled notification client -> server textDocument/didOpen in 216µs
+
+18:52:11.973 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:52:11.995 [debug] handled notification client -> server textDocument/didOpen in 470µs
+
+18:52:11.998 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:12.016 [debug] handled notification client -> server textDocument/didOpen in 363µs
+
+18:52:12.020 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:52:12.045 [debug] handled notification client -> server textDocument/didOpen in 210µs
+
+18:52:12.047 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:52:12.109 [debug] handled notification client -> server textDocument/didOpen in 280µs
+
+18:52:12.110 [debug] handled notification client -> server textDocument/didClose in 93µs
+
+18:52:12.241 [debug] handled notification client -> server textDocument/didOpen in 188µs
+
+18:52:12.241 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:52:12.414 [debug] handled notification client -> server textDocument/didOpen in 325µs
+
+18:52:12.454 [debug] handled notification client -> server textDocument/didClose in 29ms
+
+18:52:14.681 [debug] handled notification client -> server textDocument/didChange in 360µs
+
+18:52:14.686 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:52:14.688 id=6914 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:14.689 [debug] sent notification server -> client $/progress
+
+18:52:14.742 [debug] sent notification server -> client $/progress
+
+18:52:14.742 [debug] sent notification server -> client window/logMessage
+
+18:52:14.742 [info] Compiled JuruConnect!
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.746 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.747 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.747 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.747 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.750 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.892 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.893 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:14.893 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:15.120 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 342µs
+
+18:52:16.423 [debug] handled notification client -> server textDocument/didOpen in 298µs
+
+18:52:16.425 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:52:16.590 [debug] handled notification client -> server textDocument/didOpen in 167µs
+
+18:52:16.590 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:52:16.644 [debug] handled notification client -> server textDocument/didOpen in 165µs
+
+18:52:16.648 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:52:16.672 [debug] handled notification client -> server textDocument/didOpen in 689µs
+
+18:52:16.672 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:52:16.709 [debug] handled notification client -> server textDocument/didOpen in 435µs
+
+18:52:16.710 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:52:16.767 [debug] handled notification client -> server textDocument/didOpen in 342µs
+
+18:52:16.767 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+18:52:16.827 [debug] handled notification client -> server textDocument/didOpen in 804µs
+
+18:52:16.828 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+18:52:16.844 [debug] handled notification client -> server textDocument/didOpen in 440µs
+
+18:52:16.844 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:52:16.865 [debug] handled notification client -> server textDocument/didOpen in 320µs
+
+18:52:16.870 [debug] handled notification client -> server textDocument/didClose in 109µs
+
+18:52:16.925 [debug] handled notification client -> server textDocument/didOpen in 297µs
+
+18:52:16.925 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:52:17.110 [debug] handled notification client -> server textDocument/didOpen in 431µs
+
+18:52:17.112 [debug] handled notification client -> server textDocument/didClose in 91µs
+
+18:52:17.236 [debug] handled notification client -> server textDocument/didOpen in 290µs
+
+18:52:17.237 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:52:30.250 [debug] handled notification client -> server textDocument/didOpen in 310µs
+
+18:52:30.250 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:31.693 [debug] handled notification client -> server textDocument/didOpen in 231µs
+
+18:52:31.700 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:52:31.723 [debug] handled notification client -> server textDocument/didOpen in 296µs
+
+18:52:31.723 [debug] handled notification client -> server textDocument/didClose in 48µs
+
+18:52:31.814 [debug] handled notification client -> server textDocument/didOpen in 308µs
+
+18:52:31.814 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:32.004 [debug] handled notification client -> server textDocument/didOpen in 116µs
+
+18:52:32.006 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:52:32.060 [debug] handled notification client -> server textDocument/didOpen in 127µs
+
+18:52:32.061 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:32.092 [debug] handled notification client -> server textDocument/didOpen in 502µs
+
+18:52:32.093 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:52:32.202 [debug] handled notification client -> server textDocument/didOpen in 338µs
+
+18:52:32.213 [debug] handled notification client -> server textDocument/didClose in 86µs
+
+18:52:32.444 [debug] handled notification client -> server textDocument/didOpen in 272µs
+
+18:52:32.445 [debug] handled notification client -> server textDocument/didClose in 78µs
+
+18:52:32.499 [debug] handled notification client -> server textDocument/didOpen in 15ms
+
+18:52:32.499 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:52:32.526 [debug] handled notification client -> server textDocument/didOpen in 266µs
+
+18:52:32.546 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:52:32.593 [debug] handled notification client -> server textDocument/didOpen in 196µs
+
+18:52:32.594 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:32.696 [debug] handled notification client -> server textDocument/didOpen in 218µs
+
+18:52:32.717 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:52:32.995 [debug] handled notification client -> server textDocument/didOpen in 610µs
+
+18:52:32.996 [debug] handled notification client -> server textDocument/didClose in 138µs
+
+18:52:33.216 [debug] handled notification client -> server textDocument/didOpen in 293µs
+
+18:52:33.275 [debug] handled notification client -> server textDocument/didOpen in 242µs
+
+18:52:33.284 [debug] handled notification client -> server textDocument/didClose in 159µs
+
+18:52:34.606 [debug] handled notification client -> server textDocument/didChange in 347µs
+
+18:52:35.394 [debug] handled notification client -> server textDocument/didSave in 5ms
+
+18:52:35.395 id=5572 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:35.396 [debug] sent notification server -> client $/progress
+
+18:52:35.458 [debug] sent notification server -> client $/progress
+
+18:52:35.458 [debug] sent notification server -> client window/logMessage
+
+18:52:35.458 [info] Compiled JuruConnect!
+
+18:52:35.462 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.462 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.463 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.468 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.545 id=6946 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:35.546 [debug] sent notification server -> client $/progress
+
+18:52:35.610 [debug] handled notification client -> server textDocument/didSave in 72ms
+
+18:52:35.616 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.616 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.616 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.616 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.617 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.681 [debug] sent notification server -> client $/progress
+
+18:52:35.681 [debug] sent notification server -> client window/logMessage
+
+18:52:35.681 [info] Compiled JuruConnect!
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.687 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.691 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.691 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.691 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.835 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:35.877 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 333µs
+
+18:52:37.323 [debug] handled notification client -> server textDocument/didOpen in 228µs
+
+18:52:37.323 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:52:37.390 [debug] handled notification client -> server textDocument/didOpen in 135µs
+
+18:52:37.391 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:52:37.417 [debug] handled notification client -> server textDocument/didOpen in 144µs
+
+18:52:37.418 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:52:37.441 [debug] handled notification client -> server textDocument/didOpen in 955µs
+
+18:52:37.441 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:52:37.556 [debug] handled notification client -> server textDocument/didOpen in 282µs
+
+18:52:37.556 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:52:37.633 [debug] handled notification client -> server textDocument/didOpen in 245µs
+
+18:52:37.635 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:52:37.657 [debug] handled notification client -> server textDocument/didOpen in 508µs
+
+18:52:37.657 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:52:37.711 [debug] handled notification client -> server textDocument/didOpen in 311µs
+
+18:52:37.712 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:52:37.773 [debug] handled notification client -> server textDocument/didOpen in 209µs
+
+18:52:37.775 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:37.807 [debug] handled notification client -> server textDocument/didOpen in 197µs
+
+18:52:37.809 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:52:37.907 [debug] handled notification client -> server textDocument/didOpen in 151µs
+
+18:52:37.907 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+18:52:38.123 [debug] handled notification client -> server textDocument/didOpen in 272µs
+
+18:52:38.123 [debug] handled notification client -> server textDocument/didClose in 115µs
+
+18:52:43.201 [debug] handled notification client -> server textDocument/didClose in 289µs
+
+18:52:43.201 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:52:43.273 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:52:43.276 id=7811 [debug] sent request server -> client window/workDoneProgress/create
+
+18:52:43.277 [debug] sent notification server -> client $/progress
+
+18:52:43.340 [debug] sent notification server -> client $/progress
+
+18:52:43.340 [debug] sent notification server -> client window/logMessage
+
+18:52:43.340 [info] Compiled JuruConnect!
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.348 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.350 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.351 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.351 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.351 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.507 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.507 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.508 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:52:43.617 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 448µs
+
+18:52:50.776 [debug] handled notification client -> server textDocument/didOpen in 656µs
+
+18:52:50.776 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:52:50.833 [debug] handled notification client -> server textDocument/didOpen in 307µs
+
+18:52:50.833 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:52:50.908 [debug] handled notification client -> server textDocument/didOpen in 348µs
+
+18:52:50.908 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:52:55.073 [debug] handled notification client -> server textDocument/didOpen in 686µs
+
+18:52:55.073 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:52:55.096 [debug] handled notification client -> server textDocument/didOpen in 455µs
+
+18:52:55.097 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:52:55.376 [debug] handled notification client -> server textDocument/didOpen in 309µs
+
+18:52:55.376 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:53:22.975 [debug] handled notification client -> server textDocument/didOpen in 222µs
+
+18:53:22.975 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:53:23.030 [debug] handled notification client -> server textDocument/didOpen in 155µs
+
+18:53:23.032 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:53:23.096 [debug] handled notification client -> server textDocument/didOpen in 129µs
+
+18:53:23.097 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:53:23.109 [debug] handled notification client -> server textDocument/didOpen in 499µs
+
+18:53:23.109 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:53:23.133 [debug] handled notification client -> server textDocument/didOpen in 241µs
+
+18:53:23.133 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:53:23.177 [debug] handled notification client -> server textDocument/didOpen in 212µs
+
+18:53:23.178 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:53:23.197 [debug] handled notification client -> server textDocument/didOpen in 622µs
+
+18:53:23.197 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:53:23.223 [debug] handled notification client -> server textDocument/didOpen in 252µs
+
+18:53:23.224 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:53:23.241 [debug] handled notification client -> server textDocument/didOpen in 189µs
+
+18:53:23.243 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:53:23.267 [debug] handled notification client -> server textDocument/didOpen in 211µs
+
+18:53:23.267 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:53:23.335 [debug] handled notification client -> server textDocument/didOpen in 130µs
+
+18:53:23.337 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:53:23.365 [debug] handled notification client -> server textDocument/didOpen in 635µs
+
+18:53:23.365 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:53:23.461 [debug] handled notification client -> server textDocument/didOpen in 281µs
+
+18:53:23.461 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:53:23.477 [debug] handled notification client -> server textDocument/didOpen in 302µs
+
+18:53:23.492 [debug] handled notification client -> server textDocument/didClose in 153µs
+
+18:53:23.787 [debug] handled notification client -> server textDocument/didOpen in 814µs
+
+18:53:23.787 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:53:23.817 [debug] handled notification client -> server textDocument/didOpen in 228µs
+
+18:53:23.817 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:53:23.863 [debug] handled notification client -> server textDocument/didOpen in 565µs
+
+18:53:23.863 [debug] handled notification client -> server textDocument/didClose in 94µs
+
+18:53:50.615 [debug] handled notification client -> server textDocument/didOpen in 264µs
+
+18:53:50.616 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:53:50.717 [debug] handled notification client -> server textDocument/didOpen in 113µs
+
+18:53:50.723 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:53:50.775 [debug] handled notification client -> server textDocument/didOpen in 120µs
+
+18:53:50.776 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:53:50.797 [debug] handled notification client -> server textDocument/didOpen in 614µs
+
+18:53:50.798 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:53:50.850 [debug] handled notification client -> server textDocument/didOpen in 286µs
+
+18:53:50.860 [debug] handled notification client -> server textDocument/didClose in 77µs
+
+18:53:50.971 [debug] handled notification client -> server textDocument/didOpen in 286µs
+
+18:53:50.975 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+18:53:51.008 [debug] handled notification client -> server textDocument/didOpen in 18ms
+
+18:53:51.008 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:53:51.011 [debug] handled notification client -> server textDocument/didOpen in 365µs
+
+18:53:51.012 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:53:51.029 [debug] handled notification client -> server textDocument/didOpen in 298µs
+
+18:53:51.029 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:53:51.047 [debug] handled notification client -> server textDocument/didOpen in 255µs
+
+18:53:51.048 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:53:51.164 [debug] handled notification client -> server textDocument/didOpen in 182µs
+
+18:53:51.164 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:53:51.186 [debug] handled notification client -> server textDocument/didOpen in 846µs
+
+18:53:51.186 [debug] handled notification client -> server textDocument/didClose in 261µs
+
+18:53:51.266 [debug] handled notification client -> server textDocument/didOpen in 235µs
+
+18:53:51.267 [debug] handled notification client -> server textDocument/didClose in 197µs
+
+18:53:51.282 [debug] handled notification client -> server textDocument/didOpen in 315µs
+
+18:53:51.347 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+18:54:46.281 [debug] handled notification client -> server textDocument/didOpen in 274µs
+
+18:54:46.281 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:54:46.346 [debug] handled notification client -> server textDocument/didOpen in 145µs
+
+18:54:46.346 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:54:46.369 [debug] handled notification client -> server textDocument/didOpen in 129µs
+
+18:54:46.370 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:54:46.392 [debug] handled notification client -> server textDocument/didOpen in 511µs
+
+18:54:46.393 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:54:46.461 [debug] handled notification client -> server textDocument/didOpen in 308µs
+
+18:54:46.461 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:54:46.587 [debug] handled notification client -> server textDocument/didOpen in 218µs
+
+18:54:46.593 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:54:46.623 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:54:46.623 [debug] handled notification client -> server textDocument/didClose in 142µs
+
+18:54:46.642 [debug] handled notification client -> server textDocument/didOpen in 519µs
+
+18:54:46.643 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:54:46.669 [debug] handled notification client -> server textDocument/didOpen in 182µs
+
+18:54:46.670 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:54:46.695 [debug] handled notification client -> server textDocument/didOpen in 467µs
+
+18:54:46.696 [debug] handled notification client -> server textDocument/didClose in 121µs
+
+18:54:46.801 [debug] handled notification client -> server textDocument/didOpen in 139µs
+
+18:54:46.802 [debug] handled notification client -> server textDocument/didClose in 145µs
+
+18:54:46.825 [debug] handled notification client -> server textDocument/didOpen in 907µs
+
+18:54:46.825 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:54:46.877 [debug] handled notification client -> server textDocument/didOpen in 231µs
+
+18:54:46.879 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:54:46.893 [debug] handled notification client -> server textDocument/didOpen in 277µs
+
+18:54:46.943 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:54:48.649 [debug] handled notification client -> server textDocument/didOpen in 219µs
+
+18:54:48.658 [debug] handled notification client -> server textDocument/didClose in 89µs
+
+18:54:48.891 [debug] handled notification client -> server textDocument/didOpen in 617µs
+
+18:54:48.891 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:54:48.984 [debug] handled notification client -> server textDocument/didOpen in 125µs
+
+18:54:48.984 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:54:49.041 [debug] handled notification client -> server textDocument/didOpen in 113µs
+
+18:54:49.042 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:54:49.117 [debug] handled notification client -> server textDocument/didOpen in 15ms
+
+18:54:49.117 [debug] handled notification client -> server textDocument/didClose in 153µs
+
+18:54:49.179 [debug] handled notification client -> server textDocument/didOpen in 520µs
+
+18:54:49.201 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:54:49.260 [debug] handled notification client -> server textDocument/didOpen in 208µs
+
+18:54:49.261 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:54:49.280 [debug] handled notification client -> server textDocument/didOpen in 481µs
+
+18:54:49.285 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:54:49.302 [debug] handled notification client -> server textDocument/didOpen in 276µs
+
+18:54:49.302 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:54:49.326 [debug] handled notification client -> server textDocument/didOpen in 200µs
+
+18:54:49.327 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:54:49.349 [debug] handled notification client -> server textDocument/didOpen in 231µs
+
+18:54:49.350 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:54:49.469 [debug] handled notification client -> server textDocument/didOpen in 153µs
+
+18:54:49.470 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:54:49.495 [debug] handled notification client -> server textDocument/didOpen in 759µs
+
+18:54:49.495 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:54:49.554 [debug] handled notification client -> server textDocument/didOpen in 237µs
+
+18:54:49.555 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+18:54:49.608 [debug] handled notification client -> server textDocument/didOpen in 402µs
+
+18:54:49.618 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:54:51.254 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:54:52.773 [debug] handled notification client -> server textDocument/didChange in 681µs
+
+18:54:53.572 [debug] handled notification client -> server textDocument/didSave in 6ms
+
+18:54:53.575 id=7843 [debug] sent request server -> client window/workDoneProgress/create
+
+18:54:53.576 [debug] sent notification server -> client $/progress
+
+18:54:53.655 [debug] sent notification server -> client window/logMessage
+
+18:54:53.655 [info] Compiling 1 file (.ex)
+
+
+18:54:53.659 id=6978 [debug] sent request server -> client window/workDoneProgress/create
+
+18:54:53.660 [debug] sent notification server -> client $/progress
+
+18:54:53.734 [debug] handled notification client -> server textDocument/didSave in 10ms
+
+18:54:53.736 id=7875 [debug] sent request server -> client window/workDoneProgress/create
+
+18:54:53.738 [debug] sent notification server -> client $/progress
+
+18:54:53.800 [debug] sent notification server -> client window/logMessage
+
+18:54:53.800 [info] Generated app app
+
+
+18:54:53.800 [debug] sent notification server -> client $/progress
+
+18:54:53.800 [debug] sent notification server -> client window/logMessage
+
+18:54:53.800 [info] Compiled JuruConnect!
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.808 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.809 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.810 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.810 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.810 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.879 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 273µs
+
+18:54:53.887 [debug] sent notification server -> client $/progress
+
+18:54:53.993 [debug] sent notification server -> client $/progress
+
+18:54:53.993 [debug] sent notification server -> client window/logMessage
+
+18:54:53.993 [info] Compiled JuruConnect!
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.998 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:53.999 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.000 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.002 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.002 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.002 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.002 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.002 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.003 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.004 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.175 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.175 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.175 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.175 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.176 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:54:54.201 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 367µs
+
+18:54:55.468 [debug] handled notification client -> server textDocument/didOpen in 226µs
+
+18:54:55.473 [debug] handled notification client -> server textDocument/didClose in 81µs
+
+18:54:55.602 [debug] handled notification client -> server textDocument/didOpen in 197µs
+
+18:54:55.604 [debug] handled notification client -> server textDocument/didClose in 105µs
+
+18:54:55.840 [debug] handled notification client -> server textDocument/didOpen in 129µs
+
+18:54:55.850 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:54:55.879 [debug] handled notification client -> server textDocument/didOpen in 513µs
+
+18:54:55.881 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:54:55.922 [debug] handled notification client -> server textDocument/didOpen in 339µs
+
+18:54:55.930 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:54:55.984 [debug] handled notification client -> server textDocument/didOpen in 404µs
+
+18:54:55.985 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:54:56.001 [debug] handled notification client -> server textDocument/didOpen in 421µs
+
+18:54:56.003 [debug] handled notification client -> server textDocument/didClose in 88µs
+
+18:54:56.019 [debug] handled notification client -> server textDocument/didOpen in 283µs
+
+18:54:56.020 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:54:56.037 [debug] handled notification client -> server textDocument/didOpen in 213µs
+
+18:54:56.045 [debug] handled notification client -> server textDocument/didClose in 77µs
+
+18:54:56.063 [debug] handled notification client -> server textDocument/didOpen in 223µs
+
+18:54:56.063 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:54:56.129 [debug] handled notification client -> server textDocument/didOpen in 152µs
+
+18:54:56.129 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:54:56.204 [debug] handled notification client -> server textDocument/didOpen in 246µs
+
+18:54:56.205 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:54:56.252 [debug] handled notification client -> server textDocument/didOpen in 318µs
+
+18:54:56.253 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:55:04.605 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:55:29.031 [debug] handled notification client -> server textDocument/didOpen in 238µs
+
+18:55:29.032 [debug] handled notification client -> server textDocument/didClose in 240µs
+
+18:55:29.093 [debug] handled notification client -> server textDocument/didOpen in 183µs
+
+18:55:29.095 [debug] handled notification client -> server textDocument/didClose in 108µs
+
+18:55:29.113 [debug] handled notification client -> server textDocument/didOpen in 197µs
+
+18:55:29.114 [debug] handled notification client -> server textDocument/didClose in 97µs
+
+18:55:29.147 [debug] handled notification client -> server textDocument/didOpen in 999µs
+
+18:55:29.147 [debug] handled notification client -> server textDocument/didClose in 104µs
+
+18:55:29.215 [debug] handled notification client -> server textDocument/didOpen in 492µs
+
+18:55:29.217 [debug] handled notification client -> server textDocument/didClose in 97µs
+
+18:55:29.264 [debug] handled notification client -> server textDocument/didOpen in 358µs
+
+18:55:29.265 [debug] handled notification client -> server textDocument/didClose in 102µs
+
+18:55:29.319 [debug] handled notification client -> server textDocument/didOpen in 487µs
+
+18:55:29.319 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:55:29.339 [debug] handled notification client -> server textDocument/didOpen in 265µs
+
+18:55:29.345 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:55:29.360 [debug] handled notification client -> server textDocument/didOpen in 202µs
+
+18:55:29.361 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:55:29.384 [debug] handled notification client -> server textDocument/didOpen in 410µs
+
+18:55:29.395 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:55:29.474 [debug] handled notification client -> server textDocument/didOpen in 125µs
+
+18:55:29.475 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:55:29.497 [debug] handled notification client -> server textDocument/didOpen in 579µs
+
+18:55:29.497 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:55:29.563 [debug] handled notification client -> server textDocument/didOpen in 201µs
+
+18:55:29.564 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:55:29.628 [debug] handled notification client -> server textDocument/didOpen in 274µs
+
+18:55:29.631 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:55:29.725 [debug] handled notification client -> server textDocument/didOpen in 590µs
+
+18:55:29.725 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:55:48.255 [debug] handled notification client -> server textDocument/didOpen in 477µs
+
+18:55:48.256 [debug] handled notification client -> server textDocument/didClose in 150µs
+
+18:55:48.320 [debug] handled notification client -> server textDocument/didOpen in 362µs
+
+18:55:48.321 [debug] handled notification client -> server textDocument/didClose in 160µs
+
+18:55:48.350 [debug] handled notification client -> server textDocument/didOpen in 325µs
+
+18:55:48.351 [debug] handled notification client -> server textDocument/didClose in 143µs
+
+18:55:48.388 [debug] handled notification client -> server textDocument/didOpen in 17ms
+
+18:55:48.388 [debug] handled notification client -> server textDocument/didClose in 100µs
+
+18:55:48.446 [debug] handled notification client -> server textDocument/didOpen in 480µs
+
+18:55:48.447 [debug] handled notification client -> server textDocument/didClose in 99µs
+
+18:55:48.492 [debug] handled notification client -> server textDocument/didOpen in 370µs
+
+18:55:48.497 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:55:48.521 [debug] handled notification client -> server textDocument/didOpen in 516µs
+
+18:55:48.527 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:55:48.553 [debug] handled notification client -> server textDocument/didOpen in 282µs
+
+18:55:48.553 [debug] handled notification client -> server textDocument/didClose in 84µs
+
+18:55:48.569 [debug] handled notification client -> server textDocument/didOpen in 170µs
+
+18:55:48.571 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:55:48.590 [debug] handled notification client -> server textDocument/didOpen in 185µs
+
+18:55:48.597 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:55:48.669 [debug] handled notification client -> server textDocument/didOpen in 136µs
+
+18:55:48.671 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:55:48.700 [debug] handled notification client -> server textDocument/didOpen in 845µs
+
+18:55:48.700 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:55:48.792 [debug] handled notification client -> server textDocument/didOpen in 234µs
+
+18:55:48.792 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:55:48.819 [debug] handled notification client -> server textDocument/didOpen in 303µs
+
+18:55:48.882 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+18:55:53.475 [debug] handled notification client -> server textDocument/didOpen in 547µs
+
+18:55:53.476 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:55:56.166 [debug] handled notification client -> server textDocument/didOpen in 426µs
+
+18:55:56.166 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:55:56.174 [debug] handled notification client -> server textDocument/didOpen in 749µs
+
+18:55:56.174 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:56:07.153 [debug] handled notification client -> server textDocument/didOpen in 210µs
+
+18:56:07.153 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:56:10.082 [debug] handled notification client -> server textDocument/didOpen in 605µs
+
+18:56:10.083 [debug] handled notification client -> server textDocument/didOpen in 782µs
+
+18:56:10.083 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:56:10.083 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:56:12.843 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:56:12.843 [debug] handled notification client -> server textDocument/didClose in 98µs
+
+18:56:17.107 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:56:17.107 [debug] handled notification client -> server textDocument/didClose in 124µs
+
+18:56:17.161 [debug] handled notification client -> server textDocument/didOpen in 486µs
+
+18:56:17.180 [debug] handled notification client -> server textDocument/didClose in 18ms
+
+18:56:17.244 [debug] handled notification client -> server textDocument/didOpen in 184µs
+
+18:56:17.246 [debug] handled notification client -> server textDocument/didClose in 109µs
+
+18:56:17.268 [debug] handled notification client -> server textDocument/didOpen in 149µs
+
+18:56:17.268 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:56:17.291 [debug] handled notification client -> server textDocument/didOpen in 513µs
+
+18:56:17.293 [debug] handled notification client -> server textDocument/didClose in 115µs
+
+18:56:17.323 [debug] handled notification client -> server textDocument/didOpen in 582µs
+
+18:56:17.324 [debug] handled notification client -> server textDocument/didClose in 128µs
+
+18:56:17.364 [debug] handled notification client -> server textDocument/didOpen in 250µs
+
+18:56:17.365 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:56:17.385 [debug] handled notification client -> server textDocument/didOpen in 497µs
+
+18:56:17.385 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:56:17.414 [debug] handled notification client -> server textDocument/didOpen in 661µs
+
+18:56:17.414 [debug] handled notification client -> server textDocument/didClose in 96µs
+
+18:56:17.429 [debug] handled notification client -> server textDocument/didOpen in 207µs
+
+18:56:17.430 [debug] handled notification client -> server textDocument/didClose in 230µs
+
+18:56:17.458 [debug] handled notification client -> server textDocument/didOpen in 219µs
+
+18:56:17.458 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:56:17.561 [debug] handled notification client -> server textDocument/didOpen in 148µs
+
+18:56:17.561 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:56:17.592 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:56:17.593 [debug] handled notification client -> server textDocument/didClose in 259µs
+
+18:56:17.730 [debug] handled notification client -> server textDocument/didOpen in 225µs
+
+18:56:17.733 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:17.755 [debug] handled notification client -> server textDocument/didOpen in 290µs
+
+18:56:17.768 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:56:20.798 [debug] handled notification client -> server textDocument/didOpen in 657µs
+
+18:56:22.876 [debug] handled notification client -> server textDocument/didChange in 805µs
+
+18:56:23.293 [debug] handled notification client -> server textDocument/didChange in 650µs
+
+18:56:24.077 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:56:24.079 id=7907 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:24.080 [debug] sent notification server -> client $/progress
+
+18:56:24.147 [debug] sent notification server -> client window/logMessage
+
+18:56:24.148 [info] Compiling 1 file (.ex)
+
+
+18:56:24.151 id=7939 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:24.151 [debug] sent notification server -> client $/progress
+
+18:56:24.160 [debug] sent notification server -> client window/logMessage
+
+18:56:24.160 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:219:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+216 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+217 |                 <svg
+218 |                   class="w-6 h-6 text-yellow-500"
+219 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:24.163 [debug] sent notification server -> client $/progress
+
+18:56:24.163 [debug] sent notification server -> client window/logMessage
+
+18:56:24.163 [info] Compiled JuruConnect!
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.170 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.171 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.171 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.171 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.171 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.172 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.173 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.173 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.255 id=5604 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:24.256 [debug] sent notification server -> client $/progress
+
+18:56:24.300 [debug] sent notification server -> client $/progress
+
+18:56:24.377 [debug] handled notification client -> server textDocument/didSave in 129ms
+
+18:56:24.383 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.383 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.384 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.384 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.384 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.444 [debug] sent notification server -> client window/logMessage
+
+18:56:24.444 [info] Compiling 1 file (.ex)
+
+
+18:56:24.446 id=7971 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:24.446 [debug] sent notification server -> client $/progress
+
+18:56:24.456 [debug] sent notification server -> client window/logMessage
+
+18:56:24.457 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:219:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+216 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+217 |                 <svg
+218 |                   class="w-6 h-6 text-yellow-500"
+219 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:24.463 [debug] sent notification server -> client $/progress
+
+18:56:24.463 [debug] sent notification server -> client window/logMessage
+
+18:56:24.463 [info] Compiled JuruConnect!
+
+18:56:24.469 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.470 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.471 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.472 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.472 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.472 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.472 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.472 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.584 [debug] sent notification server -> client $/progress
+
+18:56:24.597 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 501µs
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.643 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:24.644 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:25.014 [debug] handled notification client -> server textDocument/didOpen in 234µs
+
+18:56:25.015 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:56:25.111 [debug] handled notification client -> server textDocument/didOpen in 254µs
+
+18:56:25.111 [debug] handled notification client -> server textDocument/didClose in 131µs
+
+18:56:25.129 [debug] handled notification client -> server textDocument/didOpen in 219µs
+
+18:56:25.130 [debug] handled notification client -> server textDocument/didClose in 99µs
+
+18:56:25.159 [debug] handled notification client -> server textDocument/didOpen in 964µs
+
+18:56:25.160 [debug] handled notification client -> server textDocument/didClose in 110µs
+
+18:56:25.201 [debug] handled notification client -> server textDocument/didOpen in 523µs
+
+18:56:25.207 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:56:25.313 [debug] handled notification client -> server textDocument/didOpen in 407µs
+
+18:56:25.313 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:25.377 [debug] handled notification client -> server textDocument/didOpen in 451µs
+
+18:56:25.379 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:56:25.406 [debug] handled notification client -> server textDocument/didOpen in 309µs
+
+18:56:25.406 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:56:25.430 [debug] handled notification client -> server textDocument/didOpen in 201µs
+
+18:56:25.430 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:56:25.512 [debug] handled notification client -> server textDocument/didClose in 128µs
+
+18:56:25.520 [debug] handled notification client -> server textDocument/didOpen in 368µs
+
+18:56:25.526 [debug] handled notification client -> server textDocument/didClose in 99µs
+
+18:56:25.643 [debug] handled notification client -> server textDocument/didOpen in 144µs
+
+18:56:25.643 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:25.753 [debug] handled notification client -> server textDocument/didOpen in 615µs
+
+18:56:25.754 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+18:56:25.840 [debug] handled notification client -> server textDocument/didOpen in 457µs
+
+18:56:25.840 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:56:25.853 [debug] handled notification client -> server textDocument/didOpen in 289µs
+
+18:56:25.854 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:56:28.682 [debug] handled notification client -> server textDocument/didOpen in 233µs
+
+18:56:28.683 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:56:28.856 [debug] handled notification client -> server textDocument/didOpen in 127µs
+
+18:56:28.859 [debug] handled notification client -> server textDocument/didOpen in 610µs
+
+18:56:28.859 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:56:28.859 [debug] handled notification client -> server textDocument/didClose in 48µs
+
+18:56:28.911 [debug] handled notification client -> server textDocument/didOpen in 125µs
+
+18:56:28.913 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:56:28.940 [debug] handled notification client -> server textDocument/didOpen in 505µs
+
+18:56:28.940 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:56:28.978 [debug] handled notification client -> server textDocument/didOpen in 293µs
+
+18:56:28.979 [debug] handled notification client -> server textDocument/didClose in 98µs
+
+18:56:29.032 [debug] handled notification client -> server textDocument/didOpen in 268µs
+
+18:56:29.032 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:56:29.065 [debug] handled notification client -> server textDocument/didOpen in 17ms
+
+18:56:29.065 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:56:29.075 [debug] handled notification client -> server textDocument/didOpen in 347µs
+
+18:56:29.075 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:56:29.093 [debug] handled notification client -> server textDocument/didOpen in 235µs
+
+18:56:29.093 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:56:29.113 [debug] handled notification client -> server textDocument/didOpen in 207µs
+
+18:56:29.116 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:29.187 [debug] handled notification client -> server textDocument/didOpen in 161µs
+
+18:56:29.189 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+18:56:29.215 [debug] handled notification client -> server textDocument/didOpen in 723µs
+
+18:56:29.216 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:56:29.280 [debug] handled notification client -> server textDocument/didOpen in 367µs
+
+18:56:29.285 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:56:29.304 [debug] handled notification client -> server textDocument/didOpen in 282µs
+
+18:56:29.305 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:56:33.467 [debug] handled notification client -> server textDocument/didOpen in 829µs
+
+18:56:35.185 [debug] handled notification client -> server textDocument/didChange in 680µs
+
+18:56:35.995 [debug] handled notification client -> server textDocument/didSave in 5ms
+
+18:56:35.996 id=7010 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:35.997 [debug] sent notification server -> client $/progress
+
+18:56:36.070 [debug] sent notification server -> client window/logMessage
+
+18:56:36.070 [info] Compiling 1 file (.ex)
+
+
+18:56:36.073 id=5636 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:36.074 [debug] sent notification server -> client $/progress
+
+18:56:36.088 [debug] sent notification server -> client window/logMessage
+
+18:56:36.088 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:220:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+217 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+218 |                 <svg
+219 |                   class="w-6 h-6 text-yellow-500"
+220 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:36.092 [debug] sent notification server -> client $/progress
+
+18:56:36.092 [debug] sent notification server -> client window/logMessage
+
+18:56:36.092 [info] Compiled JuruConnect!
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.100 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.103 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.105 id=1893 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:36.106 [debug] sent notification server -> client $/progress
+
+18:56:36.269 [debug] sent notification server -> client $/progress
+
+18:56:36.291 [debug] handled notification client -> server textDocument/didSave in 191ms
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.297 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.304 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 236µs
+
+18:56:36.359 [debug] sent notification server -> client window/logMessage
+
+18:56:36.359 [info] Compiling 1 file (.ex)
+
+
+18:56:36.361 id=5668 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:36.362 [debug] sent notification server -> client $/progress
+
+18:56:36.375 [debug] sent notification server -> client window/logMessage
+
+18:56:36.375 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:220:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+217 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+218 |                 <svg
+219 |                   class="w-6 h-6 text-yellow-500"
+220 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:36.377 [debug] sent notification server -> client $/progress
+
+18:56:36.377 [debug] sent notification server -> client window/logMessage
+
+18:56:36.377 [info] Compiled JuruConnect!
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.385 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.386 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.386 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.386 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.388 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.519 [debug] sent notification server -> client $/progress
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.540 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:36.642 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 11ms
+
+18:56:36.866 [debug] handled notification client -> server textDocument/didOpen in 412µs
+
+18:56:36.867 [debug] handled notification client -> server textDocument/didClose in 113µs
+
+18:56:36.934 [debug] handled notification client -> server textDocument/didOpen in 118µs
+
+18:56:36.935 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:56:36.975 [debug] handled notification client -> server textDocument/didOpen in 139µs
+
+18:56:36.978 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:56:37.006 [debug] handled notification client -> server textDocument/didOpen in 585µs
+
+18:56:37.008 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:56:37.049 [debug] handled notification client -> server textDocument/didOpen in 294µs
+
+18:56:37.050 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+18:56:37.100 [debug] handled notification client -> server textDocument/didOpen in 223µs
+
+18:56:37.100 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:56:37.139 [debug] handled notification client -> server textDocument/didOpen in 15ms
+
+18:56:37.139 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:56:37.156 [debug] handled notification client -> server textDocument/didOpen in 272µs
+
+18:56:37.156 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:56:37.175 [debug] handled notification client -> server textDocument/didOpen in 219µs
+
+18:56:37.175 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:56:37.199 [debug] handled notification client -> server textDocument/didOpen in 239µs
+
+18:56:37.200 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:56:37.368 [debug] handled notification client -> server textDocument/didOpen in 149µs
+
+18:56:37.373 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:56:37.566 [debug] handled notification client -> server textDocument/didClose in 83µs
+
+18:56:37.696 [debug] handled notification client -> server textDocument/didOpen in 242µs
+
+18:56:37.702 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:56:37.719 [debug] handled notification client -> server textDocument/didOpen in 513µs
+
+18:56:37.731 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:56:40.927 [debug] handled notification client -> server textDocument/didOpen in 625µs
+
+18:56:40.927 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:56:44.841 [debug] handled notification client -> server textDocument/didOpen in 638µs
+
+18:56:44.841 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:56:44.843 [debug] handled notification client -> server textDocument/didOpen in 195µs
+
+18:56:44.844 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:56:44.994 [debug] handled notification client -> server textDocument/didOpen in 118µs
+
+18:56:44.997 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:56:45.022 [debug] handled notification client -> server textDocument/didOpen in 144µs
+
+18:56:45.053 [debug] handled notification client -> server textDocument/didClose in 81µs
+
+18:56:45.089 [debug] handled notification client -> server textDocument/didOpen in 685µs
+
+18:56:45.091 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:56:45.120 [debug] handled notification client -> server textDocument/didOpen in 257µs
+
+18:56:45.122 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:56:45.177 [debug] handled notification client -> server textDocument/didOpen in 199µs
+
+18:56:45.178 [debug] handled notification client -> server textDocument/didClose in 94µs
+
+18:56:45.234 [debug] handled notification client -> server textDocument/didOpen in 559µs
+
+18:56:45.234 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:56:45.272 [debug] handled notification client -> server textDocument/didOpen in 307µs
+
+18:56:45.272 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:56:45.293 [debug] handled notification client -> server textDocument/didOpen in 177µs
+
+18:56:45.293 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:56:45.362 [debug] handled notification client -> server textDocument/didOpen in 210µs
+
+18:56:45.364 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:56:45.424 [debug] handled notification client -> server textDocument/didOpen in 175µs
+
+18:56:45.425 [debug] handled notification client -> server textDocument/didClose in 91µs
+
+18:56:45.446 [debug] handled notification client -> server textDocument/didOpen in 762µs
+
+18:56:45.447 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:56:45.563 [debug] handled notification client -> server textDocument/didOpen in 248µs
+
+18:56:45.568 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:56:45.594 [debug] handled notification client -> server textDocument/didOpen in 295µs
+
+18:56:45.595 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:56:46.081 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 211µs
+
+18:56:48.072 [debug] handled notification client -> server textDocument/didOpen in 632µs
+
+18:56:49.610 [debug] handled notification client -> server textDocument/didChange in 691µs
+
+18:56:50.137 [debug] handled notification client -> server textDocument/didChange in 904µs
+
+18:56:50.929 [debug] handled notification client -> server textDocument/didSave in 4ms
+
+18:56:50.931 id=5700 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:50.931 [debug] sent notification server -> client $/progress
+
+18:56:51.007 [debug] sent notification server -> client window/logMessage
+
+18:56:51.007 [info] Compiling 2 files (.ex)
+
+
+18:56:51.009 id=5732 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:51.010 [debug] sent notification server -> client $/progress
+
+18:56:51.024 [debug] sent notification server -> client window/logMessage
+
+18:56:51.024 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:220:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+217 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+218 |                 <svg
+219 |                   class="w-6 h-6 text-yellow-500"
+220 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:51.027 [debug] sent notification server -> client $/progress
+
+18:56:51.027 [debug] sent notification server -> client window/logMessage
+
+18:56:51.027 [info] Compiled JuruConnect!
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.036 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.037 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.104 id=7042 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:51.105 [debug] sent notification server -> client $/progress
+
+18:56:51.215 [debug] sent notification server -> client $/progress
+
+18:56:51.216 [debug] handled notification client -> server textDocument/didSave in 117ms
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.220 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.221 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.221 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.243 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 333µs
+
+18:56:51.289 [debug] sent notification server -> client window/logMessage
+
+18:56:51.289 [info] Compiling 2 files (.ex)
+
+
+18:56:51.291 id=1925 [debug] sent request server -> client window/workDoneProgress/create
+
+18:56:51.292 [debug] sent notification server -> client $/progress
+
+18:56:51.311 [debug] sent notification server -> client window/logMessage
+
+18:56:51.311 [info] 
+== Compilation error in file lib/app_web/live/dashboard_live.ex ==
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/app_web/live/dashboard_live.ex:220:27: expected closing `"` for attribute value
+
+Make sure the attribute is properly closed. This may also happen if
+there is an EEx interpolation inside a tag, which is not supported.
+Instead of
+
+    <div <%= @some_attributes %>>
+    </div>
+
+do
+
+    <div {@some_attributes}>
+    </div>
+
+Where @some_attributes must be a keyword list or a map.
+
+    |
+217 |               <div class="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center mr-2">
+218 |                 <svg
+219 |                   class="w-6 h-6 text-yellow-500"
+220 |                   fill="none"
+    |                           ^
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:748: Phoenix.LiveView.Tokenizer.raise_syntax_error!/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tokenizer.ex:454: Phoenix.LiveView.Tokenizer.handle_attribute/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/tag_engine.ex:300: Phoenix.LiveView.TagEngine.handle_text/3
+    (eex 1.18.4) lib/eex/compiler.ex:331: EEx.Compiler.generate_buffer/4
+    (eex 1.18.4) lib/eex/compiler.ex:361: EEx.Compiler.generate_buffer/4
+    (phoenix_live_view 1.0.17) expanding macro: Phoenix.Component.sigil_H/2
+    lib/app_web/live/dashboard_live.ex:61: AppWeb.DashboardLive.render/1
+
+
+18:56:51.314 [debug] sent notification server -> client $/progress
+
+18:56:51.314 [debug] sent notification server -> client window/logMessage
+
+18:56:51.314 [info] Compiled JuruConnect!
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.320 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.321 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.321 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.321 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.321 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.322 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.437 [debug] sent notification server -> client $/progress
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.496 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.497 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.497 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.497 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.497 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:56:51.509 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 313µs
+
+18:56:51.845 [debug] handled notification client -> server textDocument/didOpen in 233µs
+
+18:56:51.845 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+18:56:51.949 [debug] handled notification client -> server textDocument/didOpen in 139µs
+
+18:56:51.953 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+18:56:51.973 [debug] handled notification client -> server textDocument/didOpen in 126µs
+
+18:56:51.974 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:56:51.993 [debug] handled notification client -> server textDocument/didOpen in 550µs
+
+18:56:51.993 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:52.062 [debug] handled notification client -> server textDocument/didOpen in 338µs
+
+18:56:52.063 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:56:52.101 [debug] handled notification client -> server textDocument/didOpen in 242µs
+
+18:56:52.102 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:56:52.127 [debug] handled notification client -> server textDocument/didOpen in 509µs
+
+18:56:52.127 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+18:56:52.144 [debug] handled notification client -> server textDocument/didOpen in 412µs
+
+18:56:52.146 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:56:52.186 [debug] handled notification client -> server textDocument/didOpen in 18ms
+
+18:56:52.186 [debug] handled notification client -> server textDocument/didClose in 84µs
+
+18:56:52.186 [debug] handled notification client -> server textDocument/didOpen in 304µs
+
+18:56:52.187 [debug] handled notification client -> server textDocument/didClose in 101µs
+
+18:56:52.251 [debug] handled notification client -> server textDocument/didOpen in 200µs
+
+18:56:52.253 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+18:56:52.373 [debug] handled notification client -> server textDocument/didOpen in 267µs
+
+18:56:52.373 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:56:52.393 [debug] handled notification client -> server textDocument/didOpen in 345µs
+
+18:56:52.401 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:56:54.322 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+18:56:57.182 [debug] handled notification client -> server textDocument/didOpen in 655µs
+
+18:56:57.182 [debug] handled notification client -> server textDocument/didClose in 96µs
+
+18:57:01.415 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 242µs
+
+18:57:10.768 [debug] handled notification client -> server textDocument/didOpen in 307µs
+
+18:57:10.768 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+18:57:10.842 [debug] handled notification client -> server textDocument/didOpen in 126µs
+
+18:57:10.842 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:57:10.873 [debug] handled notification client -> server textDocument/didOpen in 140µs
+
+18:57:10.873 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:57:10.920 [debug] handled notification client -> server textDocument/didOpen in 509µs
+
+18:57:10.920 [debug] handled notification client -> server textDocument/didClose in 285µs
+
+18:57:10.942 [debug] handled notification client -> server textDocument/didOpen in 258µs
+
+18:57:10.942 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+18:57:10.979 [debug] handled notification client -> server textDocument/didOpen in 224µs
+
+18:57:10.979 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:57:10.997 [debug] handled notification client -> server textDocument/didOpen in 476µs
+
+18:57:10.997 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:57:11.022 [debug] handled notification client -> server textDocument/didOpen in 311µs
+
+18:57:11.022 [debug] handled notification client -> server textDocument/didClose in 48µs
+
+18:57:11.033 [debug] handled notification client -> server textDocument/didOpen in 184µs
+
+18:57:11.034 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:57:11.051 [debug] handled notification client -> server textDocument/didOpen in 189µs
+
+18:57:11.051 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:57:11.106 [debug] handled notification client -> server textDocument/didOpen in 186µs
+
+18:57:11.106 [debug] handled notification client -> server textDocument/didClose in 87µs
+
+18:57:11.133 [debug] handled notification client -> server textDocument/didOpen in 783µs
+
+18:57:11.133 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+18:57:11.176 [debug] handled notification client -> server textDocument/didOpen in 247µs
+
+18:57:11.176 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:11.239 [debug] handled notification client -> server textDocument/didOpen in 793µs
+
+18:57:11.239 [debug] handled notification client -> server textDocument/didClose in 105µs
+
+18:57:11.429 [debug] handled notification client -> server textDocument/didOpen in 236µs
+
+18:57:11.432 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:57:11.503 [debug] handled notification client -> server textDocument/didOpen in 115µs
+
+18:57:11.504 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+18:57:11.527 [debug] handled notification client -> server textDocument/didOpen in 119µs
+
+18:57:11.527 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:57:11.548 [debug] handled notification client -> server textDocument/didOpen in 503µs
+
+18:57:11.548 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:11.598 [debug] handled notification client -> server textDocument/didOpen in 290µs
+
+18:57:11.599 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:57:11.690 [debug] handled notification client -> server textDocument/didOpen in 216µs
+
+18:57:11.691 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:57:11.779 [debug] handled notification client -> server textDocument/didOpen in 15ms
+
+18:57:11.779 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+18:57:11.785 [debug] handled notification client -> server textDocument/didOpen in 260µs
+
+18:57:11.791 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:11.809 [debug] handled notification client -> server textDocument/didOpen in 232µs
+
+18:57:11.809 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:11.845 [debug] handled notification client -> server textDocument/didOpen in 226µs
+
+18:57:11.846 [debug] handled notification client -> server textDocument/didClose in 61µs
+
+18:57:11.915 [debug] handled notification client -> server textDocument/didOpen in 140µs
+
+18:57:11.916 [debug] handled notification client -> server textDocument/didClose in 273µs
+
+18:57:11.938 [debug] handled notification client -> server textDocument/didOpen in 582µs
+
+18:57:11.941 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+18:57:12.009 [debug] handled notification client -> server textDocument/didOpen in 372µs
+
+18:57:12.009 [debug] handled notification client -> server textDocument/didClose in 98µs
+
+18:57:12.027 [debug] handled notification client -> server textDocument/didOpen in 628µs
+
+18:57:12.064 [debug] handled notification client -> server textDocument/didClose in 117µs
+
+18:57:12.114 [debug] handled notification client -> server textDocument/didOpen in 323µs
+
+18:57:12.114 [debug] handled notification client -> server textDocument/didClose in 77µs
+
+18:57:12.167 [debug] handled notification client -> server textDocument/didOpen in 124µs
+
+18:57:12.167 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:57:12.195 [debug] handled notification client -> server textDocument/didOpen in 114µs
+
+18:57:12.195 [debug] handled notification client -> server textDocument/didClose in 48µs
+
+18:57:12.217 [debug] handled notification client -> server textDocument/didOpen in 519µs
+
+18:57:12.217 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:57:12.237 [debug] handled notification client -> server textDocument/didOpen in 440µs
+
+18:57:12.237 [debug] handled notification client -> server textDocument/didClose in 48µs
+
+18:57:12.275 [debug] handled notification client -> server textDocument/didOpen in 188µs
+
+18:57:12.275 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+18:57:12.303 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:57:12.303 [debug] handled notification client -> server textDocument/didClose in 172µs
+
+18:57:12.319 [debug] handled notification client -> server textDocument/didOpen in 990µs
+
+18:57:12.319 [debug] handled notification client -> server textDocument/didClose in 70µs
+
+18:57:12.331 [debug] handled notification client -> server textDocument/didOpen in 275µs
+
+18:57:12.331 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+18:57:12.351 [debug] handled notification client -> server textDocument/didOpen in 236µs
+
+18:57:12.352 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+18:57:12.399 [debug] handled notification client -> server textDocument/didOpen in 713µs
+
+18:57:12.400 [debug] handled notification client -> server textDocument/didClose in 122µs
+
+18:57:12.426 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+18:57:12.673 [debug] handled notification client -> server textDocument/didChange in 642µs
+
+18:57:13.473 [debug] handled notification client -> server textDocument/didSave in 5ms
+
+18:57:13.474 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+18:57:13.474 [debug] handled notification client -> server textDocument/didOpen in 244µs
+
+18:57:13.474 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+18:57:13.475 id=1957 [debug] sent request server -> client window/workDoneProgress/create
+
+18:57:13.475 [debug] sent notification server -> client $/progress
+
+18:57:13.493 [debug] handled notification client -> server textDocument/didOpen in 315µs
+
+18:57:13.493 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:57:13.538 [debug] sent notification server -> client window/logMessage
+
+18:57:13.538 [info] Compiling 2 files (.ex)
+
+
+18:57:13.541 id=1989 [debug] sent request server -> client window/workDoneProgress/create
+
+18:57:13.542 [debug] sent notification server -> client $/progress
+
+18:57:13.683 [debug] sent notification server -> client window/logMessage
+
+18:57:13.683 [info] Generated app app
+
+
+18:57:13.684 [debug] sent notification server -> client $/progress
+
+18:57:13.684 [debug] sent notification server -> client window/logMessage
+
+18:57:13.684 [info] Compiled JuruConnect!
+
+18:57:13.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.689 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.690 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.694 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.695 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.773 [debug] sent notification server -> client $/progress
+
+18:57:13.774 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 526µs
+
+18:57:13.853 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.853 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.853 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.853 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.853 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:13.854 [debug] sent notification server -> client textDocument/publishDiagnostics
+
+18:57:14.091 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 218µs
+
+18:57:18.504 [debug] handled notification client -> server textDocument/didOpen in 285µs
+
+18:57:18.504 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+18:57:18.566 [debug] handled notification client -> server textDocument/didOpen in 162µs
+
+18:57:18.567 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+18:57:18.585 [debug] handled notification client -> server textDocument/didOpen in 114µs
+
+18:57:18.585 [debug] handled notification client -> server textDocument/didClose in 47µs
+
+18:57:18.605 [debug] handled notification client -> server textDocument/didOpen in 517µs
+
+18:57:18.605 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:18.632 [debug] handled notification client -> server textDocument/didOpen in 274µs
+
+18:57:18.632 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:57:18.665 [debug] handled notification client -> server textDocument/didOpen in 194µs
+
+18:57:18.665 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:57:18.693 [debug] handled notification client -> server textDocument/didOpen in 436µs
+
+18:57:18.693 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+18:57:18.785 [debug] handled notification client -> server textDocument/didOpen in 367µs
+
+18:57:18.785 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+18:57:18.813 [debug] handled notification client -> server textDocument/didOpen in 222µs
+
+18:57:18.813 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+18:57:18.834 [debug] handled notification client -> server textDocument/didOpen in 245µs
+
+18:57:18.834 [debug] handled notification client -> server textDocument/didClose in 91µs
+
+18:57:18.887 [debug] handled notification client -> server textDocument/didOpen in 185µs
+
+18:57:18.887 [debug] handled notification client -> server textDocument/didClose in 79µs
+
+18:57:18.913 [debug] handled notification client -> server textDocument/didOpen in 798µs
+
+18:57:18.913 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+18:57:18.948 [debug] handled notification client -> server textDocument/didOpen in 320µs
+
+18:57:18.948 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:57:18.963 [debug] handled notification client -> server textDocument/didOpen in 405µs
+
+18:57:18.963 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:57:20.654 [debug] handled notification client -> server textDocument/didOpen in 308µs
+
+18:57:20.656 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+18:57:20.721 [debug] handled notification client -> server textDocument/didOpen in 914µs
+
+18:57:20.721 [debug] handled notification client -> server textDocument/didClose in 89µs
+
+18:57:20.726 [debug] handled notification client -> server textDocument/didOpen in 164µs
+
+18:57:20.729 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+18:57:20.772 [debug] handled notification client -> server textDocument/didOpen in 167µs
+
+18:57:20.773 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:57:20.820 [debug] handled notification client -> server textDocument/didOpen in 18ms
+
+18:57:20.820 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+18:57:20.832 [debug] handled notification client -> server textDocument/didOpen in 348µs
+
+18:57:20.833 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:57:20.952 [debug] handled notification client -> server textDocument/didOpen in 312µs
+
+18:57:20.952 [debug] handled notification client -> server textDocument/didClose in 71µs
+
+18:57:20.958 [debug] handled notification client -> server textDocument/didOpen in 618µs
+
+18:57:20.959 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+18:57:20.974 [debug] handled notification client -> server textDocument/didOpen in 433µs
+
+18:57:20.975 [debug] handled notification client -> server textDocument/didClose in 81µs
+
+18:57:20.992 [debug] handled notification client -> server textDocument/didOpen in 453µs
+
+18:57:20.993 [debug] handled notification client -> server textDocument/didClose in 52µs
+
+18:57:21.008 [debug] handled notification client -> server textDocument/didOpen in 293µs
+
+18:57:21.008 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+18:57:21.087 [debug] handled notification client -> server textDocument/didOpen in 182µs
+
+18:57:21.087 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+18:57:21.105 [debug] handled notification client -> server textDocument/didOpen in 709µs
+
+18:57:21.105 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:57:21.293 [debug] handled notification client -> server textDocument/didOpen in 307µs
+
+18:57:21.293 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+18:57:21.313 [debug] handled notification client -> server textDocument/didOpen in 326µs
+
+18:57:21.314 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+18:57:21.463 [debug] handled notification client -> server textDocument/didOpen in 606µs
+
+18:57:21.463 [debug] handled notification client -> server textDocument/didClose in 102µs
