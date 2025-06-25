@@ -3,7 +3,7 @@ defmodule App.Repo.Migrations.CreateMessagesTable do
 
   def change do
     create table(:messages) do
-      add :text,   :text,   null: false
+      add :text, :text, null: false
       add :sender, :string, null: false
       add :order_id, :integer, null: false
       add :image_url, :string

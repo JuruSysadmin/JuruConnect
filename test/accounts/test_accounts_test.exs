@@ -21,7 +21,10 @@ defmodule App.AccountsTest do
 
   test "retorna {:ok, user} com credenciais válidas", %{user: user} do
     deps = %{
-      get_user: fn "testuser" -> user; _ -> nil end,
+      get_user: fn
+        "testuser" -> user
+        _ -> nil
+      end,
       verify: &Pbkdf2Mock.verify_pass/2
     }
 
@@ -30,11 +33,15 @@ defmodule App.AccountsTest do
 
   test "retorna {:error, :unauthorized} com senha inválida", %{user: user} do
     deps = %{
-      get_user: fn "testuser" -> user; _ -> nil end,
+      get_user: fn
+        "testuser" -> user
+        _ -> nil
+      end,
       verify: &Pbkdf2Mock.verify_pass/2
     }
 
-    assert {:error, :unauthorized} = Accounts.authenticate_user("testuser", "wrong_password", deps)
+    assert {:error, :unauthorized} =
+             Accounts.authenticate_user("testuser", "wrong_password", deps)
   end
 
   test "retorna {:error, :unauthorized} com usuário inexistente" do

@@ -3,7 +3,6 @@ defmodule App.AccountsTest do
 
   alias App.Accounts
 
-
   @store_id "550e8400-e29b-41d4-a716-446655440000"
 
   setup do
@@ -31,6 +30,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, user} = Accounts.create_user(user_attrs)
 
       # When: Quando  buscamos o usuário pelo ID
@@ -63,6 +63,7 @@ defmodule App.AccountsTest do
         password: "senha456",
         store_id: @store_id
       }
+
       {:ok, _user} = Accounts.create_user(user_attrs)
 
       # When: buscamos o usuário pelo username
@@ -136,6 +137,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, user} = Accounts.create_user(user_attrs)
 
       # When: Quando atualizamos o usuário
@@ -144,6 +146,7 @@ defmodule App.AccountsTest do
         role: "admin",
         website: "https://novosite.com"
       }
+
       result = Accounts.update_user(user, update_attrs)
 
       # Then: Então o usuário é atualizado com sucesso
@@ -162,6 +165,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, user} = Accounts.create_user(user_attrs)
 
       # When: tentamos atualizar com dados inválidos
@@ -184,6 +188,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, user} = Accounts.create_user(user_attrs)
 
       # When: Quando deletamos o usuário
@@ -210,6 +215,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       user2_attrs = %{
         username: "usuario2",
         name: "Usuário 2",
@@ -217,6 +223,7 @@ defmodule App.AccountsTest do
         password: "senha456",
         store_id: @store_id
       }
+
       {:ok, _user1} = Accounts.create_user(user1_attrs)
       {:ok, _user2} = Accounts.create_user(user2_attrs)
 
@@ -240,6 +247,7 @@ defmodule App.AccountsTest do
           password: "senha#{i}",
           store_id: @store_id
         }
+
         {:ok, _user} = Accounts.create_user(attrs)
       end
 
@@ -275,6 +283,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: store1_id
       }
+
       user2_attrs = %{
         username: "usuario_loja2",
         name: "Usuário Loja 2",
@@ -282,6 +291,7 @@ defmodule App.AccountsTest do
         password: "senha456",
         store_id: store2_id
       }
+
       {:ok, _user1} = Accounts.create_user(user1_attrs)
       {:ok, _user2} = Accounts.create_user(user2_attrs)
 
@@ -290,6 +300,7 @@ defmodule App.AccountsTest do
 
       # Then: apenas usuários da loja 1 são retornados
       assert length(store1_users) >= 1
+
       Enum.each(store1_users, fn user ->
         assert user.store_id == store1_id
       end)
@@ -306,6 +317,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       manager_attrs = %{
         username: "manager_user",
         name: "Manager User",
@@ -313,6 +325,7 @@ defmodule App.AccountsTest do
         password: "senha456",
         store_id: @store_id
       }
+
       {:ok, _admin} = Accounts.create_user(admin_attrs)
       {:ok, _manager} = Accounts.create_user(manager_attrs)
 
@@ -321,6 +334,7 @@ defmodule App.AccountsTest do
 
       # Then: apenas usuários admin são retornados
       assert length(admin_users) >= 1
+
       Enum.each(admin_users, fn user ->
         assert user.role == "admin"
       end)
@@ -337,6 +351,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, _user} = Accounts.create_user(user_attrs)
 
       # When: tentamos autenticar com credenciais corretas
@@ -356,6 +371,7 @@ defmodule App.AccountsTest do
         password: "senha123",
         store_id: @store_id
       }
+
       {:ok, _user} = Accounts.create_user(user_attrs)
 
       # When: Quando tentamos autenticar com senha incorreta

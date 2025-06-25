@@ -55,10 +55,14 @@ defmodule App.Accounts do
     - `{:error, :unauthorized}` se autenticação falhar
   """
   @impl true
-  def authenticate_user(username, password, deps \\ %{
-    get_user: &get_user_by_username/1,
-    verify: &Pbkdf2.verify_pass/2
-  }) do
+  def authenticate_user(
+        username,
+        password,
+        deps \\ %{
+          get_user: &get_user_by_username/1,
+          verify: &Pbkdf2.verify_pass/2
+        }
+      ) do
     with user when not is_nil(user) <- deps.get_user.(username),
          true <- deps.verify.(password, user.password_hash) do
       {:ok, user}

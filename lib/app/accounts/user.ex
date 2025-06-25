@@ -1,32 +1,32 @@
 defmodule App.Accounts.User do
- @moduledoc """
-Representação do esquema da entidade Usuário no contexto Contas.
+  @moduledoc """
+  Representação do esquema da entidade Usuário no contexto Contas.
 
-O esquema Usuário inclui informações básicas do usuário, como nome de usuário, nome, função
-e detalhes de autenticação. Ele usa UUID para chaves primárias e estrangeiras.
+  O esquema Usuário inclui informações básicas do usuário, como nome de usuário, nome, função
+  e detalhes de autenticação. Ele usa UUID para chaves primárias e estrangeiras.
 
-## Campos
+  ## Campos
 
-* `id` - A chave primária (UUID)
-* `username` - Identificador único do usuário
-* `name` - Nome completo do usuário
-* `role` - Função do usuário no sistema
-* `store_id` - UUID da loja associada
-* `password` - Campo virtual para entrada de senha
-* `password_hash` - Senha criptografada armazenada no banco de dados
-* `website` - URL do site do usuário
-* `avatar_url` - URL para a imagem do avatar do usuário
-* `inserted_at` - Carimbo de data/hora da criação do registro
-* `updated_at` - Carimbo de data/hora da última atualização
+  * `id` - A chave primária (UUID)
+  * `username` - Identificador único do usuário
+  * `name` - Nome completo do usuário
+  * `role` - Função do usuário no sistema
+  * `store_id` - UUID da loja associada
+  * `password` - Campo virtual para entrada de senha
+  * `password_hash` - Senha criptografada armazenada no banco de dados
+  * `website` - URL do site do usuário
+  * `avatar_url` - URL para a imagem do avatar do usuário
+  * `inserted_at` - Carimbo de data/hora da criação do registro
+  * `updated_at` - Carimbo de data/hora da última atualização
 
-## Conjuntos de alterações
+  ## Conjuntos de alterações
 
-O módulo fornece uma função `changeset/2` que:
-* Valida Campos obrigatórios (nome de usuário, nome, função)
-* Garante que o nome de usuário tenha no mínimo 3 caracteres
-* Impõe restrição de nome de usuário exclusivo
-* Faz hash automático de senhas antes do armazenamento
-"""
+  O módulo fornece uma função `changeset/2` que:
+  * Valida Campos obrigatórios (nome de usuário, nome, função)
+  * Garante que o nome de usuário tenha no mínimo 3 caracteres
+  * Impõe restrição de nome de usuário exclusivo
+  * Faz hash automático de senhas antes do armazenamento
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -58,15 +58,12 @@ O módulo fornece uma função `changeset/2` que:
   end
 
   defp hash_password(changeset) do
-  if changeset.valid? && get_change(changeset, :password) do
-    password = get_change(changeset, :password)
+    if changeset.valid? && get_change(changeset, :password) do
+      password = get_change(changeset, :password)
 
-    put_change(changeset, :password_hash, Pbkdf2.hash_pwd_salt(password))
-  else
-    changeset
+      put_change(changeset, :password_hash, Pbkdf2.hash_pwd_salt(password))
+    else
+      changeset
+    end
   end
-end
-
-
-
 end

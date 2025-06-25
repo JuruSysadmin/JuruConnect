@@ -3,13 +3,14 @@ defmodule App.Repo.Migrations.CreateUsers do
 
   def up do
     execute "CREATE TYPE user_role AS ENUM ('admin','manager','clerk')"
+
     create table(:users, primary_key: false) do
-      add :id,            :binary_id, primary_key: true
-      add :username,      :string,    null: false
-      add :name,          :string,    null: false
-      add :role,          :user_role, null: false
-      add :store_id,      references(:stores, type: :binary_id, on_delete: :restrict), null: false
-      add :password_hash, :string,    null: false
+      add :id, :binary_id, primary_key: true
+      add :username, :string, null: false
+      add :name, :string, null: false
+      add :role, :user_role, null: false
+      add :store_id, references(:stores, type: :binary_id, on_delete: :restrict), null: false
+      add :password_hash, :string, null: false
       add :website, :string
       add :avatar_url, :string
 

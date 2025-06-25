@@ -20,7 +20,7 @@ defmodule App.Accounts.Behaviour do
       iex> get_user!("550e8400-e29b-41d4-a716-446655440000")
       %User{id: "550e8400-e29b-41d4-a716-446655440000", username: "joao123", ...}
   """
-  @callback get_user!(id :: String.t()) :: App.Accounts.User.t()
+  @callback get_user!(id :: String.t()) :: {:ok, App.Accounts.User.t()} | {:error, :not_found}
 
   @doc """
   Busca um usuário pelo username.
@@ -64,10 +64,10 @@ defmodule App.Accounts.Behaviour do
       {:error, :unauthorized}
   """
   @callback authenticate_user(
-    username :: String.t(),
-    password :: String.t(),
-    deps :: map() | nil
-  ) :: {:ok, App.Accounts.User.t()} | {:error, :unauthorized}
+              username :: String.t(),
+              password :: String.t(),
+              deps :: map() | nil
+            ) :: {:ok, App.Accounts.User.t()} | {:error, :unauthorized}
 
   @doc """
   Cria um novo usuário.
@@ -89,7 +89,8 @@ defmodule App.Accounts.Behaviour do
       })
       {:ok, %User{username: "maria456", ...}}
   """
-  @callback create_user(attrs :: map()) :: {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
+  @callback create_user(attrs :: map()) ::
+              {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
 
   @doc """
   Atualiza um usuário existente.
@@ -107,9 +108,9 @@ defmodule App.Accounts.Behaviour do
       {:ok, %User{name: "João Silva Atualizado", ...}}
   """
   @callback update_user(
-    user :: App.Accounts.User.t(),
-    attrs :: map()
-  ) :: {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
+              user :: App.Accounts.User.t(),
+              attrs :: map()
+            ) :: {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
 
   @doc """
   Deleta um usuário.
@@ -125,7 +126,8 @@ defmodule App.Accounts.Behaviour do
       iex> delete_user(user)
       {:ok, %User{...}}
   """
-  @callback delete_user(user :: App.Accounts.User.t()) :: {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
+  @callback delete_user(user :: App.Accounts.User.t()) ::
+              {:ok, App.Accounts.User.t()} | {:error, Ecto.Changeset.t()}
 
   @doc """
   Lista todos os usuários.
