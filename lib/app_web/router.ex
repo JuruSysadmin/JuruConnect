@@ -1,13 +1,15 @@
 defmodule AppWeb.Router do
   use AppWeb, :router
 
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007;"
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, html: {AppWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug :put_secure_browser_headers, %{"content-security-policy" => @csp}
   end
 
   pipeline :api do
@@ -18,6 +20,8 @@ defmodule AppWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/hello", DashboardLive
+    live "/login", UserSessionLive.Index, :new
   end
 
   # Other scopes may use custom stacks.

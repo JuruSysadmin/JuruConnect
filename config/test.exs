@@ -6,11 +6,11 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :app, App.Repo,
-  username: "phoenix",
-  password: "123",
+  username: "postgres",
+  password: "password",
   hostname: "localhost",
   port: 5433,
-  database: "chat_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "chat_app_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
@@ -20,6 +20,11 @@ config :app, AppWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "jFpSz0RgsEUAO92TDA/5NiHmkrOR4zrSjSe79fvlCfk/PBSRGbsedbFHLwE9xRUV",
   server: false
+
+# Configure Guardian for testing
+config :app, AppWeb.Auth.Guardian,
+  issuer: "app_web",
+  secret_key: "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
 
 # In test we don't send emails
 config :app, App.Mailer, adapter: Swoosh.Adapters.Test

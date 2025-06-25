@@ -15,6 +15,7 @@ defmodule AppWeb.CoreComponents do
   Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
   """
   use Phoenix.Component
+  alias Phoenix.HTML.Form
   use Gettext, backend: AppWeb.Gettext
 
   alias Phoenix.LiveView.JS
@@ -305,7 +306,7 @@ defmodule AppWeb.CoreComponents do
   def input(%{type: "checkbox"} = assigns) do
     assigns =
       assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+        Form.normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""

@@ -9,8 +9,8 @@ defmodule App.Accounts do
   @behaviour App.Accounts.Behaviour
 
   import Ecto.Query, warn: false
-  alias App.Repo
   alias App.Accounts.User
+  alias App.Repo
 
   @doc """
   Busca um usuário pelo ID.

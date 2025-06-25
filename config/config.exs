@@ -41,10 +41,11 @@ config :esbuild,
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
-  config :app_web, AppWeb.Auth.Guardian,
+config :app, AppWeb.Auth.Guardian,
   issuer: "app_web",
-  secret_key: System.get_env("GUARDIAN_SECRET") || "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
-
+  secret_key:
+    System.get_env("GUARDIAN_SECRET") ||
+      "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
 
 # Configure tailwind (the version is required)
 config :tailwind,

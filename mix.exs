@@ -19,7 +19,7 @@ defmodule App.MixProject do
   def application do
     [
       mod: {App.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :os_mon]
     ]
   end
 
@@ -53,6 +53,7 @@ defmodule App.MixProject do
       {:sweet_xml, "~> 0.6"},
       {:comeonin, "~> 5.3"},
       {:pbkdf2_elixir, "~> 1.3"},
+      {:live_debugger, "~> 0.3", only: [:dev]},
       {:fuse, "~> 2.5.0"},
       {:uuid, "~> 1.1"},
       {:swoosh, "~> 1.5"},
@@ -66,6 +67,7 @@ defmodule App.MixProject do
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:igniter, "~> 0.5.40", only: :dev, runtime: false},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},

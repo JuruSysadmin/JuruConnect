@@ -3,3 +3,198 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+/* Apple-like Login Custom Styles */
+.apple-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.apple-login .container {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 40px 32px;
+}
+
+.apple-login .header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.apple-login .logo-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(177, 40, 40, 0.1);
+    border: 1px solid #e5e5e7;
+    margin-bottom: 32px;
+}
+
+.apple-login .apple-logo {
+    width: 32px;
+    height: 32px;
+    fill: #000;
+}
+
+.apple-login .title {
+    font-size: 24px;
+    font-weight: 500;
+    color: #1d1d1f;
+    line-height: 1.3;
+    margin-bottom: 8px;
+}
+
+.apple-login .form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.apple-login .input-group {
+    position: relative;
+}
+
+.apple-login .input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    font-size: 16px;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    background-color: white;
+    transition: border-color 0.2s ease;
+}
+
+.apple-login .input:focus {
+    outline: none;
+    border-color: #007aff;
+    box-shadow: 0 0 0 1px #007aff;
+}
+
+.apple-login .input::placeholder {
+    color: #86868b;
+}
+
+.apple-login .domain-suffix {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: #86868b;
+    pointer-events: none;
+}
+
+.apple-login .password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #86868b;
+}
+
+.apple-login .password-toggle:hover {
+    color: #1d1d1f;
+}
+
+.apple-login .forgot-link {
+    text-align: center;
+    margin: 8px 0;
+}
+
+.apple-login .forgot-link a {
+    color: #06468b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.apple-login .forgot-link a:hover {
+    text-decoration: underline;
+}
+
+.apple-login .submit-btn {
+    width: 100%;
+    height: 48px;
+    background-color: #06468b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.apple-login .submit-btn:hover {
+    background-color: #0056cc;
+}
+
+.apple-login .submit-btn:active {
+    background-color: #004499;
+}
+
+.apple-login .footer {
+    margin-top: 32px;
+    text-align: center;
+}
+
+.apple-login .privacy-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: #e3f2fd;
+    border-radius: 50%;
+    margin-bottom: 16px;
+}
+
+.apple-login .privacy-dot {
+    width: 16px;
+    height: 16px;
+    background-color: #007aff;
+    border-radius: 50%;
+}
+
+.apple-login .privacy-text {
+    font-size: 12px;
+    color: #86868b;
+    line-height: 1.4;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.apple-login .privacy-text a {
+    color: #007aff;
+    text-decoration: none;
+}
+
+.apple-login .privacy-text a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .apple-login .container {
+        max-width: 100%;
+    }
+    .apple-login .title {
+        font-size: 20px;
+    }
+}
