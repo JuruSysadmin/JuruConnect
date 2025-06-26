@@ -10,7 +10,7 @@ defmodule AppWeb.DashboardComponents do
         </div>
         <span class="text-lg font-semibold text-gray-700"><%= @title %></span>
       </div>
-      <div class="text-3xl font-extrabold text-gray-900 mb-1 break-words w-full text-center">
+      <div class="text-xl md:text-2xl font-extrabold text-gray-900 mb-1 w-full text-center">
         <%= @value %>
       </div>
       <div class="text-xs text-gray-400"><%= @subtitle %></div>

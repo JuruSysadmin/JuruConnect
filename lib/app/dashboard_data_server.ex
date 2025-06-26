@@ -27,6 +27,7 @@ defmodule App.DashboardDataServer do
     new_state =
       case App.ApiClient.fetch_dashboard_summary() do
         {:ok, data} ->
+          Phoenix.PubSub.broadcast(App.PubSub, "dashboard:updated", {:dashboard_updated, data})
           %{state |
             data: data,
             last_update: now,
