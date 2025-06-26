@@ -171,7 +171,7 @@ defmodule AppWeb.DashboardLive do
   end
 
   defp format_money(value) when is_number(value) do
-    "R$ " <>
+    "R$\u00A0" <>
       (value
       |> :erlang.float_to_binary(decimals: 2)
       |> String.replace(".", ",")
@@ -292,111 +292,42 @@ defmodule AppWeb.DashboardLive do
         </div>
 
         <!-- Cards: Grid responsiva, centralizada, espaçamento amplo -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-8 w-full max-w-6xl mx-auto items-stretch mb-12">
-          <.card
-            title="Faturamento"
-            value={@faturamento}
-            subtitle="Líquido"
-            class=""
-            icon_bg="bg-green-50"
-          >
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 w-full max-w-7xl mx-auto items-stretch mb-12">
+          <.card title="Faturamento" value={@faturamento} subtitle="Líquido" icon_bg="bg-green-50">
             <:icon>
               <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/></svg>
             </:icon>
           </.card>
-          <.card
-            title="Realizado"
-            value={@realizado}
-            subtitle="Meta"
-            class=""
-            icon_bg="bg-blue-50"
-          >
+          <.card title="Realizado" value={@realizado} subtitle="Meta" icon_bg="bg-blue-50">
             <:icon>
               <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
             </:icon>
           </.card>
-          <.card
-            title="Margem"
-            value={@margem}
-            subtitle="Líquida"
-            class=""
-            icon_bg="bg-yellow-50"
-          >
+          <.card title="Margem" value={@margem} subtitle="Líquida" icon_bg="bg-yellow-50">
             <:icon>
               <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
             </:icon>
           </.card>
-          <.card
-            title="NFS"
-            value={@cupons}
-            subtitle={"Ticket Médio " <> @ticket}
-            class=""
-            icon_bg="bg-yellow-100"
-          >
+          <.card title="NFS" value={@cupons} subtitle={"Ticket Médio " <> @ticket} icon_bg="bg-indigo-50">
             <:icon>
-              <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>
+              <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>
             </:icon>
           </.card>
-        </div>
-
-        <!-- Cards Adicionais -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-6xl mx-auto items-stretch mb-12">
-          <!-- Card: Vendas Hoje -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <div class="flex items-center mb-4">
-              <div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center mr-3">
-                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                </svg>
-              </div>
-              <span class="text-lg font-semibold text-gray-700">Vendas Hoje</span>
-            </div>
-            <div class="text-2xl font-bold text-gray-900 mb-2">
-              <%= @venda_hoje %>
-            </div>
-            <div class="text-sm text-gray-500">
-              Meta: <%= @objetivo_hoje %>
-            </div>
-            <div class="text-sm text-gray-500">
-              NFS: <%= @nfs_hoje %>
-            </div>
-          </div>
-
-          <!-- Card: Devoluções -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <div class="flex items-center mb-4">
-              <div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center mr-3">
-                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-                </svg>
-              </div>
-              <span class="text-lg font-semibold text-gray-700">Devoluções</span>
-            </div>
-            <div class="text-2xl font-bold text-red-600 mb-2">
-              <%= @devolucao %>
-            </div>
-            <div class="text-sm text-gray-500">
-              Desconto: <%= @desconto %>
-            </div>
-          </div>
-
-          <!-- Card: Mix de Produtos -->
-          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-            <div class="flex items-center mb-4">
-              <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center mr-3">
-                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-              </div>
-              <span class="text-lg font-semibold text-gray-700">Mix</span>
-            </div>
-            <div class="text-2xl font-bold text-gray-900 mb-2">
-              <%= @mix %>
-            </div>
-            <div class="text-sm text-gray-500">
-              Produtos diferentes
-            </div>
-          </div>
+          <.card title="Vendas Hoje" value={@venda_hoje} subtitle={"Meta: " <> @objetivo_hoje} icon_bg="bg-pink-50">
+            <:icon>
+              <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </:icon>
+          </.card>
+          <.card title="Devoluções" value={@devolucao} subtitle={"Desconto: " <> @desconto} icon_bg="bg-red-50">
+            <:icon>
+              <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+            </:icon>
+          </.card>
+          <.card title="Mix de Produtos" value={@mix} subtitle="Produtos diferentes" icon_bg="bg-purple-50">
+            <:icon>
+              <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </:icon>
+          </.card>
         </div>
 
         <!-- Metas & Atividades -->

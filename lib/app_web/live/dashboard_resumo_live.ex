@@ -5,14 +5,21 @@ defmodule AppWeb.DashboardResumoLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket), do: :timer.send_interval(1000, self(), :fetch_data)
+    if connected?(socket), do: Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
     socket = fetch_and_assign_data(socket)
     {:ok, socket}
   end
 
   @impl true
-  def handle_info(:fetch_data, socket) do
-    socket = fetch_and_assign_data(socket)
+  def handle_info({:dashboard_updated, data}, socket) do
+    data_with_atom_keys = for {k, v} <- data, into: %{}, do: {String.to_atom(k), v}
+    socket = assign_success_data(socket, data_with_atom_keys)
+
+    socket =
+      push_event(socket, "update-gauge", %{
+        value: socket.assigns.percentual_num
+      })
+
     {:noreply, socket}
   end
 
@@ -34,6 +41,14 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   defp assign_success_data(socket, data) do
+    percentual_num =
+      (data[:percentual] || 0.0)
+      |> to_string()
+      |> String.replace(",", ".")
+      |> String.replace("%", "")
+      |> Float.parse()
+      |> elem(0)
+
     assigns = [
       sale: format_money(data[:sale] || 0.0),
       cost: format_money(data[:cost] || 0.0),
@@ -41,6 +56,7 @@ defmodule AppWeb.DashboardResumoLive do
       objetivo: format_money(data[:objetivo] || 0.0),
       profit: format_percent(data[:profit] || 0.0),
       percentual: format_percent(data[:percentual] || 0.0),
+      percentual_num: percentual_num,
       nfs: data[:nfs] || 0,
       last_update: DateTime.utc_now(),
       api_status: :ok
@@ -56,6 +72,7 @@ defmodule AppWeb.DashboardResumoLive do
       objetivo: "R$ 0,00",
       profit: "R$ 0,00",
       percentual: "0,00%",
+      percentual_num: 0,
       nfs: 0,
       api_status: :error,
       api_error: reason,
@@ -65,7 +82,7 @@ defmodule AppWeb.DashboardResumoLive do
 
   defp format_money(value) when is_number(value) do
     value = value * 1.0
-    "R$ " <>
+    "R$\u00A0" <>
       (value
       |> :erlang.float_to_binary(decimals: 2)
       |> String.replace(".", ",")
@@ -167,11 +184,29 @@ defmodule AppWeb.DashboardResumoLive do
             <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>
           </:icon>
         </.card>
-        <%= for _ <- 1..rem(3 - rem(7, 3), 3) do %>
+        <%= for _ <- 1..rem(3 - rem(6, 3), 3) do %>
           <div class="invisible"></div>
         <% end %>
       </div>
-      <.progress_bar percentual={@percentual} percentual_num={@percentual} objetivo={@objetivo} />
+
+      <div class="w-full max-w-xs mx-auto mt-8 relative">
+        <canvas
+          id="gauge-chart"
+          phx-hook="GaugeChart"
+          phx-update="ignore"
+          data-value={@percentual_num}
+          class="w-full h-full"
+        >
+        </canvas>
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span class="text-3xl font-bold text-gray-700"><%= @percentual %></span>
+            <span class="text-sm font-medium text-gray-500">Meta: <%= @objetivo %></span>
+        </div>
+      </div>
+
+      <div id="echarts-demo" style="width: 400px; height: 400px;"></div>
+      <script type="module" src="/assets/echarts_test.js"></script>
+
     </div>
     """
   end
