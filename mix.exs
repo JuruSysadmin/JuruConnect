@@ -65,6 +65,7 @@ defmodule App.MixProject do
       {:ex_aws_s3, "~> 2.3"},
       {:hackney, "~> 1.9"},
       {:finch, "~> 0.13"},
+      {:httpoison, "~> 2.0"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:igniter, "~> 0.5.40", only: :dev, runtime: false},

@@ -14,6 +14,8 @@ defmodule App.Application do
       {Phoenix.PubSub, name: App.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
+      # DashboardDataServer centraliza o fetch da API
+      App.DashboardDataServer,
       # Start a worker by calling: App.Worker.start_link(arg)
       # {App.Worker, arg},
       # Start to serve requests, typically the last entry

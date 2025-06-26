@@ -21,6 +21,7 @@ defmodule AppWeb.Router do
 
     get "/", PageController, :home
     live "/hello", DashboardLive
+    live "/dashboard", DashboardResumoLive
     live "/login", UserSessionLive.Index, :new
   end
 
