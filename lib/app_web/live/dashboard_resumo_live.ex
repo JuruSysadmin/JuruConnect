@@ -177,123 +177,8 @@ defmodule AppWeb.DashboardResumoLive do
   defp get_companies_data(data) do
     case Map.get(data, :companies) do
       companies when is_list(companies) -> companies
-      _ -> get_mock_lojas_data()
+      _ -> []
     end
-  end
-
-  defp get_mock_lojas_data do
-    [
-      %{
-        nome: "JURUNENSE ABAETETUBA",
-        meta_dia: 56000.01,
-        meta_hora: 31767.28,
-        qtde_nfs: 68,
-        venda_dia: 33361.27,
-        perc_hora: 105.02,
-        perc_dia: 59.57,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE ALCINDO",
-        meta_dia: 85000.00,
-        meta_hora: 29734.31,
-        qtde_nfs: 202,
-        venda_dia: 68030.42,
-        perc_hora: 228.79,
-        perc_dia: 80.04,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE BR",
-        meta_dia: 290454.55,
-        meta_hora: 165559.09,
-        qtde_nfs: 283,
-        venda_dia: 148429.75,
-        perc_hora: 89.65,
-        perc_dia: 51.1,
-        status: :abaixo_meta
-      },
-      %{
-        nome: "JURUNENSE CASTANHAL",
-        meta_dia: 85000.00,
-        meta_hora: 36786.89,
-        qtde_nfs: 93,
-        venda_dia: 52461.18,
-        perc_hora: 142.61,
-        perc_dia: 61.72,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE CIDADE NOVA",
-        meta_dia: 54545.50,
-        meta_hora: 19309.11,
-        qtde_nfs: 137,
-        venda_dia: 35045.36,
-        perc_hora: 181.5,
-        perc_dia: 64.25,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE CIPRIANO",
-        meta_dia: 99000.02,
-        meta_hora: 56160.01,
-        qtde_nfs: 214,
-        venda_dia: 49007.81,
-        perc_hora: 87.26,
-        perc_dia: 49.5,
-        status: :abaixo_meta
-      },
-      %{
-        nome: "JURUNENSE ECOMMERCE",
-        meta_dia: 6000.00,
-        meta_hora: 2520.00,
-        qtde_nfs: 13,
-        venda_dia: 3820.08,
-        perc_hora: 151.59,
-        perc_dia: 63.67,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE SALINOPOLIS",
-        meta_dia: 39999.96,
-        meta_hora: 22690.89,
-        qtde_nfs: 0,
-        venda_dia: 0.00,
-        perc_hora: 0,
-        perc_dia: 0,
-        status: :sem_vendas
-      },
-      %{
-        nome: "JURUNENSE SENADOR LEMOS",
-        meta_dia: 60000.05,
-        meta_hora: 27284.23,
-        qtde_nfs: 156,
-        venda_dia: 34278.51,
-        perc_hora: 125.63,
-        perc_dia: 57.13,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE TAPANA",
-        meta_dia: 64999.99,
-        meta_hora: 35749.99,
-        qtde_nfs: 117,
-        venda_dia: 38841.58,
-        perc_hora: 108.65,
-        perc_dia: 59.76,
-        status: :atingida_hora
-      },
-      %{
-        nome: "JURUNENSE TELEMARKETING",
-        meta_dia: 18000.00,
-        meta_hora: 7200.00,
-        qtde_nfs: 6,
-        venda_dia: 8708.48,
-        perc_hora: 120.95,
-        perc_dia: 48.38,
-        status: :atingida_hora
-      }
-    ]
   end
 
   @impl true
@@ -369,7 +254,7 @@ defmodule AppWeb.DashboardResumoLive do
         animation: bounceIn 0.6s ease-out;
       }
     </style>
-    <div id="dashboard-main" class="flex min-h-screen bg-white flex-col items-center py-12 px-4 sm:px-8" phx-hook="GoalCelebration">
+    <div id="dashboard-main" class="min-h-screen bg-white" phx-hook="GoalCelebration">
       <!-- Notificações de Meta Atingida -->
       <%= if @show_celebration do %>
         <div class="fixed inset-0 z-50 pointer-events-none">
@@ -404,9 +289,10 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         <% end %>
       </div>
+
       <!-- Header com status da API -->
-      <div class="flex items-center justify-between w-full max-w-4xl mb-12">
-        <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">Dashboard Resumo</h1>
+      <div class="flex items-center justify-between w-full px-8 py-6 mb-6">
+        <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">JURUNENSE HOME CENTER</h1>
         <div class="flex items-center space-x-4">
           <%= if @loading do %>
             <div class="flex items-center space-x-2">
@@ -436,384 +322,382 @@ defmodule AppWeb.DashboardResumoLive do
         </div>
       </div>
 
-      <!-- Cards de métricas -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12 w-full max-w-4xl mx-auto items-stretch mb-20">
-        <.card title="Faturamento" value={@sale} subtitle="Venda Bruta" icon_bg="bg-green-50">
-          <:icon>
-            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/>
-            </svg>
-          </:icon>
-        </.card>
+      <!-- Layout principal dividido -->
+      <div class="flex gap-6 px-8">
+        <!-- Coluna esquerda: Cards e Gráficos -->
+        <div class="flex-1 space-y-6">
+          <!-- Cards de métricas -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <.card title="Faturamento" value={@sale} subtitle="Venda Bruta" icon_bg="bg-green-50">
+              <:icon>
+                <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/>
+                </svg>
+              </:icon>
+            </.card>
 
-        <.card title="Custo" value={@cost} subtitle="Custo Total" icon_bg="bg-blue-50">
-          <:icon>
-            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
-            </svg>
-          </:icon>
-        </.card>
+            <.card title="Custo" value={@cost} subtitle="Custo Total" icon_bg="bg-blue-50">
+              <:icon>
+                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/>
+                </svg>
+              </:icon>
+            </.card>
 
-        <.card title="Devoluções" value={@devolution} subtitle="Total Devolvido" icon_bg="bg-red-50">
-          <:icon>
-            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-            </svg>
-          </:icon>
-        </.card>
+            <.card title="Devoluções" value={@devolution} subtitle="Total Devolvido" icon_bg="bg-red-50">
+              <:icon>
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+              </:icon>
+            </.card>
 
-        <.card title="Objetivo" value={@objetivo} subtitle="Meta do Período" icon_bg="bg-yellow-50">
-          <:icon>
-            <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"/>
-            </svg>
-          </:icon>
-        </.card>
+            <.card title="Objetivo" value={@objetivo} subtitle="Meta do Período" icon_bg="bg-yellow-50">
+              <:icon>
+                <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"/>
+                </svg>
+              </:icon>
+            </.card>
 
-        <.card title="Lucro" value={@profit} subtitle="Margem Bruta" icon_bg="bg-green-100">
-          <:icon>
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/>
-            </svg>
-          </:icon>
-        </.card>
+            <.card title="Lucro" value={@profit} subtitle="Margem Bruta" icon_bg="bg-green-100">
+              <:icon>
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/>
+                </svg>
+              </:icon>
+            </.card>
 
-        <.card title="NFS" value={@nfs} subtitle="Notas Fiscais" icon_bg="bg-purple-50">
-          <:icon>
-            <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-          </:icon>
-        </.card>
-      </div>
-
-      <!-- Seção de Metas em Tempo Real -->
-      <div class="w-full max-w-4xl mx-auto mt-12">
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Progresso da Meta</h2>
-            <p class="text-gray-600">Acompanhamento em tempo real do objetivo diario</p>
+            <.card title="NFS" value={@nfs} subtitle="Notas Fiscais" icon_bg="bg-purple-50">
+              <:icon>
+                <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </:icon>
+            </.card>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <!-- Gauge Chart -->
-            <div class="flex justify-center">
-              <%= if @loading do %>
-                <div class="w-64 h-64 flex items-center justify-center">
-                  <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-                </div>
-              <% else %>
-                <div class="relative">
-        <canvas
-          id="gauge-chart"
-          phx-hook="GaugeChart"
-          phx-update="ignore"
-          data-value={@percentual_num}
-                    class="w-64 h-64"
-        >
-        </canvas>
-        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span class="text-4xl font-bold text-gray-800"><%= @percentual %></span>
-                    <span class="text-sm font-medium text-gray-500 mt-1">da meta atingida</span>
-                  </div>
-                </div>
-              <% end %>
+          <!-- Seção de Metas em Tempo Real -->
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div class="text-center mb-6">
+              <h2 class="text-xl font-bold text-gray-900 mb-2">Progresso da Meta</h2>
+              <p class="text-gray-600">Acompanhamento em tempo real do objetivo diario</p>
             </div>
 
-            <!-- Informações da Meta -->
-            <div class="space-y-6">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <div class="text-sm font-medium text-green-800 mb-1">Faturamento Atual</div>
-                  <div class="text-2xl font-bold text-green-900"><%= @sale %></div>
-                </div>
-
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div class="text-sm font-medium text-blue-800 mb-1">Meta do Dia</div>
-                  <div class="text-2xl font-bold text-blue-900"><%= @objetivo %></div>
-                </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+              <!-- Gauge Chart -->
+              <div class="flex justify-center">
+                <%= if @loading do %>
+                  <div class="w-48 h-48 flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                  </div>
+                <% else %>
+                  <div class="relative">
+                    <canvas
+                      id="gauge-chart"
+                      phx-hook="GaugeChart"
+                      phx-update="ignore"
+                      data-value={@percentual_num}
+                      class="w-48 h-48"
+                    >
+                    </canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span class="text-3xl font-bold text-gray-800"><%= @percentual %></span>
+                      <span class="text-xs font-medium text-gray-500 mt-1">da meta atingida</span>
+                    </div>
+                  </div>
+                <% end %>
               </div>
 
+              <!-- Informações da Meta -->
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-3">
+                  <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <div class="text-sm font-medium text-green-800 mb-1">Faturamento Atual</div>
+                    <div class="text-xl font-bold text-green-900"><%= @sale %></div>
+                  </div>
 
-
-              <%= if @percentual_num >= 100 do %>
-                <div class="bg-green-100 border border-green-300 rounded-lg p-4">
-                  <div class="flex items-center">
-                    <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-green-800 font-medium">🎉 Parabéns! Meta atingida!</span>
+                  <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div class="text-sm font-medium text-blue-800 mb-1">Meta do Dia</div>
+                    <div class="text-xl font-bold text-blue-900"><%= @objetivo %></div>
                   </div>
                 </div>
-              <% else %>
-                <% remaining = calculate_remaining_amount(assigns) %>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div class="text-sm text-blue-800">
-                    <strong>Faltam:</strong> <%= format_money(remaining) %> para atingir a meta
+
+                <%= if @percentual_num >= 100 do %>
+                  <div class="bg-green-100 border border-green-300 rounded-lg p-3">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span class="text-green-800 font-medium text-sm">🎉 Parabéns! Meta atingida!</span>
+                    </div>
                   </div>
-                </div>
-              <% end %>
+                <% else %>
+                  <% remaining = calculate_remaining_amount(assigns) %>
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="text-sm text-blue-800">
+                      <strong>Faltam:</strong> <%= format_money(remaining) %> para atingir a meta
+                    </div>
+                  </div>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tabela de Performance das Lojas -->
-      <div class="w-full max-w-7xl mx-auto mt-8">
-        <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
-          <!-- Header da Tabela -->
-          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <div class="text-center">
-              <h2 class="text-3xl font-bold text-white mb-2">Performance por Loja</h2>
-              <p class="text-blue-100">Acompanhamento detalhado de cada unidade em tempo real</p>
+        <!-- Coluna direita: Tabela de Performance das Lojas -->
+        <div class="w-2/3">
+          <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
+            <!-- Header da Tabela -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-900 px-8 py-6">
             </div>
-          </div>
 
-          <!-- Filtros e Controles -->
-          <div class="bg-gray-50 px-8 py-4 border-b border-gray-200">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                  <span class="text-sm text-gray-600">Meta Atingida</span>
+            <!-- Filtros e Controles -->
+            <div class="bg-gray-50 px-8 py-4 border-b border-gray-200">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-sm text-gray-600">Meta Atingida</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span class="text-sm text-gray-600">Abaixo da Meta</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <span class="text-sm text-gray-600">Sem Vendas</span>
+                  </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span class="text-sm text-gray-600">Abaixo da Meta</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-                  <span class="text-sm text-gray-600">Sem Vendas</span>
+                <div class="text-sm text-gray-500">
+                  <%= length(@lojas_data) %> lojas ativas
                 </div>
               </div>
-              <div class="text-sm text-gray-500">
-                <%= length(@lojas_data) %> lojas ativas
-              </div>
             </div>
-          </div>
 
-                     <!-- Tabela -->
-           <div class="overflow-x-auto">
-             <table class="w-full animate-fade-in-scale">
-              <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  <th class="text-left py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                      </svg>
-                      <span>Loja</span>
-                    </div>
-                  </th>
-                  <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Meta Dia</th>
-                  <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Meta Hora</th>
-                  <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">NFs</th>
-                  <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Venda Dia</th>
-                  <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">% Hora</th>
-                  <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">% Dia</th>
-                </tr>
-              </thead>
-                             <tbody class="divide-y divide-gray-200">
-                 <%= if @loading do %>
-                   <%= for i <- 1..5 do %>
-                     <tr class="animate-pulse">
-                       <td class="py-4 px-6">
-                         <div class="flex items-center space-x-4">
-                           <div class="w-4 h-4 bg-gray-300 rounded-full shimmer-effect"></div>
-                           <div class="h-4 bg-gray-300 rounded w-48 shimmer-effect"></div>
-                         </div>
-                       </td>
-                       <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
-                       <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
-                       <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-12 mx-auto shimmer-effect"></div></td>
-                       <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
-                       <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div></td>
-                       <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div></td>
-                     </tr>
-                   <% end %>
-                 <% else %>
-                   <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
-                   <tr class={[
-                     "group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-md animate-slide-in-up table-row-stagger",
-                     if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50/50")
-                   ]} style={"--row-index: #{index}"}>
-                    <td class="py-4 px-6">
-                      <div class="flex items-center space-x-4">
-                                                 <div class={[
-                           "w-4 h-4 rounded-full relative overflow-hidden transition-all duration-300",
-                           case loja.status do
-                             :atingida_hora -> "bg-green-500 shadow-lg shadow-green-500/30"
-                             :abaixo_meta -> "bg-red-500 shadow-lg shadow-red-500/30"
-                             :sem_vendas -> "bg-gray-400"
-                             _ -> "bg-yellow-500 shadow-lg shadow-yellow-500/30"
-                           end
-                         ]}>
-                           <%= if loja.status == :atingida_hora do %>
-                             <div class="absolute inset-0 bg-green-400 animate-ping opacity-75"></div>
-                             <div class="absolute inset-0 bg-gradient-to-r from-green-300 to-emerald-400 animate-pulse"></div>
-                           <% end %>
-                           <%= if loja.perc_hora >= 120 do %>
-                             <div class="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-spin opacity-30"></div>
-                           <% end %>
-                         </div>
-                        <div>
-                          <div class="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">
-                            <%= loja.nome %>
+            <!-- Tabela -->
+            <div class="overflow-x-auto">
+              <table class="w-full animate-fade-in-scale">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <tr>
+                    <th class="text-left py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                        <span>Loja</span>
+                      </div>
+                    </th>
+                    <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Meta Dia</th>
+                    <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Meta Hora</th>
+                    <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">NFs</th>
+                    <th class="text-right py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">Venda Dia</th>
+                    <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">% Hora</th>
+                    <th class="text-center py-4 px-6 font-bold text-gray-800 uppercase tracking-wider text-sm">% Dia</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <%= if @loading do %>
+                    <%= for i <- 1..5 do %>
+                      <tr class="animate-pulse">
+                        <td class="py-4 px-6">
+                          <div class="flex items-center space-x-4">
+                            <div class="w-4 h-4 bg-gray-300 rounded-full shimmer-effect"></div>
+                            <div class="h-4 bg-gray-300 rounded w-48 shimmer-effect"></div>
                           </div>
-                          <div class="text-xs text-gray-500 mt-1">
-                            ID: <%= loja.supervisor_id %>
+                        </td>
+                        <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
+                        <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
+                        <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-12 mx-auto shimmer-effect"></div></td>
+                        <td class="py-4 px-6"><div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div></td>
+                        <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div></td>
+                        <td class="py-4 px-6"><div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div></td>
+                      </tr>
+                    <% end %>
+                  <% else %>
+                    <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
+                      <tr class={[
+                        "group hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-md animate-slide-in-up table-row-stagger",
+                        if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50/50")
+                      ]} style={"--row-index: #{index}"}>
+                        <td class="py-4 px-6">
+                          <div class="flex items-center space-x-4">
+                            <div class={[
+                              "w-4 h-4 rounded-full relative overflow-hidden transition-all duration-300",
+                              case loja.status do
+                                :atingida_hora -> "bg-green-500 shadow-lg shadow-green-500/30"
+                                :abaixo_meta -> "bg-red-500 shadow-lg shadow-red-500/30"
+                                :sem_vendas -> "bg-gray-400"
+                                _ -> "bg-yellow-500 shadow-lg shadow-yellow-500/30"
+                              end
+                            ]}>
+                              <%= if loja.status == :atingida_hora do %>
+                                <div class="absolute inset-0 bg-green-400 animate-ping opacity-75"></div>
+                                <div class="absolute inset-0 bg-gradient-to-r from-green-300 to-emerald-400 animate-pulse"></div>
+                              <% end %>
+                              <%= if loja.perc_hora >= 120 do %>
+                                <div class="absolute -inset-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-spin opacity-30"></div>
+                              <% end %>
+                            </div>
+                            <div>
+                              <div class="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">
+                                <%= loja.nome %>
+                              </div>
+                              <div class="text-xs text-gray-500 mt-1">
+                                ID: <%= loja.supervisor_id %>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        </td>
+                        <td class="text-right py-4 px-6">
+                          <div class="font-mono text-gray-800 font-medium">
+                            <%= format_money(loja.meta_dia) %>
+                          </div>
+                        </td>
+                        <td class="text-right py-4 px-6">
+                          <div class="font-mono text-gray-800 font-medium">
+                            <%= format_money(loja.meta_hora) %>
+                          </div>
+                        </td>
+                        <td class="text-center py-4 px-6">
+                          <span class={[
+                            "inline-flex items-center px-3 py-1 rounded-full text-sm font-bold shadow-sm transition-all duration-300 transform hover:scale-110",
+                            cond do
+                              loja.qtde_nfs >= 100 -> "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
+                              loja.qtde_nfs >= 50 -> "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
+                              loja.qtde_nfs > 0 -> "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
+                              true -> "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300"
+                            end
+                          ]}>
+                            <%= loja.qtde_nfs %>
+                          </span>
+                        </td>
+                        <td class="text-right py-4 px-6">
+                          <div class={[
+                            "font-mono font-bold transition-all duration-300",
+                            if(loja.venda_dia >= loja.meta_dia, do: "text-green-700", else: "text-gray-800")
+                          ]}>
+                            <%= format_money(loja.venda_dia) %>
+                          </div>
+                        </td>
+                        <td class="text-center py-4 px-6">
+                          <div class="relative space-y-1">
+                            <!-- Percentual -->
+                            <div>
+                              <span class={[
+                                "inline-flex items-center px-3 py-2 rounded-full text-sm font-bold shadow-lg transition-all duration-300 transform hover:scale-110",
+                                cond do
+                                  loja.perc_hora >= 120 -> "bg-gradient-to-r from-emerald-500 to-green-500 text-white animate-pulse"
+                                  loja.perc_hora >= 100 -> "bg-gradient-to-r from-green-400 to-green-500 text-white"
+                                  loja.perc_hora >= 80 -> "bg-gradient-to-r from-yellow-400 to-orange-400 text-white"
+                                  loja.perc_hora > 0 -> "bg-gradient-to-r from-red-400 to-red-500 text-white"
+                                  true -> "bg-gradient-to-r from-gray-400 to-gray-500 text-white"
+                                end
+                              ]}>
+                                <%= :erlang.float_to_binary(loja.perc_hora * 1.0, decimals: 1) %>%
+                                <%= if loja.perc_hora >= 100 do %>
+                                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                  </svg>
+                                <% end %>
+                              </span>
+                            </div>
+                            <!-- Valor em Reais da Meta Hora -->
+                            <div class="text-xs font-mono">
+                              <% valor_hora_reais = (loja.meta_hora * loja.perc_hora / 100) %>
+                              <span class={[
+                                "inline-flex items-center px-2 py-1 rounded text-xs font-semibold transition-all duration-300",
+                                if(loja.perc_hora >= 100,
+                                  do: "text-green-600 bg-green-50 border border-green-200",
+                                  else: "text-red-600 bg-red-50 border border-red-200")
+                              ]}>
+                                <%= if loja.perc_hora >= 100 do %>
+                                  ↗ <%= format_money(valor_hora_reais) %>
+                                <% else %>
+                                  ↘ <%= format_money(valor_hora_reais) %>
+                                <% end %>
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="text-center py-4 px-6">
+                          <div class="relative">
+                            <!-- Barra de progresso de fundo -->
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                              <div class={[
+                                "h-2 rounded-full transition-all duration-700 ease-out",
+                                cond do
+                                  loja.perc_dia >= 80 -> "bg-gradient-to-r from-green-400 to-green-600"
+                                  loja.perc_dia >= 60 -> "bg-gradient-to-r from-yellow-400 to-orange-500"
+                                  loja.perc_dia > 0 -> "bg-gradient-to-r from-red-400 to-red-600"
+                                  true -> "bg-gray-400"
+                                end
+                              ]} style={"width: #{min(loja.perc_dia, 100)}%"}></div>
+                            </div>
+                            <span class={[
+                              "inline-flex items-center px-3 py-1 rounded-full text-sm font-bold shadow-md transition-all duration-300 transform hover:scale-110",
+                              cond do
+                                loja.perc_dia >= 80 -> "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
+                                loja.perc_dia >= 60 -> "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
+                                loja.perc_dia > 0 -> "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300"
+                                true -> "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300"
+                              end
+                            ]}>
+                              <%= :erlang.float_to_binary(loja.perc_dia * 1.0, decimals: 1) %>%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    <% end %>
+                  <% end %>
+                </tbody>
+                <!-- Footer com totais -->
+                <tfoot>
+                  <tr class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+                    <td class="py-4 px-6 font-bold text-lg">
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        <span>TOTAL GERAL</span>
                       </div>
                     </td>
-                    <td class="text-right py-4 px-6">
-                      <div class="font-mono text-gray-800 font-medium">
-                        <%= format_money(loja.meta_dia) %>
-                      </div>
+                    <td class="text-right py-4 px-6 font-bold text-lg font-mono"><%= @objetivo %></td>
+                    <td class="text-right py-4 px-6 font-bold text-lg font-mono">
+                      <%= format_money(434761.80) %>
                     </td>
-                    <td class="text-right py-4 px-6">
-                      <div class="font-mono text-gray-800 font-medium">
-                        <%= format_money(loja.meta_hora) %>
-                      </div>
+                    <td class="text-center py-4 px-6">
+                      <span class="bg-blue-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
+                        <%= @nfs %>
+                      </span>
+                    </td>
+                    <td class="text-right py-4 px-6 font-bold text-lg font-mono"><%= @sale %></td>
+                    <td class="text-center py-4 px-6">
+                      <span class="bg-gradient-to-r from-green-400 to-green-600 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                        108,56%
+                      </span>
                     </td>
                     <td class="text-center py-4 px-6">
                       <span class={[
-                        "inline-flex items-center px-3 py-1 rounded-full text-sm font-bold shadow-sm transition-all duration-300 transform hover:scale-110",
-                        cond do
-                          loja.qtde_nfs >= 100 -> "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
-                          loja.qtde_nfs >= 50 -> "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300"
-                          loja.qtde_nfs > 0 -> "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
-                          true -> "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300"
-                        end
+                        "px-3 py-2 rounded-full text-sm font-bold shadow-lg",
+                        if(@percentual_num >= 60,
+                          do: "bg-gradient-to-r from-yellow-400 to-orange-500 text-white",
+                          else: "bg-gradient-to-r from-red-400 to-red-600 text-white")
                       ]}>
-                        <%= loja.qtde_nfs %>
+                        <%= @percentual %>
                       </span>
                     </td>
-                    <td class="text-right py-4 px-6">
-                      <div class={[
-                        "font-mono font-bold transition-all duration-300",
-                        if(loja.venda_dia >= loja.meta_dia, do: "text-green-700", else: "text-gray-800")
-                      ]}>
-                        <%= format_money(loja.venda_dia) %>
-                      </div>
-                    </td>
-                                         <td class="text-center py-4 px-6">
-                       <div class="relative space-y-1">
-                         <!-- Percentual -->
-                         <div>
-                           <span class={[
-                             "inline-flex items-center px-3 py-2 rounded-full text-sm font-bold shadow-lg transition-all duration-300 transform hover:scale-110",
-                             cond do
-                               loja.perc_hora >= 120 -> "bg-gradient-to-r from-emerald-500 to-green-500 text-white animate-pulse"
-                               loja.perc_hora >= 100 -> "bg-gradient-to-r from-green-400 to-green-500 text-white"
-                               loja.perc_hora >= 80 -> "bg-gradient-to-r from-yellow-400 to-orange-400 text-white"
-                               loja.perc_hora > 0 -> "bg-gradient-to-r from-red-400 to-red-500 text-white"
-                               true -> "bg-gradient-to-r from-gray-400 to-gray-500 text-white"
-                             end
-                           ]}>
-                             <%= :erlang.float_to_binary(loja.perc_hora * 1.0, decimals: 1) %>%
-                             <%= if loja.perc_hora >= 100 do %>
-                               <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                               </svg>
-                             <% end %>
-                           </span>
-                         </div>
-                         <!-- Valor em Reais da Meta Hora -->
-                         <div class="text-xs font-mono">
-                           <% valor_hora_reais = (loja.meta_hora * loja.perc_hora / 100) %>
-                           <span class={[
-                             "inline-flex items-center px-2 py-1 rounded text-xs font-semibold transition-all duration-300",
-                             if(loja.perc_hora >= 100,
-                               do: "text-green-600 bg-green-50 border border-green-200",
-                               else: "text-red-600 bg-red-50 border border-red-200")
-                           ]}>
-                             <%= if loja.perc_hora >= 100 do %>
-                               ↗ <%= format_money(valor_hora_reais) %>
-                             <% else %>
-                               ↘ <%= format_money(valor_hora_reais) %>
-                             <% end %>
-                           </span>
-                         </div>
-                       </div>
-                     </td>
-                    <td class="text-center py-4 px-6">
-                      <div class="relative">
-                        <!-- Barra de progresso de fundo -->
-                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-                          <div class={[
-                            "h-2 rounded-full transition-all duration-700 ease-out",
-                            cond do
-                              loja.perc_dia >= 80 -> "bg-gradient-to-r from-green-400 to-green-600"
-                              loja.perc_dia >= 60 -> "bg-gradient-to-r from-yellow-400 to-orange-500"
-                              loja.perc_dia > 0 -> "bg-gradient-to-r from-red-400 to-red-600"
-                              true -> "bg-gray-400"
-                            end
-                          ]} style={"width: #{min(loja.perc_dia, 100)}%"}></div>
-                        </div>
-                        <span class={[
-                          "inline-flex items-center px-3 py-1 rounded-full text-sm font-bold shadow-md transition-all duration-300 transform hover:scale-110",
-                          cond do
-                            loja.perc_dia >= 80 -> "bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300"
-                            loja.perc_dia >= 60 -> "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300"
-                            loja.perc_dia > 0 -> "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300"
-                            true -> "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300"
-                          end
-                        ]}>
-                          <%= :erlang.float_to_binary(loja.perc_dia * 1.0, decimals: 1) %>%
-                        </span>
-                      </div>
-                                         </td>
-                   </tr>
-                 <% end %>
-               <% end %>
-               </tbody>
-              <!-- Footer com totais -->
-              <tfoot>
-                <tr class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                  <td class="py-4 px-6 font-bold text-lg">
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                      </svg>
-                      <span>TOTAL GERAL</span>
-                    </div>
-                  </td>
-                  <td class="text-right py-4 px-6 font-bold text-lg font-mono"><%= @objetivo %></td>
-                  <td class="text-right py-4 px-6 font-bold text-lg font-mono">
-                    <%= format_money(434761.80) %>
-                  </td>
-                  <td class="text-center py-4 px-6">
-                    <span class="bg-blue-500 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
-                      <%= @nfs %>
-                    </span>
-                  </td>
-                  <td class="text-right py-4 px-6 font-bold text-lg font-mono"><%= @sale %></td>
-                  <td class="text-center py-4 px-6">
-                    <span class="bg-gradient-to-r from-green-400 to-green-600 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
-                      108,56%
-                    </span>
-                  </td>
-                  <td class="text-center py-4 px-6">
-                    <span class={[
-                      "px-3 py-2 rounded-full text-sm font-bold shadow-lg",
-                      if(@percentual_num >= 60,
-                        do: "bg-gradient-to-r from-yellow-400 to-orange-500 text-white",
-                        else: "bg-gradient-to-r from-red-400 to-red-600 text-white")
-                    ]}>
-                      <%= @percentual %>
-                    </span>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Mensagem de erro se API estiver offline -->
       <%= if @api_status == :error and @api_error do %>
-        <div class="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md">
+        <div class="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-8">
           <div class="flex items-center">
             <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>

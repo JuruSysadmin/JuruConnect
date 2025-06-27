@@ -25,6 +25,11 @@ defmodule AppWeb.Router do
     live "/login", UserSessionLive.Index, :new
     live "/chat/:order_id", ChatLive
     live "/buscar-pedido", OrderSearchLive
+
+    # PWA Routes
+    get "/manifest.json", PageController, :manifest
+    get "/sw.js", PageController, :service_worker
+    get "/offline", PageController, :offline
   end
 
   # Other scopes may use custom stacks.

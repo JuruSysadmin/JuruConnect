@@ -23,6 +23,7 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
 import ChatHook from './hooks/chat_hook.js'
+import "./pwa"
 
 let Hooks = {}
 

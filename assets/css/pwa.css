@@ -1,0 +1,286 @@
+/* PWA Specific Styles */
+
+/* Ajustes para quando app está instalado */
+.pwa-installed {
+  /* Adicionar padding para status bar no mobile */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Estilos para notificações PWA */
+.pwa-notification {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.pwa-notification.dark {
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animações para confetti */
+@keyframes confettifall {
+  from {
+    transform: translateY(-100vh) rotateZ(0deg);
+  }
+  to {
+    transform: translateY(100vh) rotateZ(360deg);
+  }
+}
+
+/* Estilos para splash screen */
+.pwa-splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  color: white;
+}
+
+.pwa-splash-logo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 2rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Estilos para modo standalone */
+@media (display-mode: standalone) {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Ocultar elementos não necessários no app */
+  .browser-only {
+    display: none !important;
+  }
+  
+  /* Ajustar header para modo app */
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Estilos para dispositivos móveis */
+@media (max-width: 768px) {
+  .pwa-installed {
+    font-size: 16px; /* Prevenir zoom no iOS */
+  }
+  
+  /* Estilos para botões de ação */
+  .pwa-action-button {
+    min-height: 44px; /* Tamanho mínimo de toque */
+    min-width: 44px;
+  }
+  
+  /* Melhorar acessibilidade em telas pequenas */
+  .pwa-notification {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* Estilos para orientação landscape */
+@media (orientation: landscape) and (max-height: 500px) {
+  .pwa-splash-screen {
+    flex-direction: row;
+    gap: 2rem;
+  }
+  
+  .pwa-splash-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0;
+  }
+}
+
+/* Estilos para dark mode */
+@media (prefers-color-scheme: dark) {
+  .pwa-notification {
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+}
+
+/* Estilos para conexão offline */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #ef4444;
+  color: white;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  z-index: 1000;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.offline-indicator.show {
+  transform: translateY(0);
+}
+
+/* Animações melhoradas */
+.pwa-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.pwa-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.pwa-bounce {
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* Estilos para pull-to-refresh */
+.pwa-pull-refresh {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 0 0 1rem 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
+
+.pwa-pull-refresh.active {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Estilos para loading states */
+.pwa-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.pwa-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Estilos responsivos para PWA */
+.pwa-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 768px) {
+  .pwa-container {
+    max-width: 768px;
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pwa-container {
+    max-width: 1024px;
+  }
+}
+
+/* Estilos para elementos interativos */
+.pwa-interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pwa-interactive:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para focus accessibility */
+.pwa-focus:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Estilos para status bar */
+.pwa-status-bar {
+  height: env(safe-area-inset-top);
+  background-color: #3b82f6;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+} 
