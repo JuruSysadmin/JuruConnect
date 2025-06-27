@@ -65,6 +65,7 @@ defmodule AppWeb.DashboardLive do
       last_update: DateTime.utc_now(),
       api_status: :ok
     ]
+
     assign(socket, assigns)
   end
 
@@ -79,7 +80,10 @@ defmodule AppWeb.DashboardLive do
   defp assign_nfs_hoje(data), do: data["nfsToday"] || 0
   defp assign_devolucao(data), do: format_money(data["devolution"] || 0.0)
   defp assign_objetivo_hora(data), do: format_money(data["objetiveHour"] || 0.0)
-  defp assign_percentual_objetivo_hora(data), do: format_percent(data["percentualObjetiveHour"] || 0.0)
+
+  defp assign_percentual_objetivo_hora(data),
+    do: format_percent(data["percentualObjetiveHour"] || 0.0)
+
   defp assign_mix(data), do: data["mix"] || 0
   defp assign_desconto(data), do: format_money(data["discount"] || 0.0)
 
@@ -150,47 +154,49 @@ defmodule AppWeb.DashboardLive do
     )
   end
 
-
-
   defp generate_activities(data) do
     activities = []
 
     # Adiciona atividade de meta baseada no percentual de venda
     if data["percentualSale"] do
-      activities = activities ++ [
-        %{
-          type: :meta,
-          loja: "Loja Principal",
-          percent: data["percentualSale"]
-        }
-      ]
+      activities =
+        activities ++
+          [
+            %{
+              type: :meta,
+              loja: "Loja Principal",
+              percent: data["percentualSale"]
+            }
+          ]
     end
 
     # Adiciona atividade de venda do dia
     if data["saleToday"] && data["saleToday"] > 0 do
-      activities = activities ++ [
-        %{
-          type: :venda,
-          user: "Sistema",
-          valor: data["saleToday"]
-        }
-      ]
+      activities =
+        activities ++
+          [
+            %{
+              type: :venda,
+              user: "Sistema",
+              valor: data["saleToday"]
+            }
+          ]
     end
 
     # Adiciona atividade de mix de produtos
     if data["mix"] && data["mix"] > 0 do
-      activities = activities ++ [
-        %{
-          type: :produto,
-          marca: "Mix de #{data["mix"]} produtos"
-        }
-      ]
+      activities =
+        activities ++
+          [
+            %{
+              type: :produto,
+              marca: "Mix de #{data["mix"]} produtos"
+            }
+          ]
     end
 
     activities
   end
-
-
 
   @impl true
   def render(assigns) do
@@ -209,56 +215,130 @@ defmodule AppWeb.DashboardLive do
         </div>
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1">
-          <a href="/buscar-pedido" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="/buscar-pedido"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
             </svg>
             Buscar Pedido
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"
+              />
             </svg>
             Dashboard
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             Forms
             <span class="ml-auto bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">12</span>
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
             Submissions
             <span class="ml-auto bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">3</span>
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
             </svg>
             Analytics
           </a>
           <div class="border-t border-gray-200 my-4"></div>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
             </svg>
             Team
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             Settings
           </a>
-          <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+          <a
+            href="#"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             Help & Support
           </a>
@@ -275,7 +355,12 @@ defmodule AppWeb.DashboardLive do
             </div>
             <button class="p-1 text-gray-400 hover:text-gray-600">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
               </svg>
             </button>
           </div>
@@ -288,54 +373,141 @@ defmodule AppWeb.DashboardLive do
           <div class="flex items-center space-x-4">
             <!-- Status da API -->
             <div class="flex items-center space-x-2">
-              <div class={["w-3 h-3 rounded-full", if(@api_status == :ok, do: "bg-green-500", else: "bg-red-500")]}/>
+              <div class={[
+                "w-3 h-3 rounded-full",
+                if(@api_status == :ok, do: "bg-green-500", else: "bg-red-500")
+              ]} />
               <span class="text-sm text-gray-600">
-                <%= if @api_status == :ok, do: "API Online", else: "API Offline" %>
+                {if @api_status == :ok, do: "API Online", else: "API Offline"}
               </span>
             </div>
           </div>
         </div>
-
-        <!-- Cards: Grid responsiva, centralizada, espaçamento amplo -->
+        
+    <!-- Cards: Grid responsiva, centralizada, espaçamento amplo -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 w-full max-w-7xl mx-auto items-stretch mb-12">
           <.card title="Faturamento" value={@faturamento} subtitle="Líquido" icon_bg="bg-green-50">
             <:icon>
-              <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"/></svg>
+              <svg
+                class="w-6 h-6 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4"
+                />
+              </svg>
             </:icon>
           </.card>
           <.card title="Realizado" value={@realizado} subtitle="Meta" icon_bg="bg-blue-50">
             <:icon>
-              <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
+              <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3" />
+              </svg>
             </:icon>
           </.card>
           <.card title="Margem" value={@margem} subtitle="Líquida" icon_bg="bg-yellow-50">
             <:icon>
-              <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
+              <svg
+                class="w-6 h-6 text-yellow-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 9V7a5 5 0 00-10 0v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2z"
+                />
+              </svg>
             </:icon>
           </.card>
-          <.card title="NFS" value={@cupons} subtitle={"Ticket Médio " <> @ticket} icon_bg="bg-indigo-50">
+          <.card
+            title="NFS"
+            value={@cupons}
+            subtitle={"Ticket Médio " <> @ticket}
+            icon_bg="bg-indigo-50"
+          >
             <:icon>
-              <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8"/></svg>
+              <svg
+                class="w-6 h-6 text-indigo-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" /><path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 12h8"
+                />
+              </svg>
             </:icon>
           </.card>
-          <.card title="Vendas Hoje" value={@venda_hoje} subtitle={"Meta: " <> @objetivo_hoje} icon_bg="bg-pink-50">
+          <.card
+            title="Vendas Hoje"
+            value={@venda_hoje}
+            subtitle={"Meta: " <> @objetivo_hoje}
+            icon_bg="bg-pink-50"
+          >
             <:icon>
-              <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
             </:icon>
           </.card>
-          <.card title="Devoluções" value={@devolucao} subtitle={"Desconto: " <> @desconto} icon_bg="bg-red-50">
+          <.card
+            title="Devoluções"
+            value={@devolucao}
+            subtitle={"Desconto: " <> @desconto}
+            icon_bg="bg-red-50"
+          >
             <:icon>
-              <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+              <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                />
+              </svg>
             </:icon>
           </.card>
-          <.card title="Mix de Produtos" value={@mix} subtitle="Produtos diferentes" icon_bg="bg-purple-50">
+          <.card
+            title="Mix de Produtos"
+            value={@mix}
+            subtitle="Produtos diferentes"
+            icon_bg="bg-purple-50"
+          >
             <:icon>
-              <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+              <svg
+                class="w-6 h-6 text-purple-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
             </:icon>
           </.card>
         </div>
-
-        <!-- Metas & Atividades -->
+        
+    <!-- Metas & Atividades -->
         <div class="bg-white rounded-xl shadow-lg border border-gray-100 w-full max-w-6xl">
           <div class="p-6 border-b border-gray-100">
             <h2 class="text-lg font-semibold text-gray-900">Metas & Atividades</h2>
@@ -347,33 +519,45 @@ defmodule AppWeb.DashboardLive do
                   <div class="flex items-center text-sm text-blue-700">
                     <span class="font-bold mr-2">Metas</span>
                     Loja <span class="font-semibold ml-1 mr-1"><%= loja %></span>:
-                    <span class="ml-1"><%= percent %>% atingida</span>
+                    <span class="ml-1">{percent}% atingida</span>
                   </div>
                 <% %{type: :venda, user: user, valor: valor} -> %>
                   <div class="flex items-center text-sm text-green-700">
                     <span class="font-bold mr-2">Venda</span>
-                    <span><%= user %> vendeu </span>
-                    <span class="font-semibold ml-1">R$ <%= :erlang.float_to_binary(:erlang.float(valor), decimals: 2) %></span>
+                    <span>{user} vendeu</span>
+                    <span class="font-semibold ml-1">
+                      R$ {:erlang.float_to_binary(:erlang.float(valor), decimals: 2)}
+                    </span>
                   </div>
                 <% %{type: :produto, marca: marca} -> %>
                   <div class="flex items-center text-sm text-yellow-700">
                     <span class="font-bold mr-2">Produto em Alta</span>
-                    <span>Marca <span class="font-semibold ml-1"><%= marca %></span></span>
+                    <span>Marca <span class="font-semibold ml-1">{marca}</span></span>
                   </div>
               <% end %>
             <% end %>
           </div>
         </div>
-
-        <!-- Mensagem de erro da API -->
+        
+    <!-- Mensagem de erro da API -->
         <%= if @api_status == :error do %>
           <div class="mt-8 bg-red-50 border border-red-200 rounded-lg p-4 w-full max-w-6xl">
             <div class="flex items-center">
-              <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <svg
+                class="w-5 h-5 text-red-400 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span class="text-red-800 font-medium">Erro na API:</span>
-              <span class="text-red-700 ml-2"><%= @api_error %></span>
+              <span class="text-red-700 ml-2">{@api_error}</span>
             </div>
           </div>
         <% end %>

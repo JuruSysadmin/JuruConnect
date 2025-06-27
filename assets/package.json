@@ -13,6 +13,8 @@
         "phoenix_html": "^3.3.1",
         "phoenix_live_view": "^0.20.0",
         "progressbar.js": "^1.1.1",
-        "tailwindcss": "^3.4.3"
+        "tailwindcss": "^3.4.3",
+        "tsparticles": "^3.8.1",
+        "tsparticles-engine": "^2.12.0"
     }
 }

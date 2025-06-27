@@ -6,13 +6,16 @@ defmodule AppWeb.DashboardUtils do
   @doc """
   Formata um valor numérico como moeda brasileira
   """
-  def format_money(value) when is_number(value) do
-    value = value * 1.0
+  def format_money(value) when is_float(value) do
     "R$\u00A0" <>
       (value
-      |> :erlang.float_to_binary(decimals: 2)
-      |> String.replace(".", ",")
-      |> add_thousands_separator())
+       |> :erlang.float_to_binary(decimals: 2)
+       |> String.replace(".", ",")
+       |> add_thousands_separator())
+  end
+
+  def format_money(value) when is_integer(value) do
+    format_money(value * 1.0)
   end
 
   def format_money(value) when is_binary(value) do
@@ -27,12 +30,15 @@ defmodule AppWeb.DashboardUtils do
   @doc """
   Formata um valor numérico como percentual
   """
-  def format_percent(value) when is_number(value) do
-    value = value * 1.0
+  def format_percent(value) when is_float(value) do
     value
     |> :erlang.float_to_binary(decimals: 2)
     |> String.replace(".", ",")
     |> Kernel.<>("%")
+  end
+
+  def format_percent(value) when is_integer(value) do
+    format_percent(value * 1.0)
   end
 
   def format_percent(value) when is_binary(value) do
@@ -62,7 +68,9 @@ defmodule AppWeb.DashboardUtils do
     |> String.replace("%", "")
     |> String.trim()
     |> case do
-      "" -> 0.0
+      "" ->
+        0.0
+
       clean_value ->
         case Float.parse(clean_value) do
           {num, _} -> num
@@ -71,18 +79,20 @@ defmodule AppWeb.DashboardUtils do
     end
   end
 
-  def parse_percent_to_number(value) when is_number(value), do: value * 1.0
+  def parse_percent_to_number(value) when is_float(value), do: value
+  def parse_percent_to_number(value) when is_integer(value), do: value * 1.0
+  def parse_percent_to_number(nil), do: 0.0
   def parse_percent_to_number(_), do: 0.0
 
   @doc """
-  Calcula margem de lucro
+  Calcula margem de Margem
   """
   def calculate_margin(data) do
     sale = get_numeric_value(data, "sale")
     discount = get_numeric_value(data, "discount")
 
     if sale > 0 do
-      ((sale - discount) / sale) * 100
+      (sale - discount) / sale * 100
     else
       0.0
     end
@@ -107,13 +117,20 @@ defmodule AppWeb.DashboardUtils do
   """
   def get_numeric_value(data, key) when is_map(data) do
     case Map.get(data, key, 0) do
-      value when is_number(value) -> value * 1.0
+      value when is_float(value) ->
+        value
+
+      value when is_integer(value) ->
+        value * 1.0
+
       value when is_binary(value) ->
         case Float.parse(value) do
           {num, _} -> num
           :error -> 0.0
         end
-      _ -> 0.0
+
+      _ ->
+        0.0
     end
   end
 

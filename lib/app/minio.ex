@@ -3,11 +3,13 @@ defmodule App.Minio do
 
   def upload_file(path, filename) do
     {:ok, file_binary} = File.read(path)
+
     ExAws.S3.put_object(@bucket, filename, file_binary, acl: :public_read)
     |> ExAws.request()
     |> case do
       {:ok, _} ->
         {:ok, public_url(filename)}
+
       {:error, reason} ->
         {:error, reason}
     end

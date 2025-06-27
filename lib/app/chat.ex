@@ -89,7 +89,8 @@ defmodule App.Chat do
     params = %{
       text: text,
       sender_id: sender_id,
-      sender_name: sender_id,  # Usando sender_id como sender_name por enquanto
+      # Usando sender_id como sender_name por enquanto
+      sender_name: sender_id,
       order_id: order_id,
       tipo: "mensagem",
       image_url: image_url
@@ -101,6 +102,7 @@ defmodule App.Chat do
         topic = "order:#{order_id}"
         Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
         {:ok, message}
+
       {:error, changeset} ->
         Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}

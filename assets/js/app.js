@@ -167,7 +167,7 @@ Hooks.GoalCelebration = {
     toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
     toast.innerHTML = `
       <div class="flex items-center space-x-2">
-        <span class="text-2xl">🎉</span>
+        <span class="text-2xl"></span>
         <div>
           <div class="font-bold">Meta Atingida!</div>
           <div class="text-sm">${storeName}</div>

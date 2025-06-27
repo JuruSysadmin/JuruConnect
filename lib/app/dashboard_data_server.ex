@@ -1,12 +1,14 @@
 defmodule App.DashboardDataServer do
-  use GenServer
+  @moduledoc """
+  GenServer para buscar e armazenar dados do dashboard em tempo real.
+  """
 
+  use GenServer
   alias App.ApiClient
 
-  @fetch_interval 1000 # 1 segundo
+  @fetch_interval 30_000
 
-  # API pública
-  def start_link(_opts) do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -14,83 +16,114 @@ defmodule App.DashboardDataServer do
     GenServer.call(__MODULE__, :get_data)
   end
 
-  # Callbacks
-  @impl true
-  def init(_init_arg) do
+  def init(_) do
+    IO.puts("DashboardDataServer started - fetch interval: #{@fetch_interval}ms")
     schedule_fetch()
-    {:ok, %{data: nil, last_update: nil, api_status: :init, api_error: nil}}
+
+    {:ok,
+     %{
+       data: nil,
+       api_status: :loading,
+       api_error: nil,
+       last_update: nil,
+       fetching: false
+     }}
   end
 
-  @impl true
+  def handle_info(:fetch, %{fetching: true} = state) do
+    {:noreply, state}
+  end
+
   def handle_info(:fetch, state) do
-    now = DateTime.utc_now()
-    new_state =
-      case fetch_all_data() do
-        {:ok, data} ->
-          Phoenix.PubSub.broadcast(App.PubSub, "dashboard:updated", {:dashboard_updated, data})
-          %{state |
-            data: data,
-            last_update: now,
+    state = %{state | fetching: true}
+
+    case fetch_dashboard_data() do
+      {:ok, data} ->
+        new_state = %{
+          state
+          | data: data,
             api_status: :ok,
-            api_error: nil
-          }
-        {:error, reason} ->
-          %{state |
-            api_status: :error,
+            api_error: nil,
+            last_update: DateTime.utc_now(),
+            fetching: false
+        }
+
+        Phoenix.PubSub.broadcast(App.PubSub, "dashboard:updated", data)
+
+        {:noreply, new_state}
+
+      {:error, reason} ->
+        new_state = %{
+          state
+          | api_status: :error,
             api_error: reason,
-            last_update: now
-          }
-      end
-    schedule_fetch() # Garante que o próximo fetch será agendado
-    {:noreply, new_state}
+            last_update: DateTime.utc_now(),
+            fetching: false
+        }
+
+        {:noreply, new_state}
+    end
+    |> then(fn result ->
+      schedule_fetch()
+      result
+    end)
   end
 
-  @impl true
   def handle_call(:get_data, _from, state) do
     {:reply, state, state}
   end
 
   defp schedule_fetch do
-    Process.send_after(self(), :fetch, @fetch_interval)
+    existing_messages = Process.info(self(), :messages) |> elem(1)
+    fetch_pending = Enum.any?(existing_messages, &match?(:fetch, &1))
+
+    unless fetch_pending do
+      Process.send_after(self(), :fetch, @fetch_interval)
+    end
   end
 
-  defp fetch_all_data do
-    with {:ok, summary} <- App.ApiClient.fetch_dashboard_summary(),
-         {:ok, companies} <- App.ApiClient.fetch_companies_data() do
-      # Verifica se alguma loja atingiu a meta do dia
-      check_daily_goals_achieved(companies)
+  defp fetch_dashboard_data do
+    with {:ok, sale_data} <- ApiClient.fetch_dashboard_summary(),
+         {:ok, company_result} <- ApiClient.fetch_companies_data() do
+      companies = Map.get(company_result, :companies, [])
+      percentual_sale = Map.get(company_result, :percentualSale, 0.0)
 
-      data = Map.put(summary, "companies", companies)
-      {:ok, data}
+      check_goal_achievements(companies)
+
+      merged_data =
+        Map.merge(sale_data, %{
+          "companies" => companies,
+          "percentualSale" => percentual_sale
+        })
+
+      {:ok, merged_data}
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp check_daily_goals_achieved(companies) do
-    companies
-    |> Enum.each(fn company ->
-      daily_percentage = (company.venda_dia / company.meta_dia) * 100
+  defp check_goal_achievements(companies) when is_list(companies) do
+    Enum.each(companies, &check_company_goal/1)
+  end
 
-      # Verifica se atingiu exatamente 100% (com margem de 0.1% para evitar múltiplos disparos)
-      if daily_percentage >= 100.0 and daily_percentage <= 100.1 do
-        # Dispara evento de meta atingida
-        Phoenix.PubSub.broadcast(
-          App.PubSub,
-          "dashboard:goals",
-          {:daily_goal_achieved, %{
-            store_name: company.nome,
-            supervisor_id: company.supervisor_id,
-            target: company.meta_dia,
-            achieved: company.venda_dia,
-            percentage: daily_percentage,
-            timestamp: DateTime.utc_now()
-          }}
-        )
+  defp check_company_goal(company) do
+    perc_dia = Map.get(company, :perc_dia, 0.0)
 
-        # Log para acompanhamento
-        IO.puts("🎉 META DIA ATINGIDA! #{company.nome} - #{AppWeb.DashboardUtils.format_money(company.venda_dia)}")
-      end
-    end)
+    if perc_dia >= 99.9 and perc_dia <= 100.1 do
+      goal_data = %{
+        store_name: company.nome,
+        achieved: company.venda_dia,
+        target: company.meta_dia,
+        percentage: perc_dia,
+        timestamp: DateTime.utc_now(),
+        celebration_id: System.unique_integer([:positive])
+      }
+
+      Phoenix.PubSub.broadcast(App.PubSub, "dashboard:goals", {:daily_goal_achieved, goal_data})
+
+      IO.puts(
+        "META DIA ATINGIDA! #{company.nome} - #{AppWeb.DashboardUtils.format_money(company.venda_dia)}"
+      )
+    end
   end
 end

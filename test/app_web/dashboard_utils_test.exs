@@ -6,7 +6,7 @@ defmodule AppWeb.DashboardUtilsTest do
     test "formats number as Brazilian currency" do
       assert format_money(1234.56) == "R$\u00A01.234,56"
       assert format_money(0) == "R$\u00A00,00"
-      assert format_money(1000000.99) == "R$\u00A01.000.000,99"
+      assert format_money(1_000_000.99) == "R$\u00A01.000.000,99"
     end
 
     test "handles string input" do

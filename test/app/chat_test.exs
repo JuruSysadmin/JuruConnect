@@ -19,7 +19,13 @@ defmodule App.ChatTest do
     {:ok, image_url} = Minio.upload_file("/tmp/teste.jpg", filename)
 
     # Envie a mensagem com image_url
-    {:ok, msg} = Chat.send_message(@valid_attrs.order_id, @valid_attrs.sender_id, @valid_attrs.text, image_url)
+    {:ok, msg} =
+      Chat.send_message(
+        @valid_attrs.order_id,
+        @valid_attrs.sender_id,
+        @valid_attrs.text,
+        image_url
+      )
 
     assert msg.image_url == image_url
     assert String.contains?(msg.image_url, filename)

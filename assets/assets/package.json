@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@tsparticles/basic": "^3.8.1",
+    "@tsparticles/engine": "^3.8.1",
     "echarts": "^5.6.0"
   }
 }

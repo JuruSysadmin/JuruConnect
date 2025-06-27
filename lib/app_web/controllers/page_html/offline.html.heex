@@ -3,11 +3,16 @@
     <!-- Ícone offline -->
     <div class="mx-auto w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
       <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+        />
       </svg>
     </div>
     
-    <!-- Título -->
+<!-- Título -->
     <div>
       <h1 class="text-3xl font-bold text-gray-900 mb-2">
         Você está offline
@@ -17,13 +22,13 @@
       </p>
     </div>
     
-    <!-- Descrição -->
+<!-- Descrição -->
     <div class="space-y-4">
       <p class="text-gray-500">
         Verifique sua conexão e tente novamente. Algumas funcionalidades podem estar disponíveis offline.
       </p>
       
-      <!-- Links disponíveis offline -->
+<!-- Links disponíveis offline -->
       <div class="space-y-2">
         <h3 class="font-semibold text-gray-700">Páginas disponíveis offline:</h3>
         <ul class="space-y-1 text-sm text-gray-600">
@@ -34,31 +39,31 @@
       </div>
     </div>
     
-    <!-- Botões de ação -->
+<!-- Botões de ação -->
     <div class="space-y-3">
-      <button 
-        onclick="window.location.reload()" 
+      <button
+        onclick="window.location.reload()"
         class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
       >
         Tentar novamente
       </button>
-      
-      <a 
-        href="/" 
+
+      <a
+        href="/"
         class="block w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
       >
         Ir para página inicial
       </a>
-      
-      <a 
-        href="/dashboard" 
+
+      <a
+        href="/dashboard"
         class="block w-full text-blue-600 py-2 px-4 hover:text-blue-800 transition-colors"
       >
         Acessar Dashboard (cache)
       </a>
     </div>
     
-    <!-- Status da conexão -->
+<!-- Status da conexão -->
     <div class="text-xs text-gray-400">
       <p id="connection-status">Verificando conexão...</p>
     </div>
@@ -77,14 +82,14 @@
       status.className = 'text-xs text-red-500';
     }
   }
-  
+
   // Atualizar status imediatamente
   updateConnectionStatus();
-  
+
   // Escutar mudanças na conexão
   window.addEventListener('online', updateConnectionStatus);
   window.addEventListener('offline', updateConnectionStatus);
-  
+
   // Verificar conexão periodicamente
   setInterval(updateConnectionStatus, 5000);
-</script> 
+</script>

@@ -32,9 +32,12 @@ defmodule App.ChatConfig do
   """
   def link_preview_circuit_breaker do
     %{
-      max_failures: 5,           # Número máximo de falhas antes de abrir o circuito
-      failure_period_s: 60,      # Período de tempo para contar falhas (segundos)
-      reset_period_s: 300        # Tempo para tentar fechar o circuito novamente (segundos)
+      # Número máximo de falhas antes de abrir o circuito
+      max_failures: 5,
+      # Período de tempo para contar falhas (segundos)
+      failure_period_s: 60,
+      # Tempo para tentar fechar o circuito novamente (segundos)
+      reset_period_s: 300
     }
   end
 
@@ -43,9 +46,12 @@ defmodule App.ChatConfig do
   """
   def pagination_config do
     %{
-      default_limit: 20,         # Número padrão de mensagens por página
-      max_limit: 50,             # Limite máximo de mensagens por página
-      max_offset: 1000           # Offset máximo para evitar consultas muito antigas
+      # Número padrão de mensagens por página
+      default_limit: 20,
+      # Limite máximo de mensagens por página
+      max_limit: 50,
+      # Offset máximo para evitar consultas muito antigas
+      max_offset: 1000
     }
   end
 
@@ -54,9 +60,12 @@ defmodule App.ChatConfig do
   """
   def performance_config do
     %{
-      message_cache_size: 1000,  # Tamanho do cache de mensagens em memória
-      presence_update_interval: 30_000,  # Intervalo de atualização de presença (ms)
-      typing_timeout: 5000       # Timeout para indicador de digitação (ms)
+      # Tamanho do cache de mensagens em memória
+      message_cache_size: 1000,
+      # Intervalo de atualização de presença (ms)
+      presence_update_interval: 30_000,
+      # Timeout para indicador de digitação (ms)
+      typing_timeout: 5000
     }
   end
 
@@ -65,9 +74,12 @@ defmodule App.ChatConfig do
   """
   def security_config do
     %{
-      max_message_length: 1000,  # Comprimento máximo de uma mensagem
-      rate_limit_messages: 10,   # Máximo de mensagens por minuto por usuário
-      rate_limit_window: 60      # Janela de tempo para rate limiting (segundos)
+      # Comprimento máximo de uma mensagem
+      max_message_length: 1000,
+      # Máximo de mensagens por minuto por usuário
+      rate_limit_messages: 10,
+      # Janela de tempo para rate limiting (segundos)
+      rate_limit_window: 60
     }
   end
 
@@ -76,9 +88,12 @@ defmodule App.ChatConfig do
   """
   def notification_config do
     %{
-      enable_sound: true,        # Habilitar som para novas mensagens
-      enable_desktop_notifications: true,  # Habilitar notificações desktop
-      notification_timeout: 5000  # Tempo de exibição da notificação (ms)
+      # Habilitar som para novas mensagens
+      enable_sound: true,
+      # Habilitar notificações desktop
+      enable_desktop_notifications: true,
+      # Tempo de exibição da notificação (ms)
+      notification_timeout: 5000
     }
   end
 
@@ -87,10 +102,14 @@ defmodule App.ChatConfig do
   """
   def ui_config do
     %{
-      auto_scroll_enabled: true,  # Habilitar scroll automático para novas mensagens
-      show_timestamps: true,      # Mostrar timestamps nas mensagens
-      show_user_avatars: true,    # Mostrar avatares dos usuários
-      message_grouping_timeout: 300_000  # Agrupar mensagens do mesmo usuário (5 min)
+      # Habilitar scroll automático para novas mensagens
+      auto_scroll_enabled: true,
+      # Mostrar timestamps nas mensagens
+      show_timestamps: true,
+      # Mostrar avatares dos usuários
+      show_user_avatars: true,
+      # Agrupar mensagens do mesmo usuário (5 min)
+      message_grouping_timeout: 300_000
     }
   end
 
@@ -99,10 +118,14 @@ defmodule App.ChatConfig do
   """
   def debug_config do
     %{
-      enable_debug_logs: false,   # Habilitar logs de debug
-      log_message_events: false,  # Logar eventos de mensagens
-      log_presence_events: false, # Logar eventos de presença
-      log_performance_metrics: false  # Logar métricas de performance
+      # Habilitar logs de debug
+      enable_debug_logs: false,
+      # Logar eventos de mensagens
+      log_message_events: false,
+      # Logar eventos de presença
+      log_presence_events: false,
+      # Logar métricas de performance
+      log_performance_metrics: false
     }
   end
 

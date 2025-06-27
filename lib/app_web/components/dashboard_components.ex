@@ -3,18 +3,21 @@ defmodule AppWeb.DashboardComponents do
 
   def card(assigns) do
     assigns = assign_new(assigns, :class, fn -> "" end)
+
     ~H"""
-    <div class={@class <> " bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-8 w-full min-w-[200px]"}>
+    <div class={@class <> " bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-4 w-full min-w-[200px]"}>
       <div class="flex items-center mb-2">
-        <div class={@icon_bg <> " w-10 h-10 rounded-full flex items-center justify-center mr-2"}>
-          <%= render_slot(@icon) %>
-        </div>
-        <span class="text-lg font-semibold text-gray-700"><%= @title %></span>
+        <%= if assigns[:icon] do %>
+          <div class={@icon_bg <> " w-8 h-8 rounded-full flex items-center justify-center mr-2"}>
+            {render_slot(@icon)}
+          </div>
+        <% end %>
+        <span class="text-sm font-semibold text-gray-700">{@title}</span>
       </div>
-      <div class="text-xl md:text-2xl font-extrabold text-gray-900 mb-1 w-full text-center">
-        <%= @value %>
+      <div class="text-lg md:text-xl font-extrabold text-gray-900 mb-1 w-full text-center">
+        {@value}
       </div>
-      <div class="text-xs text-gray-400"><%= @subtitle %></div>
+      <div class="text-xs text-gray-400">{@subtitle}</div>
     </div>
     """
   end
@@ -22,7 +25,9 @@ defmodule AppWeb.DashboardComponents do
   def progress_bar(assigns) do
     percentual_num =
       case assigns[:percentual_num] do
-        n when is_number(n) -> n
+        n when is_number(n) ->
+          n
+
         s when is_binary(s) ->
           s
           |> String.replace([",", "%"], fn
@@ -30,21 +35,26 @@ defmodule AppWeb.DashboardComponents do
             "%" -> ""
           end)
           |> String.to_float()
-        _ -> 0.0
+
+        _ ->
+          0.0
       end
+
     bar_color =
       cond do
         percentual_num < 50 -> "from-red-500 to-yellow-400"
         percentual_num < 80 -> "from-yellow-400 to-green-400"
         true -> "from-green-500 to-green-400"
       end
+
     assigns = assign(assigns, :percentual_num, percentual_num)
     assigns = assign(assigns, :bar_color, bar_color)
+
     ~H"""
     <div class="w-full max-w-xs mx-auto mt-8">
       <div class="flex justify-between mb-1">
-        <span class="text-sm font-medium text-gray-700">Meta: <%= @objetivo %></span>
-        <span class="text-sm font-medium text-gray-700"><%= @percentual %></span>
+        <span class="text-sm font-medium text-gray-700">Meta: {@objetivo}</span>
+        <span class="text-sm font-medium text-gray-700">{@percentual}</span>
       </div>
       <div class="w-full bg-gray-200 rounded-full h-6 shadow-inner relative overflow-hidden">
         <div
@@ -52,7 +62,7 @@ defmodule AppWeb.DashboardComponents do
           style={"width: #{min(@percentual_num, 100)}%; min-width: 2.5rem;"}
         >
           <span class="drop-shadow">
-            <%= @percentual %>
+            {@percentual}
           </span>
         </div>
       </div>

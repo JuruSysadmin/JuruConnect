@@ -7,17 +7,23 @@ defmodule AppWeb.DashboardLiveTest do
 
   setup %{conn: conn} do
     store = App.Stores.get_store_by!("Loja Padrão")
-    {:ok, user} = Accounts.create_user(%{
-      username: "testuser",
-      name: "Test User",
-      password: "123456",
-      role: "clerk",
-      store_id: store.id
-    })
+
+    {:ok, user} =
+      Accounts.create_user(%{
+        username: "testuser",
+        name: "Test User",
+        password: "123456",
+        role: "clerk",
+        store_id: store.id
+      })
+
     {:ok, token, _claims} = Guardian.encode_and_sign(user)
 
     # Simula uma sessão autenticada
-    conn = %{conn | private: Map.put(conn.private, :phoenix_session, %{"guardian_default_token" => token})}
+    conn = %{
+      conn
+      | private: Map.put(conn.private, :phoenix_session, %{"guardian_default_token" => token})
+    }
 
     {:ok, conn: conn, user: user}
   end

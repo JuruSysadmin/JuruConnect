@@ -10,7 +10,9 @@ defmodule App.ChatSupervisor do
   def start_chat(order_id) do
     # Verifica se já está rodando usando Registry
     case Registry.lookup(App.ChatRegistry, order_id) do
-      [{pid, _}] -> {:ok, pid}
+      [{pid, _}] ->
+        {:ok, pid}
+
       [] ->
         spec = %{
           id: Room,

@@ -7,6 +7,7 @@ defmodule App.Orders do
 
   def get_order(order_id) when is_binary(order_id) do
     url = @api_url <> order_id
+
     case HTTPoison.get(url, [], recv_timeout: 5_000) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         with {:ok, %{"data" => [pedido | _]}} <- Jason.decode(body) do
@@ -14,6 +15,7 @@ defmodule App.Orders do
         else
           _ -> nil
         end
+
       _ ->
         nil
     end

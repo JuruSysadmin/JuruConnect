@@ -28,6 +28,7 @@ defmodule App.Repo.Migrations.AddFieldsToMessages do
       remove :sender
       remove :chat_id
     end
+
     create index(:messages, [:order_id])
     execute "DROP INDEX IF EXISTS messages_chat_id_index"
   end
@@ -42,6 +43,7 @@ defmodule App.Repo.Migrations.AddFieldsToMessages do
       remove :sender_name
       remove :timestamp
     end
+
     create index(:messages, [:chat_id])
     drop index(:messages, [:order_id])
   end

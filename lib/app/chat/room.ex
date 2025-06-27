@@ -18,13 +18,24 @@ defmodule App.Chat.Room do
   @impl true
   def init(order_id) do
     # Load messages when the room starts, using the configured limit
-    {:ok, messages, _has_more} = Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
+    {:ok, messages, _has_more} =
+      Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
+
     # The state includes the order_id, the list of messages, and users who are currently typing.
-    {:ok, %{order_id: order_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTime.utc_now()}}
+    {:ok,
+     %{
+       order_id: order_id,
+       messages: messages,
+       typing_users: MapSet.new(),
+       last_activity: DateTime.utc_now()
+     }}
   end
 
   @impl true
-  def handle_cast({:new_message, %{text: text, user_id: user_id, order_id: order_id} = message_params}, state) do
+  def handle_cast(
+        {:new_message, %{text: text, user_id: user_id, order_id: order_id} = message_params},
+        state
+      ) do
     # Obter o nome do usuário
     sender_name = get_username_by_id(user_id) || ChatConfig.default_username()
 
@@ -109,7 +120,10 @@ defmodule App.Chat.Room do
     diff = DateTime.diff(now, state.last_activity, :second) / 60
 
     if diff > timeout_minutes do
-      Logger.info("Chat room for order #{state.order_id} inactive for #{diff} minutes, shutting down")
+      Logger.info(
+        "Chat room for order #{state.order_id} inactive for #{diff} minutes, shutting down"
+      )
+
       {:stop, :normal, state}
     else
       # Agendar próxima verificação
@@ -120,7 +134,10 @@ defmodule App.Chat.Room do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info("Chat room for order #{state.order_id} is shutting down. Reason: #{inspect(reason)}")
+    Logger.info(
+      "Chat room for order #{state.order_id} is shutting down. Reason: #{inspect(reason)}"
+    )
+
     :ok
   end
 
@@ -136,7 +153,11 @@ defmodule App.Chat.Room do
   defp broadcast_typing_users(order_id, typing_users) do
     topic = "order:#{order_id}"
     # We convert the Set to a List for JSON serialization
-    Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_users, %{users: MapSet.to_list(typing_users)}})
+    Phoenix.PubSub.broadcast(
+      App.PubSub,
+      topic,
+      {:typing_users, %{users: MapSet.to_list(typing_users)}}
+    )
   end
 
   # Helper para obter o nome do usuário pelo ID (você precisará implementar isso)
@@ -146,6 +167,7 @@ defmodule App.Chat.Room do
       user -> user.username || ChatConfig.default_username()
     end
   rescue
-    _ -> ChatConfig.default_username()  # Fallback em caso de erro
+    # Fallback em caso de erro
+    _ -> ChatConfig.default_username()
   end
 end

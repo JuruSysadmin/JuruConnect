@@ -20,6 +20,7 @@ defmodule AppWeb.DashboardResumoLiveTest do
       percentual: 50.0,
       nfs: 42
     }
+
     Phoenix.PubSub.broadcast(App.PubSub, "dashboard:updated", {:dashboard_updated, novos_dados})
 
     assert render(view) =~ "R$ 9.999,99"
