@@ -3,6 +3,7 @@ defmodule AppWeb.DashboardLive do
 
   alias App.DashboardDataServer
   import AppWeb.DashboardComponents
+  import AppWeb.DashboardUtils
 
   @impl true
   def mount(_params, _session, socket) do
@@ -149,27 +150,7 @@ defmodule AppWeb.DashboardLive do
     )
   end
 
-  defp calculate_margin(data) do
-    sale = data["sale"] || 0.0
-    discount = data["discount"] || 0.0
 
-    if sale > 0 do
-      ((sale - discount) / sale) * 100
-    else
-      0.0
-    end
-  end
-
-  defp calculate_ticket(data) do
-    sale = data["sale"] || 0.0
-    nfs = data["nfs"] || 1
-
-    if nfs > 0 do
-      sale / nfs
-    else
-      0.0
-    end
-  end
 
   defp generate_activities(data) do
     activities = []
@@ -209,28 +190,7 @@ defmodule AppWeb.DashboardLive do
     activities
   end
 
-  defp format_money(value) when is_number(value) do
-    "R$\u00A0" <>
-      (value
-      |> :erlang.float_to_binary(decimals: 2)
-      |> String.replace(".", ",")
-      |> add_thousands_separator())
-  end
-  defp format_money(_), do: "R$ 0,00"
 
-  defp format_percent(value) when is_number(value) do
-    value
-    |> :erlang.float_to_binary(decimals: 2)
-    |> String.replace(".", ",")
-    |> Kernel.<>("%")
-  end
-  defp format_percent(_), do: "0,00%"
-
-  defp add_thousands_separator(str) do
-    [int, frac] = String.split(str, ",")
-    int = int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
-    int <> "," <> frac
-  end
 
   @impl true
   def render(assigns) do
