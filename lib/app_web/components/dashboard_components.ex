@@ -2,6 +2,7 @@ defmodule AppWeb.DashboardComponents do
   use Phoenix.Component
 
   def card(assigns) do
+    assigns = assign_new(assigns, :class, fn -> "" end)
     ~H"""
     <div class={@class <> " bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-8 w-full min-w-[200px]"}>
       <div class="flex items-center mb-2">

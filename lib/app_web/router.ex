@@ -23,6 +23,8 @@ defmodule AppWeb.Router do
     live "/hello", DashboardLive
     live "/dashboard", DashboardResumoLive
     live "/login", UserSessionLive.Index, :new
+    live "/chat/:order_id", ChatLive
+    live "/buscar-pedido", OrderSearchLive
   end
 
   # Other scopes may use custom stacks.

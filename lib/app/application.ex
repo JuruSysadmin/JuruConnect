@@ -12,6 +12,8 @@ defmodule App.Application do
       App.Repo,
       {DNSCluster, query: Application.get_env(:app, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: App.PubSub},
+      {Registry, keys: :unique, name: App.ChatRegistry},
+      {AppWeb.Presence, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
       # DashboardDataServer centraliza o fetch da API

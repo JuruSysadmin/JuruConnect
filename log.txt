@@ -1,0 +1,2699 @@
+nohup: ignoring input
+=CRASH REPORT==== 26-Jun-2025::18:56:54.201185 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 152
+  neighbours:
+
+=CRASH REPORT==== 26-Jun-2025::18:56:54.201185 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 152
+  neighbours:
+
+    warning: AppWeb.Auth.Guardian.resource_from_token/1 is undefined (module AppWeb.Auth.Guardian is not available or is yet to be defined)
+    │
+ 12 │     case Guardian.resource_from_token(token) do
+    │                   ~
+    │
+    └─ lib/app_web/channels/user_socket.ex:12:19: AppWeb.UserSocket.connect/3
+
+     warning: function calculate_ticket/1 is unused
+     │
+ 130 │   defp calculate_ticket(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_resumo_live.ex:130:8: AppWeb.DashboardResumoLive (module)
+
+     warning: function calculate_margin/1 is unused
+     │
+ 120 │   defp calculate_margin(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_resumo_live.ex:120:8: AppWeb.DashboardResumoLive (module)
+
+    warning: Pbkdf2.verify_pass/2 is undefined (module Pbkdf2 is not available or is yet to be defined). Make sure the module name is correct and has been specified in full (or that an alias has been defined)
+    │
+ 63 │           verify: &Pbkdf2.verify_pass/2
+    │                           ~
+    │
+    └─ lib/app/accounts.ex:63:27: App.Accounts.authenticate_user/2
+
+    warning: App.ChatSession.get_messages/1 is undefined (module App.ChatSession is not available or is yet to be defined)
+    │
+ 65 │     ChatSession.get_messages(chat_id)
+    │                 ~
+    │
+    └─ lib/app/chat.ex:65:17: App.Chat.get_messages/1
+
+    warning: unused alias ApiClient
+    │
+  4 │   alias App.ApiClient
+    │   ~
+    │
+    └─ lib/app/dashboard_data_server.ex:4:3
+
+    warning: AppWeb.Auth.Guardian.Plug.sign_in/2 is undefined (module AppWeb.Auth.Guardian.Plug is not available or is yet to be defined)
+    │
+ 17 │         |> Guardian.Plug.sign_in(user)
+    │                          ~
+    │
+    └─ lib/app_web/controllers/session_controller.ex:17:26: AppWeb.SessionController.create/2
+
+    warning: AppWeb.Auth.Guardian.Plug.sign_out/1 is undefined (module AppWeb.Auth.Guardian.Plug is not available or is yet to be defined)
+    │
+ 31 │     |> Guardian.Plug.sign_out()
+    │                      ~
+    │
+    └─ lib/app_web/controllers/session_controller.ex:31:22: AppWeb.SessionController.delete/2
+
+     warning: function format_datetime/1 is unused
+     │
+ 254 │   defp format_datetime(datetime) do
+     │        ~
+     │
+     └─ lib/app_web/live/chat_live.ex:254:8: AppWeb.ChatLive (module)
+
+     warning: variable "order_id" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 205 │   defp authorized?(socket, order_id) do
+     │                            ~~~~~~~~
+     │
+     └─ lib/app_web/channels/chat_channel.ex:205:28: AppWeb.ChatChannel.authorized?/2
+
+    warning: unused alias Chat
+    │
+  7 │   alias App.Chat
+    │   ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:7:3
+
+    warning: unused alias ChatSupervisor
+    │
+  6 │   alias App.ChatSupervisor
+    │   ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:6:3
+
+    warning: unused alias Room
+    │
+  4 │   alias App.Chat.Room
+    │   ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:4:3
+
+    warning: ChatApp.ChatSupervisor.start_chat/1 is undefined (module ChatApp.ChatSupervisor is not available or is yet to be defined)
+    │
+ 13 │       with {:ok, _room_pid} <- ChatApp.ChatSupervisor.start_chat(order_id) do
+    │                                                       ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:13:55: AppWeb.ChatChannel.join/3
+
+    warning: App.Presence.track/3 is undefined (module App.Presence is not available or is yet to be defined). Did you mean:
+
+          * ChatApp.Presence.track/3
+
+    │
+ 25 │         {:ok, _} = Presence.track(socket, socket.assigns.user_id, user_data)
+    │                             ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:25:29: AppWeb.ChatChannel.join/3
+
+    warning: ChatApp.Chat.list_messages_for_order/2 is undefined (module ChatApp.Chat is not available or is yet to be defined)
+    │
+ 34 │         case ChatApp.Chat.list_messages_for_order(order_id, ChatConfig.max_message_limit()) do
+    │                           ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:34:27: AppWeb.ChatChannel.join/3
+
+    warning: App.ChatConfig.max_message_limit/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+    │
+ 34 │         case ChatApp.Chat.list_messages_for_order(order_id, ChatConfig.max_message_limit()) do
+    │                                                                        ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:34:72: AppWeb.ChatChannel.join/3
+
+     warning: App.ChatConfig.max_message_limit/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 169 │     safe_limit = min(limit, ChatConfig.max_message_limit())
+     │                                        ~
+     │
+     └─ lib/app_web/channels/chat_channel.ex:169:40: AppWeb.ChatChannel.handle_in/3
+
+    warning: App.Presence.list/1 is undefined (module App.Presence is not available or is yet to be defined). Did you mean:
+
+          * ChatApp.Presence.list/1
+
+    │
+ 75 │     push(socket, "presence_state", Presence.list(socket))
+    │                                             ~
+    │
+    └─ lib/app_web/channels/chat_channel.ex:75:45: AppWeb.ChatChannel.handle_info/2
+
+     warning: ChatApp.Chat.list_older_messages_for_order/3 is undefined (module ChatApp.Chat is not available or is yet to be defined)
+     │
+ 172 │     case ChatApp.Chat.list_older_messages_for_order(order_id, offset, safe_limit) do
+     │                       ~
+     │
+     └─ lib/app_web/channels/chat_channel.ex:172:23: AppWeb.ChatChannel.handle_in/3
+
+     warning: App.ChatConfig.default_username/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 196 │         sender: msg.sender_name || ChatConfig.default_username(),
+     │                                               ~
+     │
+     └─ lib/app_web/channels/chat_channel.ex:196:47: AppWeb.ChatChannel.format_messages/1
+
+    warning: Phoenix.LiveView.push_redirect/2 is deprecated. Use push_navigate/2 instead
+    │
+ 13 │         {:noreply, push_redirect(socket, to: "/chat/#{order_id}")}
+    │                    ~
+    │
+    └─ lib/app_web/live/order_search_live.ex:13:20: AppWeb.OrderSearchLive.handle_event/3
+
+    warning: unused alias Message
+    │
+  5 │   alias App.Chat.Message
+    │   ~
+    │
+    └─ lib/app/chat/room.ex:5:3
+
+    warning: unused alias UnreliableLinkPreviewService
+    │
+  6 │   alias App.UnreliableLinkPreviewService
+    │   ~
+    │
+    └─ lib/app/chat/room.ex:6:3
+
+    warning: ChatApp.Chat.list_messages_for_order/2 is undefined (module ChatApp.Chat is not available or is yet to be defined)
+    │
+ 22 │     {:ok, messages, _has_more} = Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
+    │                                       ~
+    │
+    └─ lib/app/chat/room.ex:22:39: App.Chat.Room.init/1
+
+    warning: App.ChatConfig.default_message_limit/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+    │
+ 22 │     {:ok, messages, _has_more} = Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
+    │                                                                                    ~
+    │
+    └─ lib/app/chat/room.ex:22:84: App.Chat.Room.init/1
+
+    warning: App.ChatConfig.default_username/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+    │
+ 30 │     sender_name = get_username_by_id(user_id) || ChatConfig.default_username()
+    │                                                             ~
+    │
+    └─ lib/app/chat/room.ex:30:61: App.Chat.Room.handle_cast/2
+
+     warning: App.ChatConfig.default_username/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 213 │       nil -> ChatConfig.default_username()
+     │                         ~
+     │
+     └─ lib/app/chat/room.ex:213:25: App.Chat.Room.get_username_by_id/1
+
+     warning: App.ChatConfig.default_username/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 214 │       user -> user.username || ChatConfig.default_username()
+     │                                           ~
+     │
+     └─ lib/app/chat/room.ex:214:43: App.Chat.Room.get_username_by_id/1
+
+     warning: App.ChatConfig.default_username/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 217 │     _ -> ChatConfig.default_username()  # Fallback em caso de erro
+     │                     ~
+     │
+     └─ lib/app/chat/room.ex:217:21: App.Chat.Room.get_username_by_id/1
+
+    warning: ChatApp.Chat.create_message/1 is undefined (module ChatApp.Chat is not available or is yet to be defined)
+    │
+ 46 │     case Chat.create_message(complete_params) do
+    │               ~
+    │
+    └─ lib/app/chat/room.ex:46:15: App.Chat.Room.handle_cast/2
+
+     warning: App.ChatConfig.room_inactivity_timeout/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 117 │     timeout_minutes = ChatConfig.room_inactivity_timeout()
+     │                                  ~
+     │
+     └─ lib/app/chat/room.ex:117:34: App.Chat.Room.handle_info/2
+
+     warning: App.ChatConfig.link_preview_circuit_breaker/0 is undefined (module App.ChatConfig is not available or is yet to be defined)
+     │
+ 165 │         circuit_breaker_config = ChatConfig.link_preview_circuit_breaker()
+     │                                             ~
+     │
+     └─ lib/app/chat/room.ex:165:45: App.Chat.Room.fetch_link_preview/1
+
+     warning: :fuse.is_fuse_available/1 is undefined or private
+     │
+ 169 │         unless :fuse.is_fuse_available(fuse_name) do
+     │                      ~
+     │
+     └─ lib/app/chat/room.ex:169:22: App.Chat.Room.fetch_link_preview/1
+
+     warning: ChatApp.Accounts.get_user/1 is undefined (module ChatApp.Accounts is not available or is yet to be defined)
+     │
+ 212 │     case ChatApp.Accounts.get_user(user_id) do
+     │                           ~
+     │
+     └─ lib/app/chat/room.ex:212:27: App.Chat.Room.get_username_by_id/1
+
+    warning: App.Presence.track/3 is undefined (module App.Presence is not available or is yet to be defined). Did you mean:
+
+          * ChatApp.Presence.track/3
+
+    │
+ 32 │     {:ok, _} = Presence.track(socket, socket.assigns.user_id, user_data)
+    │                         ~
+    │
+    └─ lib/app_web/channels/presence_channel.ex:32:25: AppWeb.PresenceChannel.handle_info/2
+
+    warning: App.Presence.list/1 is undefined (module App.Presence is not available or is yet to be defined). Did you mean:
+
+          * ChatApp.Presence.list/1
+
+    │
+ 35 │     push(socket, "presence_state", Presence.list(socket))
+    │                                             ~
+    │
+    └─ lib/app_web/channels/presence_channel.ex:35:45: AppWeb.PresenceChannel.handle_info/2
+
+    warning: App.Presence.update/3 is undefined (module App.Presence is not available or is yet to be defined). Did you mean:
+
+          * ChatApp.Presence.update/3
+
+    │
+ 53 │     {:ok, _} = Presence.update(socket, socket.assigns.user_id, user_data)
+    │                         ~
+    │
+    └─ lib/app_web/channels/presence_channel.ex:53:25: AppWeb.PresenceChannel.handle_in/3
+
+    warning: unused alias Error
+    │
+  7 │   alias HTTPoison.Error
+    │   ~
+    │
+    └─ lib/app/api_client.ex:7:3
+
+    warning: unused alias Response
+    │
+  6 │   alias HTTPoison.Response
+    │   ~
+    │
+    └─ lib/app/api_client.ex:6:3
+
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 179 │       activities = activities ++ [
+     │       ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:179:7: AppWeb.DashboardLive.generate_activities/1
+
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 190 │       activities = activities ++ [
+     │       ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:190:7: AppWeb.DashboardLive.generate_activities/1
+
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 201 │       activities = activities ++ [
+     │       ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:201:7: AppWeb.DashboardLive.generate_activities/1
+
+    warning: function extract_venda_hoje/1 is unused
+    │
+ 95 │   defp extract_venda_hoje(data), do: data["saleToday"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:95:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_realizado/1 is unused
+    │
+ 89 │   defp extract_realizado(data), do: data["percentualSale"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:89:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_percentual_objetivo_hora/1 is unused
+     │
+ 103 │   defp extract_percentual_objetivo_hora(data), do: data["percentualObjetiveHour"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:103:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_objetivo_hora/1 is unused
+     │
+ 101 │   defp extract_objetivo_hora(data), do: data["objetiveHour"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:101:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_objetivo_hoje/1 is unused
+    │
+ 93 │   defp extract_objetivo_hoje(data), do: data["objetiveToday"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:93:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_objetivo/1 is unused
+    │
+ 87 │   defp extract_objetivo(data), do: data["objetive"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:87:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_nfs_hoje/1 is unused
+    │
+ 97 │   defp extract_nfs_hoje(data), do: data["nfsToday"] || 0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:97:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_mix/1 is unused
+     │
+ 105 │   defp extract_mix(data), do: data["mix"] || 0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:105:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_faturamento/1 is unused
+    │
+ 85 │   defp extract_faturamento(data), do: data["sale"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:85:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_devolucao/1 is unused
+    │
+ 99 │   defp extract_devolucao(data), do: data["devolution"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:99:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_desconto/1 is unused
+     │
+ 107 │   defp extract_desconto(data), do: data["discount"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:107:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_cupons/1 is unused
+    │
+ 91 │   defp extract_cupons(data), do: data["nfs"] || 0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:91:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_api_data/1 is unused
+     │
+ 109 │   defp extract_api_data(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:109:8: AppWeb.DashboardLive (module)
+
+[info] Running LiveDebuggerWeb.Endpoint with Bandit 1.7.0 at 127.0.0.1:4007 (http)
+[info] Access LiveDebuggerWeb.Endpoint at http://localhost:4007
+[info] Running AppWeb.Endpoint with Bandit 1.7.0 at 0.0.0.0:4000 (http)
+[info] Access AppWeb.Endpoint at http://localhost:4000
+[watch] build finished, watching for changes...
+[info] CONNECTED TO Phoenix.LiveView.Socket in 16µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "YRI0MEkyOC1gFQAkPgodIiUmHjBQMikPUXmYygOjXwzkXYtTMDuE6Cgn", "_live_referer" => "undefined", "_mounts" => "1", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"message" => "ss", "order_id" => "263033041"}
+  Session: %{"_csrf_token" => "4JYi0UwG8bzOfSivhbkufqNa"}
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "YTl0IXNnGnVWMhYNESYxRwwULSceXCAMUs-HC2m2nPlBwuX1dvFRx-nm", "_live_referer" => "undefined", "_mounts" => "1", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "4JYi0UwG8bzOfSivhbkufqNa"}
+[debug] Replied in 7ms
+
+Rebuilding...
+warning: Range.new/2 and first..last default to a step of -1 when last < first. Use Range.new(first, last, -1) or first..last//-1, or pass 1 if that was your intention
+  (app 0.1.0) lib/app_web/live/dashboard_resumo_live.ex:187: anonymous fn/2 in AppWeb.DashboardResumoLive.render/1
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:414: Phoenix.LiveView.Diff.traverse/7
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:555: anonymous fn/4 in Phoenix.LiveView.Diff.traverse_dynamic/7
+  (elixir 1.18.4) lib/enum.ex:2546: Enum."-reduce/3-lists^foldl/2-0-"/3
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:412: Phoenix.LiveView.Diff.traverse/7
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:136: Phoenix.LiveView.Diff.render/3
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/channel.ex:994: anonymous fn/4 in Phoenix.LiveView.Channel.render_diff/3
+  (telemetry 1.3.0) /home/juru/JuruConnect/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/channel.ex:989: Phoenix.LiveView.Channel.render_diff/3
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/channel.ex:556: Phoenix.LiveView.Channel.maybe_call_mount_handle_params/4
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/channel.ex:1209: Phoenix.LiveView.Channel.verified_mount/8
+  (phoenix_live_view 1.0.17) lib/phoenix_live_view/channel.ex:84: Phoenix.LiveView.Channel.handle_info/2
+  (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+  (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+  (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] QUERY OK source="messages" db=10.1ms queue=3.5ms idle=915.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 639ms
+
+Done in 445ms.
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "HiQWFWIJAgsFGl4lC1ZhDS09Ex4iVkMEtmC-S_pDIsgb2d99COkNLc3u", "_live_referer" => "undefined", "_mounts" => "1", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] Replied in 222µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 18µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "Oho4TnQ_PzsmMXtySFESXSo-OTNadkg2PSmvEiMtjXB5qcJiDLAc4C8G", "_live_referer" => "undefined", "_mounts" => "1", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] QUERY OK source="messages" db=5.1ms idle=1893.5ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 143ms
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=4.5ms idle=289.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 200 in 141ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] GET /dashboard
+[debug] Processing with AppWeb.DashboardResumoLive.nil/2
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 705µs
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] GET /
+[debug] Processing with AppWeb.PageController.home/2
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 521µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 25µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "OCcjVRw8ABk-XlsRQ3cLcDwkVTcNQxsbRnvm-jrVr7bVzESDRV-gcvkj", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] QUERY OK source="messages" db=8.4ms idle=1895.5ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 214ms
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "PTkTDmI0QR4GWnceVHg8U1lBMSkFdwgbWpF6Sb3QJ3NYmJdg73IykBxj", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] Replied in 279µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 16µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "PTkTDmI0QR4GWnceVHg8U1lBMSkFdwgbWpF6Sb3QJ3NYmJdg73IykBxj", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] Replied in 197µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 25µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "OCcjVRw8ABk-XlsRQ3cLcDwkVTcNQxsbRnvm-jrVr7bVzESDRV-gcvkj", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] QUERY OK source="messages" db=0.8ms idle=1301.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 138ms
+[info] GET /dashboard
+[debug] Processing with AppWeb.DashboardResumoLive.nil/2
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 236ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "CxAfQHMcMXkGInsFdVsBdThFHScrbBVGaYJxBJC6JKBBLiYAV7ewEYe7", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "jIU81VrOLi9G92X4nrxPn5pq"}
+[debug] Replied in 349µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 13µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "YTl0IXNnGnVWMhYNESYxRwwULSceXCAMUs-HC2m2nPlBwuX1dvFRx-nm", "_live_referer" => "undefined", "_mounts" => "2", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "4JYi0UwG8bzOfSivhbkufqNa"}
+[debug] Replied in 255µs
+[info] CONNECTED TO Phoenix.LiveView.Socket in 13µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "YRI0MEkyOC1gFQAkPgodIiUmHjBQMikPUXmYygOjXwzkXYtTMDuE6Cgn", "_live_referer" => "undefined", "_mounts" => "2", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"message" => "ss", "order_id" => "263033041"}
+  Session: %{"_csrf_token" => "4JYi0UwG8bzOfSivhbkufqNa"}
+[debug] QUERY OK source="messages" db=8.3ms idle=1635.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 471ms
+[notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+[info] GET /dashboard
+[debug] Processing with AppWeb.DashboardResumoLive.nil/2
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 62ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 14µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "SAIXPE1QGBIPbzgJJzofHyAsGA4gMjBv0asftgIHiZVmLbINiNQaFtR5", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.DashboardResumoLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[debug] Replied in 239µs
+[info] GET /chat
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /chat (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] GET /buscar-pedido
+[debug] Processing with AppWeb.OrderSearchLive.nil/2
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 759µs
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 13µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "AiswFGtwGjFUfzwuGDQbYDtVAx4QFBgjzHTNRGKk2JRJslM1r7JqvRzy", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.OrderSearchLive
+  Parameters: %{}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[debug] Replied in 77µs
+[debug] HANDLE EVENT "search" in AppWeb.OrderSearchLive
+  Parameters: %{"order_id" => "263033041"}
+[debug] Replied in 884ms
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[debug] QUERY OK source="messages" db=45.8ms idle=1200.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 183ms
+[notice]     :alarm_handler: {:clear, :system_memory_high_watermark}
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 129ms.
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 75ms.
+Compiling 1 file (.ex)
+     warning: variable "current_count" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 313 │   defp load_older_messages(order_id, current_count) do
+     │                                      ~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:313:38: AppWeb.ChatLive.load_older_messages/2
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=6.9ms idle=1318.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 518ms
+[error] ** (ArgumentError) errors were found at the given arguments:
+
+  * 1st argument: the table identifier does not refer to an existing ETS table
+
+    (stdlib 5.2.1) :ets.lookup(ChatApp.Presence, :pool_size)
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:314: Phoenix.Tracker.pool_size/1
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:209: Phoenix.Tracker.list/2
+    (phoenix 1.7.21) lib/phoenix/presence.ex:532: Phoenix.Presence.list/2
+    (app 0.1.0) lib/app_web/live/chat_live.ex:31: AppWeb.ChatLive.mount/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+    (telemetry 1.3.0) /home/juru/JuruConnect/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+
+[info] GET /favicon.ico
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /favicon.ico (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+
+Rebuilding...
+
+Done in 58ms.
+
+Rebuilding...
+
+Done in 44ms.
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=17.3ms idle=1883.9ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 249ms
+[error] ** (ArgumentError) errors were found at the given arguments:
+
+  * 1st argument: the table identifier does not refer to an existing ETS table
+
+    (stdlib 5.2.1) :ets.lookup(ChatApp.Presence, :pool_size)
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:314: Phoenix.Tracker.pool_size/1
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:209: Phoenix.Tracker.list/2
+    (phoenix 1.7.21) lib/phoenix/presence.ex:532: Phoenix.Presence.list/2
+    (app 0.1.0) lib/app_web/live/chat_live.ex:31: AppWeb.ChatLive.mount/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+    (telemetry 1.3.0) /home/juru/JuruConnect/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+
+
+Rebuilding...
+
+Done in 50ms.
+[notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+
+Rebuilding...
+
+Done in 74ms.
+
+Rebuilding...
+
+Done in 246ms.
+
+Rebuilding...
+[watch] build started (change: "js/app.js")
+
+Done in 50ms.
+
+Rebuilding...
+[debug] Live reload: priv/static/assets/app.js
+[debug] Live reload: priv/static/assets/app.js
+[debug] Live reload: priv/static/assets/app.js
+[watch] build finished
+
+Done in 39ms.
+Compiling 14 files (.ex)
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 179 │       activities = activities ++ [
+     │       ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/dashboard_live.ex:179:7: AppWeb.DashboardLive.generate_activities/1
+
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 190 │       activities = activities ++ [
+     │       ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/dashboard_live.ex:190:7: AppWeb.DashboardLive.generate_activities/1
+
+     warning: variable "activities" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 201 │       activities = activities ++ [
+     │       ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/dashboard_live.ex:201:7: AppWeb.DashboardLive.generate_activities/1
+
+     warning: variable "current_count" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 313 │   defp load_older_messages(order_id, current_count) do
+     │                                      ~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:313:38: AppWeb.ChatLive.load_older_messages/2
+
+    warning: function extract_venda_hoje/1 is unused
+    │
+ 95 │   defp extract_venda_hoje(data), do: data["saleToday"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:95:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_realizado/1 is unused
+    │
+ 89 │   defp extract_realizado(data), do: data["percentualSale"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:89:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_percentual_objetivo_hora/1 is unused
+     │
+ 103 │   defp extract_percentual_objetivo_hora(data), do: data["percentualObjetiveHour"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:103:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_objetivo_hora/1 is unused
+     │
+ 101 │   defp extract_objetivo_hora(data), do: data["objetiveHour"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:101:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_objetivo_hoje/1 is unused
+    │
+ 93 │   defp extract_objetivo_hoje(data), do: data["objetiveToday"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:93:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_objetivo/1 is unused
+    │
+ 87 │   defp extract_objetivo(data), do: data["objetive"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:87:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_nfs_hoje/1 is unused
+    │
+ 97 │   defp extract_nfs_hoje(data), do: data["nfsToday"] || 0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:97:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_mix/1 is unused
+     │
+ 105 │   defp extract_mix(data), do: data["mix"] || 0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:105:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_faturamento/1 is unused
+    │
+ 85 │   defp extract_faturamento(data), do: data["sale"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:85:8: AppWeb.DashboardLive (module)
+
+    warning: function extract_devolucao/1 is unused
+    │
+ 99 │   defp extract_devolucao(data), do: data["devolution"] || 0.0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:99:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_desconto/1 is unused
+     │
+ 107 │   defp extract_desconto(data), do: data["discount"] || 0.0
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:107:8: AppWeb.DashboardLive (module)
+
+     warning: function calculate_ticket/1 is unused
+     │
+ 130 │   defp calculate_ticket(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_resumo_live.ex:130:8: AppWeb.DashboardResumoLive (module)
+
+    warning: function extract_cupons/1 is unused
+    │
+ 91 │   defp extract_cupons(data), do: data["nfs"] || 0
+    │        ~
+    │
+    └─ lib/app_web/live/dashboard_live.ex:91:8: AppWeb.DashboardLive (module)
+
+     warning: function extract_api_data/1 is unused
+     │
+ 109 │   defp extract_api_data(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_live.ex:109:8: AppWeb.DashboardLive (module)
+
+     warning: function calculate_margin/1 is unused
+     │
+ 120 │   defp calculate_margin(data) do
+     │        ~
+     │
+     └─ lib/app_web/live/dashboard_resumo_live.ex:120:8: AppWeb.DashboardResumoLive (module)
+
+    warning: Phoenix.LiveView.push_redirect/2 is deprecated. Use push_navigate/2 instead
+    │
+ 13 │         {:noreply, push_redirect(socket, to: "/chat/#{order_id}")}
+    │                    ~
+    │
+    └─ (app 0.1.0) lib/app_web/live/order_search_live.ex:13:20: AppWeb.OrderSearchLive.handle_event/3
+
+    warning: AppWeb.Auth.Guardian.Plug.sign_in/2 is undefined (module AppWeb.Auth.Guardian.Plug is not available or is yet to be defined)
+    │
+ 17 │         |> Guardian.Plug.sign_in(user)
+    │                          ~
+    │
+    └─ (app 0.1.0) lib/app_web/controllers/session_controller.ex:17:26: AppWeb.SessionController.create/2
+
+    warning: AppWeb.Auth.Guardian.Plug.sign_out/1 is undefined (module AppWeb.Auth.Guardian.Plug is not available or is yet to be defined)
+    │
+ 31 │     |> Guardian.Plug.sign_out()
+    │                      ~
+    │
+    └─ (app 0.1.0) lib/app_web/controllers/session_controller.ex:31:22: AppWeb.SessionController.delete/2
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=6.4ms idle=1977.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 236ms
+[error] ** (ArgumentError) errors were found at the given arguments:
+
+  * 1st argument: the table identifier does not refer to an existing ETS table
+
+    (stdlib 5.2.1) :ets.lookup(ChatApp.Presence, :pool_size)
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:314: Phoenix.Tracker.pool_size/1
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:209: Phoenix.Tracker.list/2
+    (phoenix 1.7.21) lib/phoenix/presence.ex:532: Phoenix.Presence.list/2
+    (app 0.1.0) lib/app_web/live/chat_live.ex:31: AppWeb.ChatLive.mount/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+    (telemetry 1.3.0) /home/juru/JuruConnect/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.9ms idle=1581.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 247ms
+[error] ** (ArgumentError) errors were found at the given arguments:
+
+  * 1st argument: the table identifier does not refer to an existing ETS table
+
+    (stdlib 5.2.1) :ets.lookup(ChatApp.Presence, :pool_size)
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:314: Phoenix.Tracker.pool_size/1
+    (phoenix_pubsub 2.1.3) lib/phoenix/tracker.ex:209: Phoenix.Tracker.list/2
+    (phoenix 1.7.21) lib/phoenix/presence.ex:532: Phoenix.Presence.list/2
+    (app 0.1.0) lib/app_web/live/chat_live.ex:31: AppWeb.ChatLive.mount/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/utils.ex:348: anonymous fn/6 in Phoenix.LiveView.Utils.maybe_call_live_view_mount!/5
+    (telemetry 1.3.0) /home/juru/JuruConnect/deps/telemetry/src/telemetry.erl:324: :telemetry.span/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:321: Phoenix.LiveView.Static.call_mount_and_handle_params!/5
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:155: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+
+[notice]     :alarm_handler: {:clear, :system_memory_high_watermark}
+
+Rebuilding...
+
+Done in 62ms.
+
+Rebuilding...
+
+Done in 31ms.
+
+Rebuilding...
+
+Done in 45ms.
+[notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=10.9ms idle=1774.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 200 in 498ms
+[notice]     :alarm_handler: {:clear, :system_memory_high_watermark}
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=5.9ms idle=1863.7ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 200 in 211ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "T1MoI3hjNTURbAwlLCIxCRknDSsxLhAS70LyATdowYbAGzgXPEDDWhrH", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[debug] QUERY OK source="messages" db=10.6ms idle=1294.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 150ms
+[debug] HANDLE EVENT "send_message" in AppWeb.ChatLive
+  Parameters: %{"message" => "ss"}
+[debug] QUERY OK source="messages" db=7.5ms queue=6.2ms idle=1717.4ms
+INSERT INTO "messages" ("text","order_id","sender_id","sender_name","tipo","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id" ["ss", "263033041", "Usuário", "Usuário", "mensagem", ~U[2025-06-26 22:37:24.369388Z], ~U[2025-06-26 22:37:24.369388Z]]
+[90m↳ App.Chat.send_message/3, at: lib/app/chat.ex:96[0m
+[debug] Replied in 14ms
+[error] ** (Bandit.TransportError) Unrecoverable error: timeout
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+
+Done in 111ms.
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+    warning: App.ChatConfig.max_message_length/0 is undefined or private. Did you mean:
+
+          * max_message_limit/0
+
+    │
+ 73 │       String.length(trimmed_text) > ChatConfig.max_message_length() ->
+    │                                                ~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:73:48: AppWeb.ChatLive.handle_event/3
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:402: AppWeb.ChatLive.render/1
+
+     warning: App.Chat.list_messages_for_order/3 is undefined or private. Did you mean:
+
+           * list_messages_for_order/1
+           * list_messages_for_order/2
+
+     │
+ 449 │       case App.Chat.list_messages_for_order(order_id, ChatConfig.pagination_config()[:default_limit], current_count) do
+     │                     ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:449:21: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=26.3ms idle=1099.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 554ms
+[error] ** (UndefinedFunctionError) function App.ChatConfig.max_message_length/0 is undefined or private
+    App.ChatConfig.max_message_length()
+    (app 0.1.0) lib/app_web/live/chat_live.ex:402: anonymous fn/2 in AppWeb.ChatLive.render/1
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:414: Phoenix.LiveView.Diff.traverse/7
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:555: anonymous fn/4 in Phoenix.LiveView.Diff.traverse_dynamic/7
+    (elixir 1.18.4) lib/enum.ex:2546: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:412: Phoenix.LiveView.Diff.traverse/7
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:136: Phoenix.LiveView.Diff.render/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:289: Phoenix.LiveView.Static.to_rendered_content_tag/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:171: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 52ms.
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+     warning: App.ChatConfig.max_message_length/0 is undefined or private. Did you mean:
+
+           * max_message_limit/0
+
+     │
+ 402 │                 maxlength={ChatConfig.max_message_length()}
+     │                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:402: AppWeb.ChatLive.render/1
+
+     warning: App.Chat.list_messages_for_order/3 is undefined or private. Did you mean:
+
+           * list_messages_for_order/1
+           * list_messages_for_order/2
+
+     │
+ 449 │       case App.Chat.list_messages_for_order(order_id, ChatConfig.pagination_config()[:default_limit], current_count) do
+     │                     ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:449:21: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=10.2ms idle=1825.5ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 500 in 248ms
+[error] ** (UndefinedFunctionError) function App.ChatConfig.max_message_length/0 is undefined or private
+    App.ChatConfig.max_message_length()
+    (app 0.1.0) lib/app_web/live/chat_live.ex:402: anonymous fn/2 in AppWeb.ChatLive.render/1
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:414: Phoenix.LiveView.Diff.traverse/7
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:555: anonymous fn/4 in Phoenix.LiveView.Diff.traverse_dynamic/7
+    (elixir 1.18.4) lib/enum.ex:2546: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:412: Phoenix.LiveView.Diff.traverse/7
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/diff.ex:136: Phoenix.LiveView.Diff.render/3
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:289: Phoenix.LiveView.Static.to_rendered_content_tag/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/static.ex:171: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.0.17) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.7.21) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 45ms.
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+     warning: App.Chat.list_messages_for_order/3 is undefined or private. Did you mean:
+
+           * list_messages_for_order/1
+           * list_messages_for_order/2
+
+     │
+ 449 │       case App.Chat.list_messages_for_order(order_id, ChatConfig.pagination_config()[:default_limit], current_count) do
+     │                     ~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:449:21: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=22.7ms idle=666.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 200 in 165ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "ICQmKwoEOhsXZ1xXPgA8Ni04GRolJyZqXGBq33kAqR23UXjgdZPuCaD0", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=978.5ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 140ms
+[info] Users joined chat: ["phx-GEy4-vfv_3pEIA4h"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 42ms.
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 52ms.
+Compiling 1 file (.ex)
+     warning: variable "current_count" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 446 │     current_count = length(socket.assigns.messages)
+     │     ~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:446:5: AppWeb.ChatLive.load_older_messages_async/1
+
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+     warning: the following clause will never match:
+
+         {:error, _}
+
+     because it attempts to match on the result of:
+
+         App.Chat.list_messages_for_order(order_id, App.ChatConfig.pagination_config()[:default_limit])
+
+     which has type:
+
+         dynamic({:ok, term(), boolean()})
+
+     typing violation found at:
+     │
+ 452 │         {:error, _} ->
+     │         ~~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:452: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.6ms idle=1835.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[info] Sent 200 in 213ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 14µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "KDNWDlhHPG4EZj0qGAw-E34zMT0CNVYfPP2Tapm4bSSNsThB7QxRds4E", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=447.9ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 ["263033041", 50]
+[90m↳ App.Chat.list_messages_for_order/2, at: lib/app/chat.ex:79[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy4_2poq8TUVw7h"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 39ms.
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+     warning: the following clause will never match:
+
+         {:error, _}
+
+     because it attempts to match on the result of:
+
+         App.Chat.list_messages_for_order(order_id, App.ChatConfig.pagination_config()[:default_limit])
+
+     which has type:
+
+         dynamic({:ok, term(), boolean()})
+
+     typing violation found at:
+     │
+ 452 │         {:error, _} ->
+     │         ~~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:452: AppWeb.ChatLive.load_older_messages_async/1
+
+    warning: App.ChatSession.get_messages/1 is undefined (module App.ChatSession is not available or is yet to be defined)
+    │
+ 65 │     ChatSession.get_messages(chat_id)
+    │                 ~
+    │
+    └─ (app 0.1.0) lib/app/chat.ex:65:17: App.Chat.get_messages/1
+
+     warning: ChatApp.Accounts.get_user/1 is undefined (module ChatApp.Accounts is not available or is yet to be defined)
+     │
+ 144 │     case ChatApp.Accounts.get_user(user_id) do
+     │                           ~
+     │
+     └─ (app 0.1.0) lib/app/chat/room.ex:144:27: App.Chat.Room.get_username_by_id/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=1.9ms queue=10.5ms idle=1692.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 223ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "TSIlGW1HHCtXQwwNBAA6OHA9ZDgACxI55AACTpMq1vbioXli9_-WfMpc", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 49ms.
+[debug] QUERY OK source="messages" db=5.8ms idle=921.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 143ms
+[info] Users joined chat: ["phx-GEy5AmjCWrpzVgfj"]
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, _}
+
+    because it attempts to match on the result of:
+
+        App.Chat.list_messages_for_order(order_id, App.ChatConfig.default_message_limit())
+
+    which has type:
+
+        dynamic({:ok, term(), boolean()})
+
+    typing violation found at:
+    │
+ 40 │       {:error, _} -> {[], false}
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ (app 0.1.0) lib/app_web/live/chat_live.ex:40: AppWeb.ChatLive.mount/3
+
+     warning: the following clause will never match:
+
+         {:error, _}
+
+     because it attempts to match on the result of:
+
+         App.Chat.list_messages_for_order(
+           order_id,
+           App.ChatConfig.pagination_config()[:default_limit],
+           current_count
+         )
+
+     which has type:
+
+         dynamic({:ok, term(), boolean()})
+
+     typing violation found at:
+     │
+ 452 │         {:error, _} ->
+     │         ~~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:452: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=1725.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 145ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 14µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "VSdWEF9bNQAVX1xdDRksYDwMfAIwNjUW-D2JfldZsj29fAz1un5mVpWL", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=4.7ms idle=1479.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 146ms
+[info] Users joined chat: ["phx-GEy5AqpylbBzVgjl"]
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.9ms idle=1783.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 205ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 16µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "OyRcaFxuNDAKZiQvU28lIwIECgVfcCA3CG82eYejlSJK87srKfCj96Bm", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=990.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 140ms
+[info] Users joined chat: ["phx-GEy5CECDNn5zVg_B"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 60ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=6.2ms idle=1368.7ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 144ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "GjxTPVt9Nh5WWwAqKQAxEAc7MzsVPzhib_7gbJgD0nnNBXgANYzTsyZ8", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=3.1ms idle=1592.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 144ms
+[info] Users joined chat: ["phx-GEy5CN6cypyQIhBB"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 53ms.
+Compiling 1 file (.ex)
+     warning: the following clause will never match:
+
+         {:error, _}
+
+     because it attempts to match on the result of:
+
+         App.Chat.list_messages_for_order(
+           order_id,
+           App.ChatConfig.pagination_config()[:default_limit],
+           current_count
+         )
+
+     which has type:
+
+         dynamic({:ok, term(), boolean()})
+
+     typing violation found at:
+     │
+ 451 │         {:error, _} ->
+     │         ~~~~~~~~~~~~~~
+     │
+     └─ (app 0.1.0) lib/app_web/live/chat_live.ex:451: AppWeb.ChatLive.load_older_messages_async/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=5.7ms idle=1535.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 146ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 19µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "MSI-N2NiMxIteAwKRjtlMCswHV0pAyYTIAZmZUbHKMbn-c3abRT2OEDI", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] QUERY OK source="messages" db=0.6ms idle=742.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy5CV_ipimQIgbk"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 52ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=4.4ms idle=1213.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 209ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 21µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "LzxJaXhhNmoeATkuH2wnMzEFMVYEMyN3W_-3AVg0x4WJt4qbxgx9buA-", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.9ms idle=1460.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 139ms
+[info] Users joined chat: ["phx-GEy5CuoV38mQIgpC"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 38ms.
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 30ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.6ms idle=1783.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 140ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 18µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "IQ00HxRoFwo2WlYgLjE4FTstLThVDlUxYnPE-_FPPo8DEinDrOdW3H7k", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=984.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 137ms
+[info] Users joined chat: ["phx-GEy5C4dH7rmQIgjD"]
+Compiling 1 file (.ex)
+    warning: unused alias Message
+    │
+  5 │   alias App.Chat.Message
+    │   ~
+    │
+    └─ lib/app/chat/room.ex:5:3
+
+    warning: unused alias PubSub
+    │
+  7 │   alias App.PubSub
+    │   ~
+    │
+    └─ lib/app/chat/room.ex:7:3
+
+     warning: App.Accounts.get_user/1 is undefined or private. Did you mean:
+
+           * get_user!/1
+           * get_user_by_username/1
+           * get_users_by_role/1
+           * get_users_by_store/1
+
+     │
+ 145 │     case App.Accounts.get_user(user_id) do
+     │                       ~
+     │
+     └─ (app 0.1.0) lib/app/chat/room.ex:145:23: App.Chat.Room.get_username_by_id/1
+
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=1179.9ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 216ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "HBUFPlJVPSNWagIpGhdhJHEGIBwqCzYPdvadkbly0_lMqO7u8disLMTU", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.5ms idle=1381.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 139ms
+[info] Users joined chat: ["phx-GEy5Dt2clJ3V5gkD"]
+[notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+[notice]     :alarm_handler: {:clear, :system_memory_high_watermark}
+[debug] HANDLE EVENT "send_message" in AppWeb.ChatLive
+  Parameters: %{"message" => "d"}
+[debug] QUERY OK source="messages" db=5.2ms queue=5.8ms idle=1836.8ms
+INSERT INTO "messages" ("text","order_id","sender_id","sender_name","tipo","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id" ["d", "263033041", "Usuário", "Usuário", "mensagem", ~U[2025-06-26 22:47:11.505792Z], ~U[2025-06-26 22:47:11.505792Z]]
+[90m↳ App.Chat.send_message/3, at: lib/app/chat.ex:97[0m
+[info] Message sent by Usuário in order 263033041
+[debug] Replied in 11ms
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+
+Done in 66ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+[debug] QUERY OK source="messages" db=0.7ms idle=1408.7ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 495ms
+
+Done in 49ms.
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 31µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "Ty4jN3p-HS0rcAAABBpmJysyJQ4wdVAX7MGmCILwMEndoB0vbPlaV32M", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=1677.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy5VLSNc4Q-jAgk"]
+[notice]     :alarm_handler: {:set, {:system_memory_high_watermark, []}}
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 45ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.7ms idle=1228.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 221ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "DzwzE11GGR8qGD4dGWwlPWQ0BRcqMlo8w_WIdqHEL-Pyr4sl-VLxLt8f", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=464.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 140ms
+[info] Users joined chat: ["phx-GEy5V_vjDXM-jBHh"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 53ms.
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 126ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.6ms idle=1736.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 212ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "PgE-bFNfHx4MTw0ORg0gHgIzOwRWBzoRFbZ6jhNDjzcj-UvOKQrk0AXK", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=1954.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy5WjOwNgQ-jAhk"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 62ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.7ms idle=1189.7ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 206ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 16µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "MhkLMGhoMw4qewkHGmgTJHEPDSEocQloJzojQ_bTLNgcq0Eu8mDNN7k2", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=1418.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 140ms
+[info] Users joined chat: ["phx-GEy5YyjZ-u391xJB"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+
+Done in 80ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=1.2ms idle=1691.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 146ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "DgoXEXtTHAAjQgUiGxYBCDgRJikJaw8WvisKBdMZEwkFpNWYqsoFo-mL", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=1918.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy5Y_1upry3rQqD"]
+[notice]     :alarm_handler: {:clear, :system_memory_high_watermark}
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 41ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.6ms idle=1148.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 207ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "CQImNml0HyhVWkMADRQeGyQjMBpSKycsqaBlPCNr3o-dfLHJmAyu4mEv", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=1344.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 139ms
+[info] Users joined chat: ["phx-GEy5aawNAcfm5BPB"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+
+Done in 62ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=1.0ms idle=1118.2ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 211ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 16µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "LFEqDnZVOD4xYgYVDD0sKRsvLjYgEC0VT2NTObidWWhqgezxRMgYFVOO", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.8ms idle=1317.0ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 139ms
+[info] Users joined chat: ["phx-GEy5dJvABenm5BSB"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 67ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.7ms idle=847.7ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 208ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 21µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "TA0LKVFmZjcFaiYFIjQkOAcMAl82JSEV4noshQ7mc_HaIlriNnK0PcCO", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] QUERY OK source="messages" db=0.7ms idle=1047.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 142ms
+[info] Users joined chat: ["phx-GEy5hYqgOApDAxTB"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 43ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=730.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 146ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "EBs7L28HODQXXSMiXmgfEwo7ARUSP1czhx_uV0inqhMF50IBCYHzty5i", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.6ms idle=926.9ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 137ms
+[info] Users joined chat: ["phx-GEy5hf7Mp5tN9guD"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 44ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=1.0ms idle=207.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 207ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 35µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "NS0wYnVRAQoqRDkTMTluByoKHw00KQA_MNT8LfPPLqWwZa8VchVbRobe", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.9ms idle=390.5ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 146ms
+[info] Users joined chat: ["phx-GEy5kuLUyE5N9hIi"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 37ms.
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=1736.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 148ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 17µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "LiUzKHNlaW9QWhQoGxkbOn4gDFsCaxFvVFWrJR856ozLpAMk7BE4d-s5", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=1961.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 136ms
+[info] Users joined chat: ["phx-GEy5k0SKPplN9hUh"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 63ms.
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=1157.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 227ms
+[info] GET /assets/echarts_test.js
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "N1JUGGp5Bw0wBAoRGS8zIQ1bASJRCVc8O10BSNVWV1durwepD9HM7O5f", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=1345.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 137ms
+[info] Users joined chat: ["phx-GEy5liPv7rZN9hXh"]
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+[debug] Live reload: lib/app_web/live/chat_live.ex
+
+Rebuilding...
+
+Done in 83ms.
+[debug] Live reload: priv/static/assets/app.css
+[debug] Live reload: priv/static/assets/app.css
+Compiling 1 file (.ex)
+Generated app app
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.8ms idle=1449.3ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 751ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 15µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "OREBPk5tGhZfcilTBTInZSJWfxhTIS87AredwZKL9GG7njq4k46w5gMa", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "xcdZ97QZf5ndkXVQIbIofFbZ"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.7ms idle=1707.9ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 140ms
+[info] Users joined chat: ["phx-GEy51pS8HhgC8QxD"]
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=0.9ms idle=1042.6ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 205ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 5.2.1) gen_server.erl:1095: :gen_server.try_handle_info/3
+    (stdlib 5.2.1) gen_server.erl:1183: :gen_server.handle_msg/6
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 14µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "NlABNho6VBUkJj8QBz4-YCM4A1gNVy8DS2sLoKdLWuoajgV0Mwtlhciw", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"order_id" => "263033041"}
+  Session: %{"_csrf_token" => "ebrzuq0YsSPqmYhPnOw4e4Ft"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.8ms idle=1551.8ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 138ms
+[info] Users joined chat: ["phx-GEy520T1AXGYKRbh"]
+[debug] HANDLE EVENT "send_message" in AppWeb.ChatLive
+  Parameters: %{"message" => "oi"}
+[debug] QUERY OK source="messages" db=4.5ms queue=5.6ms idle=1939.6ms
+INSERT INTO "messages" ("text","order_id","sender_id","sender_name","tipo","inserted_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id" ["oi", "263033041", "Usuário", "Usuário", "mensagem", ~U[2025-06-26 22:59:26.646742Z], ~U[2025-06-26 22:59:26.646742Z]]
+[90m↳ App.Chat.send_message/3, at: lib/app/chat.ex:97[0m
+[info] Message sent by Usuário in order 263033041
+[debug] Replied in 10ms
+[info] GET /chat/263033041
+[debug] Processing with AppWeb.ChatLive.nil/2
+  Parameters: %{"message" => "oi", "order_id" => "263033041"}
+  Pipelines: [:browser]
+[debug] QUERY OK source="messages" db=1.4ms queue=0.1ms idle=1191.1ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[info] Sent 200 in 212ms
+[info] GET /assets/echarts_test.js
+[debug] ** (Phoenix.Router.NoRouteError) no route found for GET /assets/echarts_test.js (AppWeb.Router)
+    (app 0.1.0) deps/phoenix/lib/phoenix/router.ex:541: AppWeb.Router.call/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.plug_builder_call/2
+    (app 0.1.0) deps/plug/lib/plug/debugger.ex:155: AppWeb.Endpoint."call (overridable 3)"/2
+    (app 0.1.0) lib/app_web/endpoint.ex:1: AppWeb.Endpoint.call/2
+    (phoenix 1.7.21) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.7.0) lib/bandit/pipeline.ex:131: Bandit.Pipeline.call_plug!/2
+    (bandit 1.7.0) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.7.0) lib/bandit/http1/handler.ex:13: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.7.0) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 5.2.1) gen_server.erl:1085: :gen_server.try_handle_continue/3
+    (stdlib 5.2.1) gen_server.erl:995: :gen_server.loop/7
+    (stdlib 5.2.1) proc_lib.erl:241: :proc_lib.init_p_do_apply/3
+
+[info] CONNECTED TO Phoenix.LiveView.Socket in 14µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "Cy4kTRQhZDwSKmA3AjUEAjYeLlsAdgwsnLV7aPTeay0FollRXQYoeBJX", "_live_referer" => "undefined", "_mounts" => "0", "_track_static" => %{"0" => "http://10.1.1.23:4000/assets/app.css", "1" => "http://10.1.1.23:4000/assets/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT AppWeb.ChatLive
+  Parameters: %{"message" => "oi", "order_id" => "263033041"}
+  Session: %{"_csrf_token" => "ebrzuq0YsSPqmYhPnOw4e4Ft"}
+[info] User Usuário joined chat for order 263033041
+[debug] QUERY OK source="messages" db=0.9ms idle=698.4ms
+SELECT m0."id", m0."text", m0."sender_id", m0."sender_name", m0."order_id", m0."tipo", m0."image_url", m0."inserted_at", m0."updated_at" FROM "messages" AS m0 WHERE (m0."order_id" = $1) ORDER BY m0."inserted_at" LIMIT $2 OFFSET $3 ["263033041", 50, 0]
+[90m↳ App.Chat.list_messages_for_order/3, at: lib/app/chat.ex:80[0m
+[debug] Replied in 142ms
+[info] Users joined chat: ["phx-GEy56UW9y5DvAxeh"]
+[notice] SIGTERM received - shutting down
+
+[info] DRAINING 3 of 3 total connection(s) for socket Phoenix.LiveView.Socket every 2000ms - round 1 of 1
+[info] DRAINING 1 of 1 total connection(s) for socket Phoenix.LiveReloader.Socket every 2000ms - round 1 of 1

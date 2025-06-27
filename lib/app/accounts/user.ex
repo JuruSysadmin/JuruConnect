@@ -61,7 +61,7 @@ defmodule App.Accounts.User do
     if changeset.valid? && get_change(changeset, :password) do
       password = get_change(changeset, :password)
 
-      put_change(changeset, :password_hash, Pbkdf2.hash_pwd_salt(password))
+      put_change(changeset, :password_hash, Argon2.hash_pwd_salt(password))
     else
       changeset
     end

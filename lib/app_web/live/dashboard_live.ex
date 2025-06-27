@@ -45,20 +45,20 @@ defmodule AppWeb.DashboardLive do
 
   defp assign_success_data(socket, data) do
     assigns = [
-      faturamento: format_money(data["sale"] || 0.0),
-      objetivo: format_money(data["objetive"] || 0.0),
-      realizado: format_percent(data["percentualSale"] || 0.0),
-      margem: format_percent(calculate_margin(data)),
-      cupons: data["nfs"] || 0,
-      ticket: format_money(calculate_ticket(data)),
-      objetivo_hoje: format_money(data["objetiveToday"] || 0.0),
-      venda_hoje: format_money(data["saleToday"] || 0.0),
-      nfs_hoje: data["nfsToday"] || 0,
-      devolucao: format_money(data["devolution"] || 0.0),
-      objetivo_hora: format_money(data["objetiveHour"] || 0.0),
-      percentual_objetivo_hora: format_percent(data["percentualObjetiveHour"] || 0.0),
-      mix: data["mix"] || 0,
-      desconto: format_money(data["discount"] || 0.0),
+      faturamento: assign_faturamento(data),
+      objetivo: assign_objetivo(data),
+      realizado: assign_realizado(data),
+      margem: assign_margem(data),
+      cupons: assign_cupons(data),
+      ticket: assign_ticket(data),
+      objetivo_hoje: assign_objetivo_hoje(data),
+      venda_hoje: assign_venda_hoje(data),
+      nfs_hoje: assign_nfs_hoje(data),
+      devolucao: assign_devolucao(data),
+      objetivo_hora: assign_objetivo_hora(data),
+      percentual_objetivo_hora: assign_percentual_objetivo_hora(data),
+      mix: assign_mix(data),
+      desconto: assign_desconto(data),
       activities: generate_activities(data),
       tick: socket.assigns[:tick] || 0,
       last_update: DateTime.utc_now(),
@@ -67,22 +67,61 @@ defmodule AppWeb.DashboardLive do
     assign(socket, assigns)
   end
 
+  defp assign_faturamento(data), do: format_money(data["sale"] || 0.0)
+  defp assign_objetivo(data), do: format_money(data["objetive"] || 0.0)
+  defp assign_realizado(data), do: format_percent(data["percentualSale"] || 0.0)
+  defp assign_margem(data), do: format_percent(calculate_margin(data))
+  defp assign_cupons(data), do: data["nfs"] || 0
+  defp assign_ticket(data), do: format_money(calculate_ticket(data))
+  defp assign_objetivo_hoje(data), do: format_money(data["objetiveToday"] || 0.0)
+  defp assign_venda_hoje(data), do: format_money(data["saleToday"] || 0.0)
+  defp assign_nfs_hoje(data), do: data["nfsToday"] || 0
+  defp assign_devolucao(data), do: format_money(data["devolution"] || 0.0)
+  defp assign_objetivo_hora(data), do: format_money(data["objetiveHour"] || 0.0)
+  defp assign_percentual_objetivo_hora(data), do: format_percent(data["percentualObjetiveHour"] || 0.0)
+  defp assign_mix(data), do: data["mix"] || 0
+  defp assign_desconto(data), do: format_money(data["discount"] || 0.0)
+
+  defp extract_faturamento(data), do: data["sale"] || 0.0
+
+  defp extract_objetivo(data), do: data["objetive"] || 0.0
+
+  defp extract_realizado(data), do: data["percentualSale"] || 0.0
+
+  defp extract_cupons(data), do: data["nfs"] || 0
+
+  defp extract_objetivo_hoje(data), do: data["objetiveToday"] || 0.0
+
+  defp extract_venda_hoje(data), do: data["saleToday"] || 0.0
+
+  defp extract_nfs_hoje(data), do: data["nfsToday"] || 0
+
+  defp extract_devolucao(data), do: data["devolution"] || 0.0
+
+  defp extract_objetivo_hora(data), do: data["objetiveHour"] || 0.0
+
+  defp extract_percentual_objetivo_hora(data), do: data["percentualObjetiveHour"] || 0.0
+
+  defp extract_mix(data), do: data["mix"] || 0
+
+  defp extract_desconto(data), do: data["discount"] || 0.0
+
   defp extract_api_data(data) do
     [
-      faturamento: data["sale"] || 0.0,
-      objetivo: data["objetive"] || 0.0,
-      realizado: data["percentualSale"] || 0.0,
+      faturamento: extract_faturamento(data),
+      objetivo: extract_objetivo(data),
+      realizado: extract_realizado(data),
       margem: calculate_margin(data),
-      cupons: data["nfs"] || 0,
+      cupons: extract_cupons(data),
       ticket: calculate_ticket(data),
-      objetivo_hoje: data["objetiveToday"] || 0.0,
-      venda_hoje: data["saleToday"] || 0.0,
-      nfs_hoje: data["nfsToday"] || 0,
-      devolucao: data["devolution"] || 0.0,
-      objetivo_hora: data["objetiveHour"] || 0.0,
-      percentual_objetivo_hora: data["percentualObjetiveHour"] || 0.0,
-      mix: data["mix"] || 0,
-      desconto: data["discount"] || 0.0,
+      objetivo_hoje: extract_objetivo_hoje(data),
+      venda_hoje: extract_venda_hoje(data),
+      nfs_hoje: extract_nfs_hoje(data),
+      devolucao: extract_devolucao(data),
+      objetivo_hora: extract_objetivo_hora(data),
+      percentual_objetivo_hora: extract_percentual_objetivo_hora(data),
+      mix: extract_mix(data),
+      desconto: extract_desconto(data),
       activities: generate_activities(data)
     ]
   end
@@ -210,6 +249,12 @@ defmodule AppWeb.DashboardLive do
         </div>
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1">
+          <a href="/buscar-pedido" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Buscar Pedido
+          </a>
           <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg group">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>

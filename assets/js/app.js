@@ -22,74 +22,82 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
+import ChatHook from './hooks/chat_hook.js'
 
 let Hooks = {}
 
-Hooks.GaugeChart = {
+Hooks.ChatHook = ChatHook
+
+// Hooks for charts
+Hooks.Chart = {
   mounted() {
-    this.createChart(this.el.dataset.value);
-
-    this.handleEvent("update-gauge", ({value}) => {
-        this.updateChart(value);
-    })
-  },
-
-  updateChart(value) {
-    const percentage = Math.min(value, 100);
-    this.chart.data.datasets[0].data[0] = percentage;
-    this.chart.data.datasets[0].data[1] = 100 - percentage;
-    this.chart.update('none'); 
-  },
-
-  createChart(initialValue) {
-    const value = Math.min(initialValue, 100);
-
-    const data = {
-      datasets: [{
-        data: [value, 100 - value],
-        backgroundColor: [
-          '#3b82f6', 
-          '#e5e7eb'  
-        ],
-        borderColor: [
-            '#3b82f6',
-            '#e5e7eb'
-        ],
-        borderWidth: 0,
-        hoverBorderWidth: 0,
-
-      }]
-    };
-
-    const config = {
+    const ctx = this.el.getContext('2d');
+    const data = JSON.parse(this.el.dataset.chartData);
+    
+    new Chart(ctx, {
       type: 'doughnut',
       data: data,
       options: {
         responsive: true,
-        rotation: -90,
-        circumference: 180,
-        cutout: '80%',
-        events: [],
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  }
+}
+
+// Hooks for gauge charts
+Hooks.Gauge = {
+  mounted() {
+    const ctx = this.el.getContext('2d');
+    const value = parseFloat(this.el.dataset.value) || 0;
+    
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [value, 100 - value],
+          backgroundColor: [
+            value > 80 ? '#10B981' : value > 60 ? '#F59E0B' : '#EF4444',
+            '#F3F4F6'
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
         plugins: {
           legend: {
             display: false
           },
           tooltip: {
             enabled: false
-          },
-        },
+          }
+        }
       }
-    };
-
-    this.chart = new Chart(
-      this.el,
-      config
-    );
+    });
+  },
+  
+  updated() {
+    const value = parseFloat(this.el.dataset.value) || 0;
+    const chart = Chart.getChart(this.el);
+    
+    if (chart) {
+      chart.data.datasets[0].data = [value, 100 - value];
+      chart.data.datasets[0].backgroundColor[0] = 
+        value > 80 ? '#10B981' : value > 60 ? '#F59E0B' : '#EF4444';
+      chart.update();
+    }
   }
 }
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-
 let liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken},
   hooks: Hooks
@@ -97,8 +105,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", info => topbar.show())
-window.addEventListener("phx:page-loading-stop", info => topbar.hide())
+window.addEventListener("phx:page-loading-start", _info => topbar.show(100))
+window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()

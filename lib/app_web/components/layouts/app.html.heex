@@ -30,9 +30,7 @@
 <div id="echarts-demo" style="width: 400px; height: 400px; margin: 2rem auto;"></div>
 <script type="module" src="/assets/echarts_test.js"></script>
 
-<main class="px-4 py-20 sm:px-6 lg:px-8">
-  <div class="mx-auto max-w-2xl">
-    <.flash_group flash={@flash} />
-    {@inner_content}
-  </div>
+<main class="w-full h-full min-h-screen min-w-0">
+  <.flash_group flash={@flash} />
+  {@inner_content}
 </main>
