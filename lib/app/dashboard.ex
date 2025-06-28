@@ -68,18 +68,37 @@ defmodule App.Dashboard do
   @doc """
   Busca dados do feed de vendas em tempo real.
   """
-  def get_sales_feed(limit \\ 15) do
-    case App.ApiClient.fetch_sales_feed(limit) do
-      {:ok, sales_data} ->
+  def get_sales_feed(limit \\ nil) do
+    actual_limit = limit || App.Config.sales_feed_limit()
+
+         case App.ApiClient.fetch_sales_feed_robust(actual_limit) do
+      {:ok, sales_data} when length(sales_data) > 0 ->
         formatted_sales =
           sales_data
-          |> Enum.map(&format_sale_for_feed/1)
+          |> Enum.map(&format_and_save_api_sale/1)
           |> Enum.sort_by(& &1.sale_value, :desc)
 
         {:ok, formatted_sales}
 
-      {:error, reason} ->
-        {:error, reason}
+             _ ->
+         try_fallback_strategies(actual_limit)
+    end
+  end
+
+  defp try_fallback_strategies(actual_limit) do
+    case App.Sales.get_sales_feed(actual_limit) do
+      {:ok, [_ | _] = saved_sales} ->
+        {:ok, saved_sales}
+
+      _ ->
+        case App.ApiClient.fetch_sales_feed(15) do
+          {:ok, minimal_sales} ->
+            formatted_minimal = Enum.map(minimal_sales, &format_and_save_api_sale/1)
+            {:ok, formatted_minimal}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
     end
   end
 
@@ -331,7 +350,47 @@ defmodule App.Dashboard do
   end
 
   defp save_sale(sale_data) do
-    {:ok, sale_data}
+    sale_type = Map.get(sale_data, :type, :api)
+
+    if sale_type == :simulated do
+      {:error, "Vendas simuladas não são mais permitidas"}
+    else
+      sale_attrs = %{
+        seller_name: Map.get(sale_data, :seller_name, "Vendedor Desconhecido"),
+        store: Map.get(sale_data, :store, "Loja Não Informada"),
+        sale_value: Map.get(sale_data, :amount, Map.get(sale_data, :sale_value, 0.0)),
+        objetivo: Map.get(sale_data, :objetivo, 0.0),
+        timestamp: Map.get(sale_data, :timestamp, DateTime.utc_now()),
+        type: sale_type,  # :api ou :sale_supervisor
+        product: Map.get(sale_data, :product),
+        category: Map.get(sale_data, :category),
+        brand: Map.get(sale_data, :brand),
+        status: Map.get(sale_data, :status, "completed"),
+        celebration_id: Map.get(sale_data, :celebration_id)
+      }
+
+      case App.Sales.create_sale(sale_attrs) do
+        {:ok, sale} -> {:ok, format_saved_sale(sale)}
+        {:error, changeset} -> {:error, "Erro ao salvar venda: #{inspect(changeset.errors)}"}
+      end
+    end
+  end
+
+  defp format_saved_sale(sale) do
+    %{
+      id: sale.id,
+      seller_name: sale.seller_name,
+      store: sale.store,
+      sale_value: Decimal.to_float(sale.sale_value),
+      objetivo: Decimal.to_float(sale.objetivo || Decimal.new(0)),
+      timestamp: sale.timestamp,
+      type: sale.type,
+      product: sale.product,
+      category: sale.category,
+      brand: sale.brand,
+      status: sale.status,
+      celebration_id: sale.celebration_id
+    }
   end
 
   defp broadcast_sale(sale_data) do
@@ -411,6 +470,54 @@ defmodule App.Dashboard do
     }
   end
 
+  defp format_and_save_api_sale(sale_data) do
+    sale_value = normalize_decimal_value(sale_data.sale_value)
+    objetivo = normalize_decimal_value(sale_data.objetivo)
+
+    sale_attrs = %{
+      seller_name: sale_data.seller_name,
+      store: sale_data.store,
+      sale_value: sale_value,
+      objetivo: objetivo,
+      timestamp: sale_data.timestamp,
+      type: :api,
+      product: nil,
+      category: nil,
+      brand: nil,
+      status: "completed"
+    }
+
+    case App.Sales.create_sale(sale_attrs) do
+      {:ok, saved_sale} ->
+        %{
+          id: saved_sale.id,
+          seller_name: saved_sale.seller_name,
+          store: saved_sale.store,
+          sale_value: Decimal.to_float(saved_sale.sale_value),
+          sale_value_formatted: format_money(Decimal.to_float(saved_sale.sale_value)),
+          objetivo: Decimal.to_float(saved_sale.objetivo || Decimal.new(0)),
+          objetivo_formatted: format_money(Decimal.to_float(saved_sale.objetivo || Decimal.new(0))),
+          timestamp: saved_sale.timestamp,
+          timestamp_formatted: format_datetime(saved_sale.timestamp),
+          type: saved_sale.type
+        }
+      {:error, _reason} ->
+
+        %{
+          id: sale_data.id,
+          seller_name: sale_data.seller_name,
+          store: sale_data.store,
+          sale_value: sale_value,
+          sale_value_formatted: format_money(sale_value),
+          objetivo: objetivo,
+          objetivo_formatted: format_money(objetivo),
+          timestamp: sale_data.timestamp,
+          timestamp_formatted: format_datetime(sale_data.timestamp),
+          type: :api
+        }
+    end
+  end
+
   defp get_store_metrics(_store_id) do
     {:ok, %{}}
   end
@@ -469,13 +576,9 @@ defmodule App.Dashboard do
 
   def format_money(_), do: "R$ 0,00"
 
-  @doc """
-  Adiciona separador de milhares no formato brasileiro.
-  """
   defp add_thousands_separator(str) do
     [int, frac] = String.split(str, ",")
 
-    # Adiciona pontos a cada 3 dígitos da direita para a esquerda
     int_formatted =
       int
       |> String.reverse()

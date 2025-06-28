@@ -38,7 +38,6 @@ defmodule AppWeb.DashboardResumoLive do
 
   @impl true
   def handle_info({:dashboard_updated, data}, socket) do
-
     data_with_atom_keys = convert_keys_to_atoms(data)
 
     socket =
@@ -202,11 +201,14 @@ defmodule AppWeb.DashboardResumoLive do
 
     # Incrementa o valor total de vendas
     updated_sale_num = current_sale_num + sale_value
-    updated_percentual_hoje = if current_objetivo_num > 0, do: (updated_sale_num / current_objetivo_num * 100), else: 0.0
+
+    updated_percentual_hoje =
+      if current_objetivo_num > 0, do: updated_sale_num / current_objetivo_num * 100, else: 0.0
 
     # Incrementa ligeiramente o percentual mensal (simulação)
     current_percentual_sale = socket.assigns.percentual_sale || 0.0
-    increment_amount = sale_value / 10000.0  # Incremento proporcional à venda
+    # Incremento proporcional à venda
+    increment_amount = sale_value / 10000.0
     updated_percentual_sale = min(current_percentual_sale + increment_amount, 100.0)
 
     socket =
@@ -217,7 +219,7 @@ defmodule AppWeb.DashboardResumoLive do
         sale: AppWeb.DashboardUtils.format_money(updated_sale_num),
         percentual_num: updated_percentual_hoje,
         realizado_hoje_percent: updated_percentual_hoje,
-                 realizado_hoje_formatted: AppWeb.DashboardUtils.format_percent(updated_percentual_hoje),
+        realizado_hoje_formatted: AppWeb.DashboardUtils.format_percent(updated_percentual_hoje),
         percentual_sale: updated_percentual_sale
       )
       |> push_event("update-gauge", %{value: updated_percentual_hoje})
@@ -270,56 +272,6 @@ defmodule AppWeb.DashboardResumoLive do
   def handle_event("refresh_feed", _params, socket) do
     socket = load_sales_feed(socket)
     socket = put_flash(socket, :info, "Feed atualizado com sucesso!")
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("simulate_sale", _params, socket) do
-    sellers = [
-      %{name: "João Carlos", initials: "JC", color: "blue"},
-      %{name: "Maria Silva", initials: "MS", color: "green"},
-      %{name: "Roberto Alves", initials: "RA", color: "purple"},
-      %{name: "Ana Ferreira", initials: "AF", color: "yellow"},
-      %{name: "Pedro Costa", initials: "PC", color: "indigo"},
-      %{name: "Carla Santos", initials: "CS", color: "pink"},
-      %{name: "Rafael Oliveira", initials: "RO", color: "red"},
-      %{name: "Lucia Martins", initials: "LM", color: "orange"}
-    ]
-
-
-
-    seller = Enum.random(sellers)
-
-    amount_ranges = [
-      {100..500, 0.3},
-      {500..2000, 0.4},
-      {2_000..5_000, 0.2},
-      {5_000..15_000, 0.1}
-    ]
-
-    {min..max//_, _} = Enum.random(amount_ranges)
-    base_amount = Enum.random(min..max) * 1.0
-    random_cents = :rand.uniform() * 100
-    amount = base_amount + random_cents
-
-    sale_value = normalize_decimal(amount)
-
-    base_objetivo = Enum.random(1000..8000) * 1.0
-    random_objetivo = :rand.uniform() * 500
-    objetivo = normalize_decimal(base_objetivo + random_objetivo)
-
-    sale_data = %{
-      id: System.unique_integer([:positive]),
-      seller_name: seller.name,
-      store: "Loja #{Enum.random(1..5)}",
-      sale_value: sale_value,
-      objetivo: objetivo,
-      timestamp: DateTime.utc_now(),
-      type: :sale_supervisor
-    }
-
-    Phoenix.PubSub.broadcast(App.PubSub, "sales:feed", {:new_sale, sale_data})
-
     {:noreply, socket}
   end
 
@@ -417,7 +369,7 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   defp load_sales_feed(socket) do
-    case App.Dashboard.get_sales_feed(15) do
+    case App.Dashboard.get_sales_feed(50) do
       {:ok, sales_feed} ->
         assign(socket, sales_feed: sales_feed)
 
@@ -437,9 +389,15 @@ defmodule AppWeb.DashboardResumoLive do
     sale_num = Map.get(data, :sale, 0.0)
     objetivo_num = Map.get(data, :objetivo, 0.0)
     percentual_sale = Map.get(data, :percentualSale, 0.0)
-         realizado_hoje_percent = percentual_num
+    realizado_hoje_percent = percentual_num
+
+    # Dados mensais
+    sale_mensal_num = Map.get(data, :sale_mensal, 0.0)
+    objetivo_mensal_num = Map.get(data, :objetivo_mensal, 0.0)
+    devolution_mensal_num = Map.get(data, :devolution_mensal, 0.0)
 
     assigns = [
+      # Dados DIÁRIOS
       sale: format_money(sale_num),
       cost: format_money(Map.get(data, :cost, 0.0)),
       devolution: format_money(Map.get(data, :devolution, 0.0)),
@@ -447,12 +405,20 @@ defmodule AppWeb.DashboardResumoLive do
       profit: format_percent(Map.get(data, :profit, 0.0)),
       percentual: format_percent(Map.get(data, :percentual, 0.0)),
       percentual_num: percentual_num,
-      percentual_sale: percentual_sale,
-             realizado_hoje_percent: realizado_hoje_percent,
-       realizado_hoje_formatted: format_percent(realizado_hoje_percent),
+      realizado_hoje_percent: realizado_hoje_percent,
+      realizado_hoje_formatted: format_percent(realizado_hoje_percent),
       nfs: Map.get(data, :nfs, 0) |> trunc(),
       sale_num: sale_num,
       objetivo_num: objetivo_num,
+
+      # Dados MENSAIS
+      sale_mensal: format_money(sale_mensal_num),
+      objetivo_mensal: format_money(objetivo_mensal_num),
+      devolution_mensal: format_money(devolution_mensal_num),
+      nfs_mensal: Map.get(data, :nfs_mensal, 0) |> trunc(),
+      percentual_sale: percentual_sale,
+      sale_mensal_num: sale_mensal_num,
+      objetivo_mensal_num: objetivo_mensal_num,
       lojas_data: get_companies_data(data),
       last_update: DateTime.utc_now(),
       api_status: :ok,
@@ -465,6 +431,7 @@ defmodule AppWeb.DashboardResumoLive do
 
   defp assign_error_data(socket, reason) do
     assign(socket,
+      # Dados DIÁRIOS
       sale: "R$ 0,00",
       cost: "R$ 0,00",
       devolution: "R$ 0,00",
@@ -472,12 +439,20 @@ defmodule AppWeb.DashboardResumoLive do
       profit: "0,00%",
       percentual: "0,00%",
       percentual_num: 0,
-      percentual_sale: 0,
       realizado_hoje_percent: 0,
       realizado_hoje_formatted: "0,00%",
       nfs: 0,
       sale_num: 0.0,
       objetivo_num: 0.0,
+
+      # Dados MENSAIS
+      sale_mensal: "R$ 0,00",
+      objetivo_mensal: "R$ 0,00",
+      devolution_mensal: "R$ 0,00",
+      nfs_mensal: 0,
+      percentual_sale: 0,
+      sale_mensal_num: 0.0,
+      objetivo_mensal_num: 0.0,
       lojas_data: get_companies_data(%{}),
       api_status: :error,
       api_error: reason,
@@ -532,6 +507,7 @@ defmodule AppWeb.DashboardResumoLive do
     case celebration_data.type do
       :top_seller ->
         Map.get(celebration_data.data, :store, "Loja Desconhecida")
+
       _ ->
         Map.get(celebration_data.data, :store_name, "Sistema")
     end
@@ -552,9 +528,11 @@ defmodule AppWeb.DashboardResumoLive do
       :top_seller ->
         seller_name = Map.get(celebration_data.data, :seller_name, "Vendedor")
         "#{base_message} - #{seller_name}"
+
       :exceptional_individual_sale ->
         seller_name = Map.get(celebration_data.data, :seller_name, "Vendedor")
         "#{base_message} - #{seller_name}"
+
       _ ->
         base_message
     end
@@ -562,12 +540,18 @@ defmodule AppWeb.DashboardResumoLive do
 
   defp get_celebration_duration(level) do
     case level do
-      :legendary -> 15_000  # 15 segundos
-      :epic -> 12_000       # 12 segundos
-      :major -> 10_000      # 10 segundos
-      :standard -> 8_000    # 8 segundos
-      :minor -> 5_000       # 5 segundos
-      _ -> 8_000            # padrão
+      # 15 segundos
+      :legendary -> 15_000
+      # 12 segundos
+      :epic -> 12_000
+      # 10 segundos
+      :major -> 10_000
+      # 8 segundos
+      :standard -> 8_000
+      # 5 segundos
+      :minor -> 5_000
+      # padrão
+      _ -> 8_000
     end
   end
 
@@ -710,7 +694,7 @@ defmodule AppWeb.DashboardResumoLive do
               style={"animation-delay: #{index * 0.1 + 1.6}s;"}
             >
             </div>
-
+            
     <!-- Layer 2 - Confetti secundário -->
             <div
               class="absolute top-0 left-[15%] w-1 h-1 bg-yellow-300 confetti"
@@ -755,16 +739,18 @@ defmodule AppWeb.DashboardResumoLive do
           <% end %>
         </div>
       <% end %>
-
+      
     <!-- Painel de Notificações com Contador -->
       <div class="fixed top-4 right-2 sm:right-4 z-40 space-y-2 w-80 sm:w-auto">
         <!-- Contador de Celebrações Ativas -->
         <%= if length(@notifications) > 0 do %>
           <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-full shadow-lg text-center animate-pulse">
-            <span class="text-xs sm:text-sm font-medium">{length(@notifications)} Celebrações Globais Ativas</span>
+            <span class="text-xs sm:text-sm font-medium">
+              {length(@notifications)} Celebrações Globais Ativas
+            </span>
           </div>
         <% end %>
-
+        
     <!-- Notificações Individuais -->
         <%= for {notification, index} <- Enum.with_index(@notifications) do %>
           <div
@@ -806,7 +792,7 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         <% end %>
       </div>
-
+      
     <!-- Header com status da API -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full px-3 sm:px-6 py-3 sm:py-4 mb-3 sm:mb-4 space-y-2 sm:space-y-0">
         <div>
@@ -844,7 +830,7 @@ defmodule AppWeb.DashboardResumoLive do
               Atualizado: {Calendar.strftime(@last_update, "%H:%M:%S")}
             </span>
           <% end %>
-
+          
     <!-- Botões de Teste -->
           <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             <button
@@ -857,48 +843,37 @@ defmodule AppWeb.DashboardResumoLive do
                 <span class="text-center">Testar Celebração</span>
               </span>
             </button>
-
-            <button
-              phx-click="simulate_sale"
-              class="relative px-2 sm:px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-medium animate-pulse hover:animate-none border border-blue-400 hover:border-blue-300 w-full sm:w-auto"
-              title="Clique para simular uma nova venda (ranking automático)"
-            >
-              <span class="flex items-center justify-center space-x-1">
-                <span class="text-sm mobile-hide"></span>
-                <span class="text-center">Simular Venda</span>
-              </span>
-            </button>
           </div>
         </div>
       </div>
-
+      
     <!-- Layout principal - Responsivo -->
       <div class="flex flex-col xl:flex-row gap-3 sm:gap-4 px-3 sm:px-6">
         <!-- Coluna esquerda: Cards e Gráficos -->
         <div class="flex-1 space-y-3 sm:space-y-4 w-full xl:w-4/12">
-          <!-- Cards de métricas - Grid responsivo -->
+          <!-- Cards de métricas DIÁRIAS - Grid responsivo -->
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-3 gap-2 sm:gap-4">
-            <.card title="Meta diaria" value={@objetivo} subtitle="" icon_bg="bg-yellow-50"></.card>
+            <.card title="Meta Diária" value={@objetivo} subtitle="" icon_bg="bg-yellow-50"></.card>
 
-            <.card title="Faturamento Liquido" value={@sale} subtitle="" icon_bg="bg-green-50">
+            <.card title="Vendas Diárias" value={@sale} subtitle="" icon_bg="bg-green-50"></.card>
+
+            <.card title="Devoluções Diárias" value={@devolution} subtitle="" icon_bg="bg-red-50">
             </.card>
 
-            <.card title="Devoluções" value={@devolution} subtitle="" icon_bg="bg-red-50"></.card>
+            <.card title="Margem Diária" value={@profit} subtitle="" icon_bg="bg-green-100"></.card>
 
-            <.card title="Margem" value={@profit} subtitle="" icon_bg="bg-green-100"></.card>
-
-            <.card title="Notas fiscais" value={@nfs} subtitle="" icon_bg="bg-purple-50"></.card>
+            <.card title="NFs Diárias" value={@nfs} subtitle="" icon_bg="bg-purple-50"></.card>
 
             <.card
-              title="Realizado: Hoje"
+              title="% Realizado Hoje"
               value={@realizado_hoje_formatted}
               subtitle=""
               icon_bg="bg-blue-50"
             >
             </.card>
           </div>
-
-          <!-- Seção de Metas em Tempo Real -->
+          
+    <!-- Seção de Metas em Tempo Real -->
           <div class="grid grid-cols-1 gap-3 sm:gap-4">
             <!-- Card - Realizado: até ontem -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
@@ -911,7 +886,8 @@ defmodule AppWeb.DashboardResumoLive do
                 <div class="flex justify-center">
                   <%= if @loading do %>
                     <div class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
-                      <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
+                      <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500">
+                      </div>
                     </div>
                   <% else %>
                     <div class="relative">
@@ -931,35 +907,35 @@ defmodule AppWeb.DashboardResumoLive do
                     </div>
                   <% end %>
                 </div>
-
-                <!-- Dados Absolutos -->
+                
+    <!-- Dados Absolutos MENSAIS -->
                 <div class="flex flex-col space-y-2 text-center sm:text-left">
                   <div class="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div class="text-xs text-gray-600 mb-1">Meta Mensal</div>
                     <div class="font-mono text-sm sm:text-base font-medium text-gray-900">
-                      {@objetivo}
+                      {@objetivo_mensal}
                     </div>
                   </div>
 
                   <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
                     <div class="text-xs text-gray-600 mb-1">Vendas Mensais</div>
                     <div class="font-mono text-sm sm:text-base font-medium text-blue-700">
-                      {@sale}
+                      {@sale_mensal}
                     </div>
                   </div>
 
                   <div class="bg-red-50 rounded-lg p-2 sm:p-3">
-                    <div class="text-xs text-gray-600 mb-1">Devoluções</div>
+                    <div class="text-xs text-gray-600 mb-1">Devoluções Mensais</div>
                     <div class="font-mono text-sm sm:text-base font-medium text-red-700">
-                      {@devolution}
+                      {@devolution_mensal}
                     </div>
                   </div>
 
-                  <%= if @sale_num > 0 and @objetivo_num > 0 do %>
+                  <%= if @sale_mensal_num > 0 and @objetivo_mensal_num > 0 do %>
                     <div class="bg-green-50 rounded-lg p-2 sm:p-3">
-                      <div class="text-xs text-gray-600 mb-1">Falta Atingir</div>
+                      <div class="text-xs text-gray-600 mb-1">Falta Atingir (Mensal)</div>
                       <div class="font-mono text-sm sm:text-base font-medium text-green-700">
-                        {format_money(@objetivo_num - @sale_num)}
+                        {format_money(@objetivo_mensal_num - @sale_mensal_num)}
                       </div>
                     </div>
                   <% end %>
@@ -967,8 +943,8 @@ defmodule AppWeb.DashboardResumoLive do
               </div>
             </div>
           </div>
-
-          <!-- Feed de Vendas - Dinâmico baseado no modo -->
+          
+    <!-- Feed de Vendas - Dinâmico baseado no modo -->
           <%= if @feed_mode == :advanced do %>
             <.live_component
               module={AppWeb.SalesFeedComponent}
@@ -1002,11 +978,12 @@ defmodule AppWeb.DashboardResumoLive do
                       "px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors border w-full sm:w-auto",
                       if(@feed_mode == :advanced,
                         do: "bg-blue-100 text-blue-700 border-blue-300",
-                        else: "bg-gray-100 text-gray-700 border-gray-300")
+                        else: "bg-gray-100 text-gray-700 border-gray-300"
+                      )
                     ]}
                     title="Alternar modo do feed"
                   >
-                    <%= if @feed_mode == :advanced, do: "✨ Minimalista", else: "📊 Detalhado" %>
+                    {if @feed_mode == :advanced, do: "✨ Minimalista", else: "📊 Detalhado"}
                   </button>
                   <button
                     phx-click="refresh_feed"
@@ -1021,9 +998,12 @@ defmodule AppWeb.DashboardResumoLive do
                   </div>
                 </div>
               </div>
-
-              <!-- Feed Container - Estilo Twitter -->
-              <div class="h-[350px] sm:h-[450px] overflow-y-auto space-y-2 sm:space-y-3 pr-1" id="sales-feed">
+              
+    <!-- Feed Container - Estilo Twitter -->
+              <div
+                class="h-[350px] sm:h-[450px] overflow-y-auto space-y-2 sm:space-y-3 pr-1"
+                id="sales-feed"
+              >
                 <%= if Enum.empty?(@sales_feed) do %>
                   <!-- Estado vazio -->
                   <div class="text-center py-6 sm:py-8">
@@ -1064,19 +1044,21 @@ defmodule AppWeb.DashboardResumoLive do
                       ]}>
                         #{index + 1}
                       </div>
-
-                      <!-- Cabeçalho -->
+                      
+    <!-- Cabeçalho -->
                       <div class="flex items-center justify-between mb-2 pr-6 sm:pr-8">
-                        <h4 class="font-medium text-gray-900 text-xs sm:text-sm">{sale.seller_name}</h4>
+                        <h4 class="font-medium text-gray-900 text-xs sm:text-sm">
+                          {sale.seller_name}
+                        </h4>
                         <span class="text-xs text-gray-500">{time_ago(sale.timestamp)}</span>
                       </div>
-
-                      <!-- Loja -->
+                      
+    <!-- Loja -->
                       <div class="text-gray-600 mb-2 sm:mb-3 text-xs sm:text-sm">
                         <span class="font-medium">{sale.store}</span>
                       </div>
-
-                      <!-- Dados -->
+                      
+    <!-- Dados -->
                       <div class="space-y-1 sm:space-y-2">
                         <%= if sale.objetivo > 0 do %>
                           <div class="flex justify-between text-xs sm:text-sm">
@@ -1094,15 +1076,18 @@ defmodule AppWeb.DashboardResumoLive do
                               </span>
                               <div class="text-xs text-gray-400 mobile-hide">
                                 ({if is_number(sale.sale_value),
-                                  do: (sale.sale_value * 1.0 |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")),
+                                  do:
+                                    (sale.sale_value * 1.0)
+                                    |> :erlang.float_to_binary(decimals: 2)
+                                    |> String.replace(".", ","),
                                   else: "0,00"})
                               </div>
                             </div>
                           </div>
                         <% end %>
                       </div>
-
-                      <!-- Rodapé -->
+                      
+    <!-- Rodapé -->
                       <div class="mt-2 sm:mt-3 pt-2 border-t border-gray-100">
                         <div class="flex items-center justify-between text-xs text-gray-400">
                           <span>{sale.timestamp_formatted}</span>
@@ -1116,14 +1101,16 @@ defmodule AppWeb.DashboardResumoLive do
             </div>
           <% end %>
         </div>
-
-        <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva (MAIOR) -->
+        
+    <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva (MAIOR) -->
         <div class="w-full xl:w-8/12 order-first xl:order-last">
           <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6">
             <!-- Header igual ao feed de vendas -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
               <div>
-                <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Performance das Lojas</h2>
+                <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">
+                  Performance das Lojas
+                </h2>
                 <p class="text-xs text-gray-500">
                   {length(@lojas_data)} lojas ativas • Atualização em tempo real
                 </p>
@@ -1133,29 +1120,29 @@ defmodule AppWeb.DashboardResumoLive do
                 <span class="text-xs text-gray-600">AO VIVO</span>
               </div>
             </div>
-
-            <!-- Tabela Responsiva -->
+            
+    <!-- Tabela Responsiva -->
             <div class="overflow-x-auto">
               <!-- Versão Desktop/Tablet da Tabela -->
               <table class="w-full animate-fade-in-scale text-sm hidden sm:table">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">
+                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 border-r border-gray-300">
                       Loja
                     </th>
-                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide border-r border-gray-300">
                       Meta Dia
                     </th>
-                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide border-r border-gray-300">
                       Meta Hora
                     </th>
-                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600">
+                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600 border-r border-gray-300">
                       NFs
                     </th>
-                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 border-r border-gray-300">
                       Venda Dia
                     </th>
-                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
+                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600 tablet-hide border-r border-gray-300">
                       % Hora
                     </th>
                     <th class="text-center py-3 px-4 text-sm font-medium text-gray-600">
@@ -1167,25 +1154,25 @@ defmodule AppWeb.DashboardResumoLive do
                   <%= if @loading do %>
                     <%= for _i <- 1..5 do %>
                       <tr class="animate-pulse">
-                        <td class="py-4 px-4">
+                        <td class="py-4 px-4 border-r border-gray-200">
                           <div class="flex items-center space-x-3">
                             <div class="w-4 h-4 bg-gray-300 rounded-full shimmer-effect"></div>
                             <div class="h-4 bg-gray-300 rounded w-32 shimmer-effect"></div>
                           </div>
                         </td>
-                        <td class="py-4 px-4 tablet-hide">
+                        <td class="py-4 px-4 tablet-hide border-r border-gray-200">
                           <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-4 tablet-hide">
+                        <td class="py-4 px-4 tablet-hide border-r border-gray-200">
                           <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-4">
+                        <td class="py-4 px-4 border-r border-gray-200">
                           <div class="h-4 bg-gray-300 rounded-full w-10 mx-auto shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-4">
+                        <td class="py-4 px-4 border-r border-gray-200">
                           <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-4 tablet-hide">
+                        <td class="py-4 px-4 tablet-hide border-r border-gray-200">
                           <div class="h-4 bg-gray-300 rounded-full w-14 mx-auto shimmer-effect"></div>
                         </td>
                         <td class="py-4 px-4">
@@ -1199,7 +1186,7 @@ defmodule AppWeb.DashboardResumoLive do
                         if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50"),
                         "hover:bg-gray-100 transition-colors duration-200"
                       ]}>
-                        <td class="py-4 px-4">
+                        <td class="py-4 px-4 border-r border-gray-200">
                           <div class="flex items-center space-x-3">
                             <div class={[
                               "w-3 h-3 rounded-full",
@@ -1218,22 +1205,22 @@ defmodule AppWeb.DashboardResumoLive do
                             </div>
                           </div>
                         </td>
-                        <td class="text-right py-4 px-4 tablet-hide">
+                        <td class="text-right py-4 px-4 tablet-hide border-r border-gray-200">
                           <span class="font-mono text-gray-800 text-sm">
                             {format_money(loja.meta_dia)}
                           </span>
                         </td>
-                        <td class="text-right py-4 px-4 tablet-hide">
+                        <td class="text-right py-4 px-4 tablet-hide border-r border-gray-200">
                           <span class="font-mono text-gray-800 text-sm">
                             {format_money(loja.meta_hora)}
                           </span>
                         </td>
-                        <td class="text-center py-4 px-4">
+                        <td class="text-center py-4 px-4 border-r border-gray-200">
                           <span class="text-sm text-gray-800 font-medium">
                             {loja.qtde_nfs}
                           </span>
                         </td>
-                        <td class="text-right py-4 px-4">
+                        <td class="text-right py-4 px-4 border-r border-gray-200">
                           <span class={[
                             "font-mono text-sm font-medium",
                             if(loja.venda_dia >= loja.meta_dia,
@@ -1244,11 +1231,14 @@ defmodule AppWeb.DashboardResumoLive do
                             {format_money(loja.venda_dia)}
                           </span>
                         </td>
-                        <td class="text-center py-4 px-4 tablet-hide">
+                        <td class="text-center py-4 px-4 tablet-hide border-r border-gray-200">
                           <span class="text-sm text-gray-800 font-medium">
-                                                          {if is_number(loja.perc_hora),
-                               do: (loja.perc_hora * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
-                                else: "0,0"}%
+                            {if is_number(loja.perc_hora),
+                              do:
+                                (loja.perc_hora * 1.0)
+                                |> :erlang.float_to_binary(decimals: 1)
+                                |> String.replace(".", ","),
+                              else: "0,0"}%
                           </span>
                         </td>
                         <td class="text-center py-4 px-4">
@@ -1260,9 +1250,12 @@ defmodule AppWeb.DashboardResumoLive do
                               true -> "text-red-700"
                             end
                           ]}>
-                                                          {if is_number(loja.perc_dia),
-                               do: (loja.perc_dia * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
-                                else: "0,0"}%
+                            {if is_number(loja.perc_dia),
+                              do:
+                                (loja.perc_dia * 1.0)
+                                |> :erlang.float_to_binary(decimals: 1)
+                                |> String.replace(".", ","),
+                              else: "0,0"}%
                           </span>
                         </td>
                       </tr>
@@ -1270,8 +1263,8 @@ defmodule AppWeb.DashboardResumoLive do
                   <% end %>
                 </tbody>
               </table>
-
-              <!-- Versão Mobile da Tabela (Cards) -->
+              
+    <!-- Versão Mobile da Tabela (Cards) -->
               <div class="block sm:hidden space-y-2">
                 <%= if @loading do %>
                   <%= for _i <- 1..3 do %>
@@ -1306,11 +1299,16 @@ defmodule AppWeb.DashboardResumoLive do
                           </div>
                         </div>
                         <div class="text-right">
-                          <div class="font-mono text-sm text-gray-900">{format_money(loja.venda_dia)}</div>
+                          <div class="font-mono text-sm text-gray-900">
+                            {format_money(loja.venda_dia)}
+                          </div>
                           <div class="text-xs text-gray-500">
                             {if is_number(loja.perc_dia),
-                               do: (loja.perc_dia * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
-                                else: "0,0"}%
+                              do:
+                                (loja.perc_dia * 1.0)
+                                |> :erlang.float_to_binary(decimals: 1)
+                                |> String.replace(".", ","),
+                              else: "0,0"}%
                           </div>
                         </div>
                       </div>
@@ -1322,7 +1320,7 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         </div>
       </div>
-
+      
     <!-- Mensagem de erro se API estiver offline -->
       <%= if @api_status == :error and @api_error do %>
         <div class="mt-6 sm:mt-8 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-3 sm:mx-8">
@@ -1334,8 +1332,8 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         </div>
       <% end %>
-
-      <!-- Modal Interativa do Leaderboard -->
+      
+    <!-- Modal Interativa do Leaderboard -->
       <%= if @show_leaderboard_modal do %>
         <.live_component
           module={AppWeb.InteractiveLeaderboardModal}
