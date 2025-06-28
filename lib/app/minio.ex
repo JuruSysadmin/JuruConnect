@@ -1,4 +1,7 @@
 defmodule App.Minio do
+  @moduledoc """
+  Cliente para upload de arquivos no MinIO/S3.
+  """
   @bucket "chat-images"
 
   def upload_file(path, filename) do

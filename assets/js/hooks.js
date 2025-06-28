@@ -1,5 +1,20 @@
-// Gauge Chart Hook
+/**
+ * @fileoverview Hooks personalizados para gráficos gauge usando Canvas HTML5
+ * @author JuruConnect Team
+ * @version 1.0.0
+ */
+
+/**
+ * Hook para gráfico de gauge (medidor) usando Canvas HTML5
+ * Renderiza um gauge semicircular com cores dinâmicas baseadas no valor
+ * @namespace GaugeChart
+ */
 let GaugeChart = {
+  /**
+   * Inicializa o hook quando o elemento é montado no DOM
+   * Configura o gráfico inicial e listeners para atualizações
+   * @memberof GaugeChart
+   */
   mounted() {
     this.initChart()
     this.handleEvent("update-gauge", (data) => {
@@ -7,6 +22,11 @@ let GaugeChart = {
     })
   },
 
+  /**
+   * Inicializa o gráfico de gauge no canvas
+   * Define dimensões e desenha o estado inicial
+   * @memberof GaugeChart
+   */
   initChart() {
     const canvas = this.el
     const ctx = canvas.getContext('2d')
@@ -19,6 +39,12 @@ let GaugeChart = {
     this.drawGauge(ctx, value)
   },
 
+  /**
+   * Atualiza o gráfico com um novo valor
+   * Limpa o canvas e redesenha com o novo valor
+   * @memberof GaugeChart
+   * @param {number} value - Novo valor para o gauge (0-100)
+   */
   updateChart(value) {
     const canvas = this.el
     const ctx = canvas.getContext('2d')
@@ -26,6 +52,13 @@ let GaugeChart = {
     this.drawGauge(ctx, value)
   },
 
+  /**
+   * Desenha o gauge no contexto do canvas
+   * Renderiza arco de fundo, arco de progresso, ponto central e texto do valor
+   * @memberof GaugeChart
+   * @param {CanvasRenderingContext2D} ctx - Contexto 2D do canvas
+   * @param {number} value - Valor a ser exibido (0-100)
+   */
   drawGauge(ctx, value) {
     const centerX = 150
     const centerY = 120

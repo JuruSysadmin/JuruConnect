@@ -111,6 +111,17 @@ defmodule App.ApiClient do
 
     case HTTPoison.get(url) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        process_companies_response(body)
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, "API retornou status #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, "Erro de conexão: #{inspect(reason)}"}
+    end
+  end
+
+  defp process_companies_response(body) do
         case Jason.decode(body) do
           {:ok, data} when is_map(data) ->
             companies_data = Map.get(data, "saleSupervisor", [])
@@ -147,13 +158,6 @@ defmodule App.ApiClient do
 
           {:error, error} ->
             {:error, "Erro ao decodificar JSON: #{inspect(error)}"}
-        end
-
-      {:ok, %HTTPoison.Response{status_code: status_code}} ->
-        {:error, "API retornou status #{status_code}"}
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, "Erro de conexão: #{inspect(reason)}"}
     end
   end
 

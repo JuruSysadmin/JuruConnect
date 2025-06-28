@@ -22,21 +22,44 @@ defmodule AppWeb.DashboardResumoLive do
       |> assign(
         notifications: [],
         show_celebration: false,
-        sales_feed: []
+        sales_feed: [],
+        feed_mode: :normal
       )
-      |> fetch_and_assign_data()
+      |> fetch_and_assign_data_safe()
 
     {:ok, socket}
   end
 
   @impl true
   def handle_info({:dashboard_updated, data}, socket) do
+
     data_with_atom_keys = convert_keys_to_atoms(data)
-    socket = assign_success_data(socket, data_with_atom_keys)
 
     socket =
-      push_event(socket, "update-gauge", %{
+      assign_success_data(socket, data_with_atom_keys)
+      |> assign(
+        api_status: :ok,
+        last_update: DateTime.utc_now(),
+        loading: false,
+        api_error: nil
+      )
+
+    # Atualiza o gauge se estava em loading
+    socket =
+      if socket.assigns[:loading] == true do
+        # Se estava carregando, também carrega o sales feed
+        load_sales_feed(socket)
+      else
+        socket
+      end
+
+    socket =
+      socket
+      |> push_event("update-gauge", %{
         value: socket.assigns.percentual_num
+      })
+      |> push_event("update-gauge-monthly", %{
+        value: socket.assigns.percentual_sale
       })
 
     {:noreply, socket}
@@ -121,7 +144,34 @@ defmodule AppWeb.DashboardResumoLive do
       |> Enum.sort_by(& &1.sale_value, :desc)
       |> Enum.take(15)
 
-    {:noreply, assign(socket, sales_feed: updated_feed)}
+    # Atualiza também os totais e gauges com a nova venda
+    current_sale_num = socket.assigns.sale_num || 0.0
+    current_objetivo_num = socket.assigns.objetivo_num || 1.0
+
+    # Incrementa o valor total de vendas
+    updated_sale_num = current_sale_num + sale_value
+    updated_percentual_hoje = if current_objetivo_num > 0, do: (updated_sale_num / current_objetivo_num * 100), else: 0.0
+
+    # Incrementa ligeiramente o percentual mensal (simulação)
+    current_percentual_sale = socket.assigns.percentual_sale || 0.0
+    increment_amount = sale_value / 10000.0  # Incremento proporcional à venda
+    updated_percentual_sale = min(current_percentual_sale + increment_amount, 100.0)
+
+    socket =
+      socket
+      |> assign(
+        sales_feed: updated_feed,
+        sale_num: updated_sale_num,
+        sale: AppWeb.DashboardUtils.format_money(updated_sale_num),
+        percentual_num: updated_percentual_hoje,
+        realizado_hoje_percent: updated_percentual_hoje,
+                 realizado_hoje_formatted: AppWeb.DashboardUtils.format_percent(updated_percentual_hoje),
+        percentual_sale: updated_percentual_sale
+      )
+      |> push_event("update-gauge", %{value: updated_percentual_hoje})
+      |> push_event("update-gauge-monthly", %{value: updated_percentual_sale})
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -137,8 +187,8 @@ defmodule AppWeb.DashboardResumoLive do
     ]
 
     loja_random = Enum.random(lojas_teste)
-    valor_base = Enum.random(30000..80000)
-    meta_base = valor_base - Enum.random(5000..15000)
+    valor_base = Enum.random(30_000..80_000)
+    meta_base = valor_base - Enum.random(5_000..15_000)
     percentual = (valor_base / meta_base * 100) |> Float.round(1)
 
     goal_data = %{
@@ -175,58 +225,18 @@ defmodule AppWeb.DashboardResumoLive do
       %{name: "Lucia Martins", initials: "LM", color: "orange"}
     ]
 
-    products = [
-      %{
-        name: "Furadeira Bosch",
-        category: "Ferramentas Elétricas",
-        brand: "Bosch",
-        status: "Em Alta"
-      },
-      %{
-        name: "Tinta Suvinil",
-        category: "Tintas e Vernizes",
-        brand: "Suvinil",
-        status: "Crescendo"
-      },
-      %{
-        name: "Kit Banheiro Deca",
-        category: "Materiais Hidráulicos",
-        brand: "Deca",
-        status: "Destaque"
-      },
-      %{
-        name: "Cimento Votoran",
-        category: "Materiais de Construção",
-        brand: "Votoran",
-        status: "Estável"
-      },
-      %{
-        name: "Piso Portinari",
-        category: "Pisos e Revestimentos",
-        brand: "Portinari",
-        status: "Top Vendas"
-      },
-      %{name: "Parafuso Phillips", category: "Ferragens", brand: "Gerdau", status: "Forte"},
-      %{name: "Luminária LED", category: "Iluminação", brand: "Philips", status: "Brilhante"},
-      %{
-        name: "Torneira Docol",
-        category: "Materiais Hidráulicos",
-        brand: "Docol",
-        status: "Fluindo"
-      }
-    ]
+
 
     seller = Enum.random(sellers)
-    product = Enum.random(products)
 
     amount_ranges = [
       {100..500, 0.3},
       {500..2000, 0.4},
-      {2000..5000, 0.2},
-      {5000..15000, 0.1}
+      {2_000..5_000, 0.2},
+      {5_000..15_000, 0.1}
     ]
 
-    {min..max, _} = Enum.random(amount_ranges)
+    {min..max//_, _} = Enum.random(amount_ranges)
     base_amount = Enum.random(min..max) * 1.0
     random_cents = :rand.uniform() * 100
     amount = base_amount + random_cents
@@ -252,6 +262,21 @@ defmodule AppWeb.DashboardResumoLive do
     {:noreply, socket}
   end
 
+  @doc """
+  Manipula evento para alternar entre feed normal e avançado.
+  """
+  def handle_event("toggle_advanced_feed", _params, socket) do
+    current_mode = socket.assigns[:feed_mode] || :normal
+    new_mode = if current_mode == :normal, do: :advanced, else: :normal
+
+    socket =
+      socket
+      |> assign(feed_mode: new_mode)
+      |> put_flash(:info, "Feed alterado para modo #{new_mode}")
+
+    {:noreply, socket}
+  end
+
   defp assign_loading_state(socket) do
     assign(socket,
       loading: true,
@@ -261,34 +286,61 @@ defmodule AppWeb.DashboardResumoLive do
     )
   end
 
-  defp fetch_and_assign_data(socket) do
-    case DashboardDataServer.get_data() do
-      %{api_status: :ok, data: data} = state when not is_nil(data) ->
+  defp fetch_and_assign_data_safe(socket) do
+    case DashboardDataServer.get_data(timeout: 5_000) do
+      {:ok, data} ->
+        # Dados disponíveis - processa imediatamente
         data_with_atom_keys = convert_keys_to_atoms(data)
 
         socket =
           assign_success_data(socket, data_with_atom_keys)
           |> assign(
-            api_status: state.api_status,
-            last_update: state.last_update,
-            loading: false
+            api_status: :ok,
+            last_update: DateTime.utc_now(),
+            loading: false,
+            api_error: nil
           )
 
         load_sales_feed(socket)
 
-      %{api_status: status, api_error: error} = state ->
-        assign_error_data(socket, error)
-        |> assign(
-          api_status: status,
-          last_update: state.last_update,
-          loading: false
+      {:loading, nil} ->
+        # Ainda carregando - mantém estado de loading e aguarda PubSub
+
+        assign(socket,
+          api_status: :loading,
+          loading: true,
+          api_error: nil,
+          last_update: nil
         )
 
-      _ ->
-        assign_error_data(socket, "Dados não disponíveis")
+      {:error, reason} ->
+        # Erro na busca - exibe estado de erro
+
+        assign_error_data(socket, reason)
         |> assign(
           api_status: :error,
-          loading: false
+          loading: false,
+          last_update: DateTime.utc_now()
+        )
+
+      {:timeout, reason} ->
+        # Timeout - trata como erro mas com mensagem específica
+
+        assign_error_data(socket, "Timeout: #{reason}")
+        |> assign(
+          api_status: :timeout,
+          loading: false,
+          last_update: DateTime.utc_now()
+        )
+
+      _unexpected ->
+        # Caso inesperado - fallback
+
+        assign_error_data(socket, "Resposta inesperada do servidor")
+        |> assign(
+          api_status: :error,
+          loading: false,
+          last_update: DateTime.utc_now()
         )
     end
   end
@@ -314,7 +366,7 @@ defmodule AppWeb.DashboardResumoLive do
     sale_num = Map.get(data, :sale, 0.0)
     objetivo_num = Map.get(data, :objetivo, 0.0)
     percentual_sale = Map.get(data, :percentualSale, 0.0)
-    realizado_hoje_percent = percentual_num
+         realizado_hoje_percent = percentual_num
 
     assigns = [
       sale: format_money(sale_num),
@@ -325,8 +377,8 @@ defmodule AppWeb.DashboardResumoLive do
       percentual: format_percent(Map.get(data, :percentual, 0.0)),
       percentual_num: percentual_num,
       percentual_sale: percentual_sale,
-      realizado_hoje_percent: realizado_hoje_percent,
-      realizado_hoje_formatted: format_percent(realizado_hoje_percent),
+             realizado_hoje_percent: realizado_hoje_percent,
+       realizado_hoje_formatted: format_percent(realizado_hoje_percent),
       nfs: Map.get(data, :nfs, 0) |> trunc(),
       sale_num: sale_num,
       objetivo_num: objetivo_num,
@@ -350,8 +402,8 @@ defmodule AppWeb.DashboardResumoLive do
       percentual: "0,00%",
       percentual_num: 0,
       percentual_sale: 0,
-      realizado_hoje_percent: 0,
-      realizado_hoje_formatted: "0,00%",
+             realizado_hoje_percent: 0,
+                    realizado_hoje_formatted: "0,00%",
       nfs: 0,
       lojas_data: get_companies_data(%{}),
       api_status: :error,
@@ -383,14 +435,14 @@ defmodule AppWeb.DashboardResumoLive do
 
     cond do
       diff < 60 -> "#{diff}s"
-      diff < 3600 -> "#{div(diff, 60)}m"
-      diff < 86400 -> "#{div(diff, 3600)}h"
+      diff < 3600 -> "#{Kernel.div(diff, 60)}m"
+      diff < 86_400 -> "#{Kernel.div(diff, 3600)}h"
       true -> Calendar.strftime(datetime, "%d/%m")
     end
   end
 
   defp normalize_decimal(value) when is_float(value), do: Float.round(value, 2)
-  defp normalize_decimal(value) when is_integer(value), do: Float.round(value * 1.0, 2)
+  defp normalize_decimal(value) when is_integer(value), do: Float.round(value * 2.0, 2)
 
   defp normalize_decimal(value) when is_binary(value) do
     case Float.parse(value) do
@@ -474,6 +526,20 @@ defmodule AppWeb.DashboardResumoLive do
       .bounce-in {
         animation: bounceIn 0.6s ease-out;
       }
+
+      /* Responsividade customizada */
+      @media (max-width: 640px) {
+        .mobile-hide { display: none !important; }
+        .mobile-stack { flex-direction: column !important; }
+        .mobile-full { width: 100% !important; }
+        .mobile-text-xs { font-size: 0.65rem !important; }
+        .mobile-p-2 { padding: 0.5rem !important; }
+      }
+
+      @media (max-width: 768px) {
+        .tablet-hide { display: none !important; }
+        .tablet-stack { flex-direction: column !important; }
+      }
     </style>
     <div id="dashboard-main" class="min-h-screen bg-white" phx-hook="GoalCelebration">
       <!-- Notificações de Meta Atingida com Confetti em Tempo Real -->
@@ -527,7 +593,7 @@ defmodule AppWeb.DashboardResumoLive do
               style={"animation-delay: #{index * 0.1 + 1.6}s;"}
             >
             </div>
-            
+
     <!-- Layer 2 - Confetti secundário -->
             <div
               class="absolute top-0 left-[15%] w-1 h-1 bg-yellow-300 confetti"
@@ -572,49 +638,37 @@ defmodule AppWeb.DashboardResumoLive do
           <% end %>
         </div>
       <% end %>
-      
+
     <!-- Painel de Notificações com Contador -->
-      <div class="fixed top-4 right-4 z-40 space-y-2">
+      <div class="fixed top-4 right-2 sm:right-4 z-40 space-y-2 w-80 sm:w-auto">
         <!-- Contador de Celebrações Ativas -->
         <%= if length(@notifications) > 0 do %>
           <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-full shadow-lg text-center animate-pulse">
-            <span class="text-sm font-bold">{length(@notifications)} Celebrações Globais Ativas</span>
+            <span class="text-xs sm:text-sm font-medium">{length(@notifications)} Celebrações Globais Ativas</span>
           </div>
         <% end %>
-        
+
     <!-- Notificações Individuais -->
         <%= for {notification, index} <- Enum.with_index(@notifications) do %>
           <div
-            class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-lg shadow-2xl max-w-sm bounce-in transform hover:scale-105 transition-all duration-300"
+            class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 sm:p-4 rounded-lg shadow-2xl max-w-sm bounce-in transform hover:scale-105 transition-all duration-300"
             style={"animation-delay: #{index * 0.1}s;"}
             id={"notification-#{notification.celebration_id}"}
           >
             <div class="flex items-center space-x-3">
               <div class="flex-shrink-0 relative">
-                <svg
-                  class="w-8 h-8 text-white animate-spin"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <!-- Ícone removido -->
                 <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping">
                 </div>
               </div>
               <div class="flex-1">
-                <h4 class="font-bold text-lg animate-bounce">
+                <h4 class="text-sm sm:text-base font-medium animate-bounce">
                   Meta #{index + 1} Atingida!
                   <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2">
                     GLOBAL
                   </span>
                 </h4>
-                <p class="text-sm opacity-90 font-semibold">{notification.store_name}</p>
+                <p class="text-xs sm:text-sm opacity-90 font-medium">{notification.store_name}</p>
                 <p class="text-xs opacity-75">
                   {AppWeb.DashboardUtils.format_money(notification.achieved)} ({if is_number(
                                                                                      notification.percentage
@@ -625,9 +679,9 @@ defmodule AppWeb.DashboardResumoLive do
                                                                                          1.0,
                                                                                        decimals: 1
                                                                                      ),
-                                                                                   else: "0.0"}%)
+                                                                                   else: "0,0"}%)
                 </p>
-                <p class="text-xs opacity-60 mt-1">
+                <p class="text-xs opacity-60 mt-1 mobile-hide">
                   ID: #{notification.celebration_id}
                 </p>
               </div>
@@ -635,14 +689,14 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         <% end %>
       </div>
-      
+
     <!-- Header com status da API -->
-      <div class="flex items-center justify-between w-full px-6 py-4 mb-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full px-3 sm:px-6 py-3 sm:py-4 mb-3 sm:mb-4 space-y-2 sm:space-y-0">
         <div>
-          <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">JURUNENSE HOME CENTER</h1>
-          <p class="text-xs text-gray-600 mt-1"></p>
+          <h1 class="text-lg sm:text-xl font-medium text-gray-900">JURUNENSE HOME CENTER</h1>
+          <p class="text-xs text-gray-600 mt-1 mobile-hide"></p>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
           <%= if @loading do %>
             <div class="flex items-center space-x-2">
               <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
@@ -669,44 +723,44 @@ defmodule AppWeb.DashboardResumoLive do
           <% end %>
 
           <%= if @last_update do %>
-            <span class="text-xs text-gray-400">
+            <span class="text-xs text-gray-400 mobile-hide">
               Atualizado: {Calendar.strftime(@last_update, "%H:%M:%S")}
             </span>
           <% end %>
-          
+
     <!-- Botões de Teste -->
-          <div class="flex space-x-2">
+          <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             <button
               phx-click="test_goal_achieved"
-              class="relative px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-bold animate-pulse hover:animate-none border border-green-400 hover:border-green-300"
+              class="relative px-2 sm:px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-medium animate-pulse hover:animate-none border border-green-400 hover:border-green-300 w-full sm:w-auto"
               title="Clique para testar a animação de meta atingida"
             >
-              <span class="flex items-center space-x-1">
-                <span class="text-sm"></span>
-                <span>Testar Celebração</span>
+              <span class="flex items-center justify-center space-x-1">
+                <span class="text-sm mobile-hide"></span>
+                <span class="text-center">Testar Celebração</span>
               </span>
             </button>
 
             <button
               phx-click="simulate_sale"
-              class="relative px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-bold animate-pulse hover:animate-none border border-blue-400 hover:border-blue-300"
+              class="relative px-2 sm:px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-medium animate-pulse hover:animate-none border border-blue-400 hover:border-blue-300 w-full sm:w-auto"
               title="Clique para simular uma nova venda (ranking automático)"
             >
-              <span class="flex items-center space-x-1">
-                <span class="text-sm"></span>
-                <span>Simular Venda (Ranking)</span>
+              <span class="flex items-center justify-center space-x-1">
+                <span class="text-sm mobile-hide"></span>
+                <span class="text-center">Simular Venda</span>
               </span>
             </button>
           </div>
         </div>
       </div>
-      
-    <!-- Layout principal dividido -->
-      <div class="flex gap-4 px-6">
+
+    <!-- Layout principal - Responsivo -->
+      <div class="flex flex-col xl:flex-row gap-3 sm:gap-4 px-3 sm:px-6">
         <!-- Coluna esquerda: Cards e Gráficos -->
-        <div class="flex-1 space-y-4">
-          <!-- Cards de métricas -->
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+        <div class="flex-1 space-y-3 sm:space-y-4 w-full xl:w-auto">
+          <!-- Cards de métricas - Grid responsivo -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-3 gap-2 sm:gap-4">
             <.card title="Meta diaria" value={@objetivo} subtitle="" icon_bg="bg-yellow-50"></.card>
 
             <.card title="Faturamento Liquido" value={@sale} subtitle="" icon_bg="bg-green-50">
@@ -719,39 +773,39 @@ defmodule AppWeb.DashboardResumoLive do
             <.card title="Notas fiscais" value={@nfs} subtitle="" icon_bg="bg-purple-50"></.card>
 
             <.card
-              title="Realizado Hoje"
-              value={@realizado_hoje_formatted}
+              title="Realizado: Hoje"
+                             value={@realizado_hoje_formatted}
               subtitle=""
               icon_bg="bg-blue-50"
             >
             </.card>
           </div>
-          
+
     <!-- Seção de Metas em Tempo Real -->
-          <div class="grid grid-cols-1 gap-4">
-            <!-- Card - Realizado até ontem -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 hover:shadow-xl">
+          <div class="grid grid-cols-1 gap-3 sm:gap-4">
+            <!-- Card - Realizado: até ontem -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
               <div class="text-center mb-3">
-                <h2 class="text-lg font-bold text-gray-900 mb-1">Realizado Mensal</h2>
+                <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Realizado: Mensal</h2>
               </div>
 
               <div class="flex justify-center">
                 <%= if @loading do %>
-                  <div class="w-32 h-32 flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <div class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
                   </div>
                 <% else %>
                   <div class="relative">
                     <canvas
                       id="gauge-chart-2"
-                      phx-hook="GaugeChart"
+                      phx-hook="GaugeChartMonthly"
                       phx-update="ignore"
                       data-value={min(@percentual_sale, 100)}
-                      class="w-32 h-32"
+                      class="w-24 h-24 sm:w-32 sm:h-32"
                     >
                     </canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span class="text-2xl font-bold text-gray-800">
+                      <span class="text-lg sm:text-xl font-medium text-gray-800">
                         {format_percent(@percentual_sale)}
                       </span>
                     </div>
@@ -760,48 +814,57 @@ defmodule AppWeb.DashboardResumoLive do
               </div>
             </div>
           </div>
-          
-    <!-- Feed de Vendas em Tempo Real - Estilo Twitter -->
-          <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 min-h-[550px]">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h2 class="text-lg font-bold text-gray-900 mb-1">Feed Vendas</h2>
-                <p class="text-xs text-gray-500">
-                  Ordenado por valor de venda (maior para menor) • Precisão: 2 casas decimais
-                </p>
+
+        <!-- Feed de Vendas - Dinâmico baseado no modo -->
+          <%= if @feed_mode == :advanced do %>
+            <.live_component
+              module={AppWeb.SalesFeedComponent}
+              id="sales-feed-advanced"
+              sales_feed={@sales_feed}
+            />
+          <% else %>
+            <!-- Feed Normal -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 min-h-[400px] sm:min-h-[550px]">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+                <div>
+                  <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leadeboards</h2>
+                  <p class="text-xs text-gray-500 mobile-hide">
+                  </p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                  <button
+                    phx-click="toggle_advanced_feed"
+                    class={[
+                      "px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors border w-full sm:w-auto",
+                      if(@feed_mode == :advanced,
+                        do: "bg-blue-100 text-blue-700 border-blue-300",
+                        else: "bg-gray-100 text-gray-700 border-gray-300")
+                    ]}
+                    title="Alternar modo do feed"
+                  >
+                    <%= if @feed_mode == :advanced, do: "✨ Minimalista", else: "📊 Detalhado" %>
+                  </button>
+                  <button
+                    phx-click="refresh_feed"
+                    class="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors border w-full sm:w-auto"
+                    title="Atualizar feed"
+                  >
+                    Atualizar
+                  </button>
+                  <div class="flex items-center space-x-2 justify-center sm:justify-start w-full sm:w-auto">
+                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span class="text-xs text-gray-600">AO VIVO</span>
+                  </div>
+                </div>
               </div>
-              <div class="flex items-center space-x-2">
-                <button
-                  phx-click="refresh_feed"
-                  class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors border"
-                  title="Atualizar feed"
-                >
-                  Atualizar
-                </button>
-                <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                <span class="text-xs text-gray-600">AO VIVO</span>
-              </div>
-            </div>
-            
+
     <!-- Feed Container - Estilo Twitter -->
-            <div class="h-[450px] overflow-y-auto space-y-3 pr-1" id="sales-feed">
+            <div class="h-[350px] sm:h-[450px] overflow-y-auto space-y-2 sm:space-y-3 pr-1" id="sales-feed">
               <%= if Enum.empty?(@sales_feed) do %>
                 <!-- Estado vazio -->
-                <div class="text-center py-8">
-                  <div class="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <svg
-                      class="w-6 h-6 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                      />
-                    </svg>
+                <div class="text-center py-6 sm:py-8">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                    <!-- Ícone removido -->
                   </div>
                   <p class="text-gray-500 text-sm font-medium mb-1">Feed vazio</p>
                 </div>
@@ -811,7 +874,7 @@ defmodule AppWeb.DashboardResumoLive do
                   <div
                     class={
                       [
-                        "rounded p-3 hover:shadow-sm transition-shadow relative",
+                        "rounded p-2 sm:p-3 hover:shadow-sm transition-shadow relative",
                         case index do
                           # 1º lugar - Ouro
                           0 -> "bg-yellow-50 border-2 border-yellow-300"
@@ -827,125 +890,111 @@ defmodule AppWeb.DashboardResumoLive do
                   >
                     <!-- Posição no ranking -->
                     <div class={[
-                      "absolute top-2 right-2 text-xs px-2 py-1 rounded",
+                      "absolute top-1 sm:top-2 right-1 sm:right-2 text-xs px-1 sm:px-2 py-1 rounded",
                       case index do
-                        0 -> "bg-yellow-200 text-yellow-800 font-bold"
-                        1 -> "bg-gray-200 text-gray-800 font-bold"
-                        2 -> "bg-orange-200 text-orange-800 font-bold"
+                        0 -> "bg-yellow-200 text-yellow-800 font-medium"
+                        1 -> "bg-gray-200 text-gray-800 font-medium"
+                        2 -> "bg-orange-200 text-orange-800 font-medium"
                         _ -> "bg-gray-100 text-gray-600"
                       end
                     ]}>
                       #{index + 1}
                     </div>
-                    
+
     <!-- Cabeçalho -->
-                    <div class="flex items-center justify-between mb-2 pr-8">
-                      <h4 class="font-medium text-gray-900 text-sm">{sale.seller_name}</h4>
+                    <div class="flex items-center justify-between mb-2 pr-6 sm:pr-8">
+                      <h4 class="font-medium text-gray-900 text-xs sm:text-sm">{sale.seller_name}</h4>
                       <span class="text-xs text-gray-500">{time_ago(sale.timestamp)}</span>
                     </div>
-                    
+
     <!-- Loja -->
-                    <div class="text-gray-600 mb-3 text-sm">
+                    <div class="text-gray-600 mb-2 sm:mb-3 text-xs sm:text-sm">
                       <span class="font-medium">{sale.store}</span>
                     </div>
-                    
+
     <!-- Dados -->
-                    <div class="space-y-2">
+                    <div class="space-y-1 sm:space-y-2">
                       <%= if sale.objetivo > 0 do %>
-                        <div class="flex justify-between text-sm">
+                        <div class="flex justify-between text-xs sm:text-sm">
                           <span class="text-gray-600">Objetivo:</span>
-                          <span class="font-medium text-gray-900">{sale.objetivo_formatted}</span>
+                          <span class="font-mono text-gray-900">{sale.objetivo_formatted}</span>
                         </div>
                       <% end %>
 
                       <%= if sale.sale_value > 0 do %>
-                        <div class="flex justify-between text-sm">
-                          <span class="text-gray-600">Venda:</span>
+                        <div class="flex justify-between text-xs sm:text-sm">
+                          <span class="text-gray-600">Realizado:</span>
                           <div class="text-right">
-                            <span class="font-medium text-green-600">
+                            <span class="font-mono text-green-600">
                               {sale.sale_value_formatted}
                             </span>
-                            <div class="text-xs text-gray-400">
+                            <div class="text-xs text-gray-400 mobile-hide">
                               ({if is_number(sale.sale_value),
-                                do: :erlang.float_to_binary(sale.sale_value * 1.0, decimals: 2),
-                                else: "0.00"})
+                                do: (sale.sale_value * 1.0 |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")),
+                                                                 else: "0,00"})
                             </div>
                           </div>
                         </div>
                       <% end %>
                     </div>
-                    
+
     <!-- Rodapé -->
-                    <div class="mt-3 pt-2 border-t border-gray-100">
+                    <div class="mt-2 sm:mt-3 pt-2 border-t border-gray-100">
                       <div class="flex items-center justify-between text-xs text-gray-400">
                         <span>{sale.timestamp_formatted}</span>
-                        <span>Vendaweb</span>
+                        <span class="mobile-hide">Vendaweb</span>
                       </div>
                     </div>
                   </div>
                 <% end %>
               <% end %>
             </div>
-          </div>
-        </div>
-        
-    <!-- Coluna direita: Tabela de Performance das Lojas -->
-        <div class="w-6/12">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <!-- Header da Tabela -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-900 px-4 py-3">
-              <h2 class="text-lg font-bold text-white">Performance das Lojas</h2>
             </div>
-            
-    <!-- Filtros e Controles -->
-            <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-gray-500">
-                  {length(@lojas_data)} lojas ativas
-                </span>
-                <span class="text-xs text-gray-500">Atualização em tempo real</span>
+          <% end %>
+        </div>
+
+    <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva -->
+        <div class="w-full xl:w-6/12 order-first xl:order-last">
+          <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4">
+            <!-- Header igual ao feed de vendas -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+              <div>
+                <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Performance das Lojas</h2>
+                <p class="text-xs text-gray-500">
+                  {length(@lojas_data)} lojas ativas • Atualização em tempo real
+                </p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-xs text-gray-600">AO VIVO</span>
               </div>
             </div>
-            
-    <!-- Tabela -->
+
+            <!-- Tabela Responsiva -->
             <div class="overflow-x-auto">
-              <table class="w-full animate-fade-in-scale text-sm">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+              <!-- Versão Desktop/Tablet da Tabela -->
+              <table class="w-full animate-fade-in-scale text-xs sm:text-sm hidden sm:table">
+                <thead class="bg-gray-100">
                   <tr>
-                    <th class="text-left py-2 px-3 font-bold text-gray-800 uppercase tracking-wider text-xs">
-                      <div class="flex items-center space-x-1">
-                        <svg
-                          class="w-3 h-3 text-gray-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                          />
-                        </svg>
-                        <span>Loja</span>
-                      </div>
+                    <th class="text-left py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
+                      Loja
                     </th>
-                    <th class="text-right py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
                       Meta Dia
                     </th>
-                    <th class="text-right py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
                       Meta Hora
                     </th>
-                    <th class="text-center py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
                       NFs
                     </th>
-                    <th class="text-right py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
                       Venda Dia
                     </th>
-                    <th class="text-center py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
                       % Hora
                     </th>
-                    <th class="text-center py-2 px-2 font-bold text-gray-800 uppercase tracking-wider text-xs">
+                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
                       % Dia
                     </th>
                   </tr>
@@ -954,29 +1003,29 @@ defmodule AppWeb.DashboardResumoLive do
                   <%= if @loading do %>
                     <%= for _i <- 1..5 do %>
                       <tr class="animate-pulse">
-                        <td class="py-4 px-6">
-                          <div class="flex items-center space-x-4">
-                            <div class="w-4 h-4 bg-gray-300 rounded-full shimmer-effect"></div>
-                            <div class="h-4 bg-gray-300 rounded w-48 shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6">
+                          <div class="flex items-center space-x-2 sm:space-x-4">
+                            <div class="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full shimmer-effect"></div>
+                            <div class="h-3 sm:h-4 bg-gray-300 rounded w-24 sm:w-48 shimmer-effect"></div>
                           </div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
+                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
+                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-6 bg-gray-300 rounded-full w-12 mx-auto shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6">
+                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-8 sm:w-12 mx-auto shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6">
+                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
+                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-12 sm:w-16 mx-auto shimmer-effect"></div>
                         </td>
-                        <td class="py-4 px-6">
-                          <div class="h-6 bg-gray-300 rounded-full w-16 mx-auto shimmer-effect"></div>
+                        <td class="py-2 sm:py-4 px-1 sm:px-6">
+                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-12 sm:w-16 mx-auto shimmer-effect"></div>
                         </td>
                       </tr>
                     <% end %>
@@ -985,10 +1034,10 @@ defmodule AppWeb.DashboardResumoLive do
                       <tr class={[
                         if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50")
                       ]}>
-                        <td class="py-2 px-3">
-                          <div class="flex items-center space-x-2">
+                        <td class="py-1 sm:py-2 px-1 sm:px-3">
+                          <div class="flex items-center space-x-1 sm:space-x-2">
                             <div class={[
-                              "w-3 h-3 rounded-full",
+                              "w-2 h-2 sm:w-3 sm:h-3 rounded-full",
                               case loja.status do
                                 :atingida_hora -> "bg-green-500"
                                 :abaixo_meta -> "bg-red-500"
@@ -998,28 +1047,28 @@ defmodule AppWeb.DashboardResumoLive do
                             ]}>
                             </div>
                             <div>
-                              <div class="font-semibold text-gray-900 text-sm">
+                              <div class="font-medium text-gray-900 text-xs">
                                 {loja.nome}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td class="text-right py-2 px-2">
+                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
                           <span class="font-mono text-gray-800 text-xs">
                             {format_money(loja.meta_dia)}
                           </span>
                         </td>
-                        <td class="text-right py-2 px-2">
+                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
                           <span class="font-mono text-gray-800 text-xs">
                             {format_money(loja.meta_hora)}
                           </span>
                         </td>
-                        <td class="text-center py-2 px-2">
-                          <span class="text-xs font-medium text-gray-800">
+                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2">
+                          <span class="text-xs text-gray-800">
                             {loja.qtde_nfs}
                           </span>
                         </td>
-                        <td class="text-right py-2 px-2">
+                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2">
                           <span class={[
                             "font-mono text-xs",
                             if(loja.venda_dia >= loja.meta_dia,
@@ -1030,85 +1079,83 @@ defmodule AppWeb.DashboardResumoLive do
                             {format_money(loja.venda_dia)}
                           </span>
                         </td>
-                        <td class="text-center py-2 px-2">
-                          <span class="text-xs font-medium text-gray-800">
-                            {if is_number(loja.perc_hora),
-                              do: :erlang.float_to_binary(loja.perc_hora * 1.0, decimals: 1),
-                              else: "0.0"}%
+                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
+                          <span class="text-xs text-gray-800">
+                                                          {if is_number(loja.perc_hora),
+                               do: (loja.perc_hora * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
+                                else: "0,0"}%
                           </span>
                         </td>
-                        <td class="text-center py-2 px-2">
-                          <span class="text-xs font-medium text-gray-800">
-                            {if is_number(loja.perc_dia),
-                              do: :erlang.float_to_binary(loja.perc_dia * 1.0, decimals: 1),
-                              else: "0.0"}%
+                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2">
+                          <span class="text-xs text-gray-800">
+                                                          {if is_number(loja.perc_dia),
+                               do: (loja.perc_dia * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
+                                else: "0,0"}%
                           </span>
                         </td>
                       </tr>
                     <% end %>
                   <% end %>
                 </tbody>
-                <!-- Footer com totais -->
-                <tfoot>
-                  <tr class="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                    <td class="py-2 px-3 font-bold text-sm">
-                      <div class="flex items-center space-x-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                          />
-                        </svg>
-                        <span>TOTAL</span>
-                      </div>
-                    </td>
-                    <td class="text-right py-2 px-2 font-bold text-xs font-mono">{@objetivo}</td>
-                    <td class="text-right py-2 px-2 font-bold text-xs font-mono">
-                      {format_money(434_761.80)}
-                    </td>
-                    <td class="text-center py-2 px-2">
-                      <span class="text-xs font-bold text-white">
-                        {@nfs}
-                      </span>
-                    </td>
-                    <td class="text-right py-2 px-2 font-bold text-xs font-mono">{@sale}</td>
-                    <td class="text-center py-2 px-2">
-                      <span class="text-xs font-bold text-white">
-                        108,56%
-                      </span>
-                    </td>
-                    <td class="text-center py-2 px-2">
-                      <span class="text-xs font-bold text-white">
-                        {@percentual}
-                      </span>
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
+
+              <!-- Versão Mobile da Tabela (Cards) -->
+              <div class="block sm:hidden space-y-2">
+                <%= if @loading do %>
+                  <%= for _i <- 1..3 do %>
+                    <div class="bg-gray-50 p-3 rounded-lg animate-pulse">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <div class="w-3 h-3 bg-gray-300 rounded-full shimmer-effect"></div>
+                          <div class="h-4 bg-gray-300 rounded w-24 shimmer-effect"></div>
+                        </div>
+                        <div class="h-4 bg-gray-300 rounded w-16 shimmer-effect"></div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <%= for loja <- @lojas_data do %>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <div class={[
+                            "w-3 h-3 rounded-full",
+                            case loja.status do
+                              :atingida_hora -> "bg-green-500"
+                              :abaixo_meta -> "bg-red-500"
+                              :sem_vendas -> "bg-gray-400"
+                              _ -> "bg-yellow-500"
+                            end
+                          ]}>
+                          </div>
+                          <div>
+                            <div class="font-medium text-gray-900 text-sm">{loja.nome}</div>
+                            <div class="text-xs text-gray-500">NFs: {loja.qtde_nfs}</div>
+                          </div>
+                        </div>
+                        <div class="text-right">
+                          <div class="font-mono text-sm text-gray-900">{format_money(loja.venda_dia)}</div>
+                          <div class="text-xs text-gray-500">
+                            {if is_number(loja.perc_dia),
+                               do: (loja.perc_dia * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
+                                else: "0,0"}%
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      
+
     <!-- Mensagem de erro se API estiver offline -->
       <%= if @api_status == :error and @api_error do %>
-        <div class="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-8">
+        <div class="mt-6 sm:mt-8 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-3 sm:mx-8">
           <div class="flex items-center">
-            <svg
-              class="w-5 h-5 text-red-500 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <!-- Ícone removido -->
             <span class="text-sm text-red-700">
               Erro na API: {@api_error}
             </span>

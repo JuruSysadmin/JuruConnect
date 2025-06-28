@@ -11,7 +11,7 @@ defmodule AppWeb.OrderSearchLive do
         {:noreply, assign(socket, error: "Pedido não encontrado", order_id: order_id)}
 
       _order ->
-        {:noreply, push_redirect(socket, to: "/chat/#{order_id}")}
+        {:noreply, push_navigate(socket, to: "/chat/#{order_id}")}
     end
   end
 

@@ -1,9 +1,8 @@
 defmodule App.Chat.Room do
   use GenServer
-  require Logger
   alias App.Chat
   alias App.ChatConfig
-  alias App.PubSub
+
 
   # Client API
   def start_link(order_id) do
@@ -49,14 +48,11 @@ defmodule App.Chat.Room do
       timestamp: Map.get(message_params, :timestamp, DateTime.utc_now())
     }
 
-    # Log dos parâmetros para debug
-    Logger.debug("Tentando criar mensagem com parâmetros: #{inspect(complete_params)}")
+    # Criar mensagem com parâmetros completos
 
     # Persist the message to the database with the generated ID
     case Chat.create_message(complete_params) do
       {:ok, message} ->
-        Logger.info("Mensagem salva com sucesso: #{inspect(message)}")
-
         # Broadcast the new message to all LiveView subscribers via PubSub
         broadcast_message(state.order_id, message)
 
@@ -65,11 +61,7 @@ defmodule App.Chat.Room do
         new_state = %{state | messages: new_messages, last_activity: DateTime.utc_now()}
         {:noreply, new_state}
 
-      {:error, changeset} ->
-        # Log the error if the message couldn't be saved
-        Logger.error("Failed to save message: #{inspect(changeset)}")
-        Logger.error("Validation errors: #{inspect(changeset.errors)}")
-
+      {:error, _changeset} ->
         # Mesmo se falhar ao salvar no banco, vamos transmitir a mensagem para os clientes
         # com um ID temporário para garantir que ela apareça no frontend
         temp_message = %{
@@ -92,7 +84,6 @@ defmodule App.Chat.Room do
   def handle_cast({:start_typing, user_id}, state) do
     typing_users = MapSet.put(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
-    Logger.debug("Broadcasted start_typing for user #{user_id} in order #{state.order_id}")
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
   end
 
@@ -100,15 +91,13 @@ defmodule App.Chat.Room do
   def handle_cast({:stop_typing, user_id}, state) do
     typing_users = MapSet.delete(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
-    Logger.debug("Broadcasted stop_typing for user #{user_id} in order #{state.order_id}")
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
   end
 
   @impl true
-  def handle_cast({:join, user_data}, state) do
+  def handle_cast({:join, _user_data}, state) do
     # Quando um usuário entra, podemos querer enviar o estado atual de digitação
     # para ele, ou apenas registrar a entrada.
-    Logger.info("User #{user_data.name} joined Room GenServer for order #{state.order_id}")
     {:noreply, %{state | last_activity: DateTime.utc_now()}}
   end
 
@@ -120,10 +109,6 @@ defmodule App.Chat.Room do
     diff = DateTime.diff(now, state.last_activity, :second) / 60
 
     if diff > timeout_minutes do
-      Logger.info(
-        "Chat room for order #{state.order_id} inactive for #{diff} minutes, shutting down"
-      )
-
       {:stop, :normal, state}
     else
       # Agendar próxima verificação
@@ -133,11 +118,7 @@ defmodule App.Chat.Room do
   end
 
   @impl true
-  def terminate(reason, state) do
-    Logger.info(
-      "Chat room for order #{state.order_id} is shutting down. Reason: #{inspect(reason)}"
-    )
-
+  def terminate(_reason, _state) do
     :ok
   end
 
@@ -147,7 +128,6 @@ defmodule App.Chat.Room do
 
     # Broadcast via PubSub for LiveView subscribers
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-    Logger.info("Broadcasted new_message for order #{order_id}: #{inspect(message)}")
   end
 
   defp broadcast_typing_users(order_id, typing_users) do

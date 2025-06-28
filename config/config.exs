@@ -67,6 +67,23 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure Oban
+config :app, Oban,
+  repo: App.Repo,
+  plugins: [
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Coleta dados de supervisores a cada hora
+       {"0 * * * *", JuruConnect.Workers.SupervisorDataWorker,
+        args: %{"api_url" => "http://10.1.1.108:8065/api/v1/dashboard/sale/12"}}
+     ]}
+  ],
+  queues: [
+    default: 10,
+    api_sync: 5
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

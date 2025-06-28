@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Arquivo principal do Phoenix LiveView com hooks para gráficos e interações
+ * @author JuruConnect Team
+ * @version 1.0.0
+ */
+
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
 // import "./user_socket.js"
@@ -23,14 +29,24 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
 import ChatHook from './hooks/chat_hook.js'
-import "./pwa"
 
+/**
+ * Coleção de hooks do Phoenix LiveView
+ * @type {Object}
+ */
 let Hooks = {}
 
 Hooks.ChatHook = ChatHook
 
-// Hooks for charts
+/**
+ * Hook para gráficos de rosca básicos usando Chart.js
+ * @namespace Hooks.Chart
+ */
 Hooks.Chart = {
+  /**
+   * Inicializa o gráfico quando o elemento é montado no DOM
+   * @memberof Hooks.Chart
+   */
   mounted() {
     const ctx = this.el.getContext('2d');
     const data = JSON.parse(this.el.dataset.chartData);
@@ -51,8 +67,15 @@ Hooks.Chart = {
   }
 }
 
-// Hooks for gauge charts
+/**
+ * Hook para gráficos de gauge (medidor) com animações suaves
+ * @namespace Hooks.GaugeChart
+ */
 Hooks.GaugeChart = {
+  /**
+   * Inicializa o gauge chart e configura listeners de eventos
+   * @memberof Hooks.GaugeChart
+   */
   mounted() {
     this.initChart();
     this.handleEvent("update-gauge", (data) => {
@@ -60,6 +83,10 @@ Hooks.GaugeChart = {
     });
   },
   
+  /**
+   * Cria o gráfico de gauge inicial
+   * @memberof Hooks.GaugeChart
+   */
   initChart() {
     const ctx = this.el.getContext('2d');
     const value = parseFloat(this.el.dataset.value) || 0;
@@ -97,6 +124,11 @@ Hooks.GaugeChart = {
     });
   },
   
+  /**
+   * Atualiza o valor do gauge com animação
+   * @memberof Hooks.GaugeChart
+   * @param {number} value - Novo valor para o gauge (0-100)
+   */
   updateChart(value) {
     if (this.chart) {
       this.chart.data.datasets[0].data = [value, 100 - value];
@@ -105,6 +137,12 @@ Hooks.GaugeChart = {
     }
   },
   
+  /**
+   * Retorna a cor baseada no valor do gauge
+   * @memberof Hooks.GaugeChart
+   * @param {number} value - Valor de 0 a 100
+   * @returns {string} Código hexadecimal da cor
+   */
   getColor(value) {
     if (value >= 100) return '#059669'; // Green-600
     if (value >= 80) return '#10B981';  // Green-500
@@ -113,20 +151,173 @@ Hooks.GaugeChart = {
     return '#EF4444'; // Red-500
   },
   
+  /**
+   * Callback executado quando o elemento é atualizado
+   * @memberof Hooks.GaugeChart
+   */
   updated() {
     const value = parseFloat(this.el.dataset.value) || 0;
     this.updateChart(value);
   }
 }
 
-// Hook para celebração de meta atingida
+/**
+ * Hook especializado para gauge mensal com animações mais suaves
+ * @namespace Hooks.GaugeChartMonthly
+ */
+Hooks.GaugeChartMonthly = {
+  /**
+   * Inicializa o gauge mensal e configura listeners
+   * @memberof Hooks.GaugeChartMonthly
+   */
+  mounted() {
+    this.initChart();
+    this.handleEvent("update-gauge-monthly", (data) => {
+      this.updateChart(data.value);
+    });
+  },
+  
+  /**
+   * Cria o gráfico de gauge mensal com configurações específicas
+   * @memberof Hooks.GaugeChartMonthly
+   */
+  initChart() {
+    const ctx = this.el.getContext('2d');
+    const value = parseFloat(this.el.dataset.value) || 0;
+    
+    this.chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [value, 100 - value],
+          backgroundColor: [
+            this.getColor(value),
+            '#F3F4F6'
+          ],
+          borderWidth: 0,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
+          }
+        },
+        animation: {
+          animateRotate: true,
+          duration: 1500, // Animação um pouco mais lenta para efeito suave
+          easing: 'easeOutQuart'
+        }
+      }
+    });
+  },
+  
+  /**
+   * Atualiza o gauge mensal com animação inteligente
+   * @memberof Hooks.GaugeChartMonthly
+   * @param {number} value - Novo valor para o gauge (0-100)
+   */
+  updateChart(value) {
+    if (this.chart) {
+      // Preserva o valor atual para animação suave
+      const currentValue = this.chart.data.datasets[0].data[0];
+      const targetValue = Math.min(value, 100);
+      
+      // Se for uma diferença pequena, anima suavemente
+      if (Math.abs(targetValue - currentValue) < 10) {
+        this.animateToValue(currentValue, targetValue);
+      } else {
+        // Para mudanças grandes, atualiza diretamente
+        this.chart.data.datasets[0].data = [targetValue, 100 - targetValue];
+        this.chart.data.datasets[0].backgroundColor[0] = this.getColor(targetValue);
+        this.chart.update('active');
+      }
+    }
+  },
+  
+  /**
+   * Anima suavemente entre dois valores
+   * @memberof Hooks.GaugeChartMonthly
+   * @param {number} startValue - Valor inicial
+   * @param {number} endValue - Valor final
+   */
+  animateToValue(startValue, endValue) {
+    const duration = 1000;
+    const startTime = performance.now();
+    
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function para suavidade
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const currentValue = startValue + (endValue - startValue) * easeProgress;
+      
+      this.chart.data.datasets[0].data = [currentValue, 100 - currentValue];
+      this.chart.data.datasets[0].backgroundColor[0] = this.getColor(currentValue);
+      this.chart.update('none'); // Update sem animação para controle manual
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  },
+  
+  /**
+   * Retorna a cor baseada no valor do gauge
+   * @memberof Hooks.GaugeChartMonthly
+   * @param {number} value - Valor de 0 a 100
+   * @returns {string} Código hexadecimal da cor
+   */
+  getColor(value) {
+    if (value >= 100) return '#059669'; // Green-600
+    if (value >= 80) return '#10B981';  // Green-500
+    if (value >= 60) return '#F59E0B';  // Yellow-500
+    if (value >= 40) return '#F97316';  // Orange-500
+    return '#EF4444'; // Red-500
+  },
+  
+  /**
+   * Callback executado quando o elemento é atualizado
+   * @memberof Hooks.GaugeChartMonthly
+   */
+  updated() {
+    const value = parseFloat(this.el.dataset.value) || 0;
+    this.updateChart(value);
+  }
+}
+
+/**
+ * Hook para celebração de metas atingidas com efeitos visuais e sonoros
+ * @namespace Hooks.GoalCelebration
+ */
 Hooks.GoalCelebration = {
+  /**
+   * Configura o listener para eventos de meta atingida
+   * @memberof Hooks.GoalCelebration
+   */
   mounted() {
     this.handleEvent("goal-achieved", (data) => {
       this.celebrate(data);
     });
   },
   
+  /**
+   * Executa a celebração completa com som, toast e confetti
+   * @memberof Hooks.GoalCelebration
+   * @param {Object} data - Dados da meta atingida
+   * @param {string} data.store_name - Nome da loja
+   * @param {string} data.achieved - Valor atingido formatado
+   */
   celebrate(data) {
     // Efeito sonoro (opcional - só funciona com interação do usuário)
     this.playSound();
@@ -138,6 +329,10 @@ Hooks.GoalCelebration = {
     this.createConfetti();
   },
   
+  /**
+   * Reproduz um som de sucesso usando Web Audio API
+   * @memberof Hooks.GoalCelebration
+   */
   playSound() {
     try {
       // Cria um som de sucesso usando Web Audio API
@@ -157,10 +352,16 @@ Hooks.GoalCelebration = {
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
     } catch (e) {
-      console.log('Audio not available');
+      // Audio not available
     }
   },
   
+  /**
+   * Exibe uma notificação toast no canto da tela
+   * @memberof Hooks.GoalCelebration
+   * @param {string} storeName - Nome da loja
+   * @param {string} achieved - Valor atingido formatado
+   */
   showToast(storeName, achieved) {
     // Cria uma notificação temporária no canto da tela
     const toast = document.createElement('div');
@@ -192,6 +393,10 @@ Hooks.GoalCelebration = {
     }, 4000);
   },
   
+  /**
+   * Cria efeito de confetti com múltiplas partículas
+   * @memberof Hooks.GoalCelebration
+   */
   createConfetti() {
     // Cria partículas de confetti
     for (let i = 0; i < 50; i++) {
@@ -201,6 +406,10 @@ Hooks.GoalCelebration = {
     }
   },
   
+  /**
+   * Cria uma única partícula de confetti animada
+   * @memberof Hooks.GoalCelebration
+   */
   createConfettiPiece() {
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
     const confetti = document.createElement('div');
@@ -226,7 +435,16 @@ Hooks.GoalCelebration = {
   }
 }
 
+/**
+ * Token CSRF obtido do meta tag
+ * @type {string}
+ */
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+/**
+ * Instância principal do LiveSocket
+ * @type {LiveSocket}
+ */
 let liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken},
   hooks: Hooks

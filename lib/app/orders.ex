@@ -10,9 +10,8 @@ defmodule App.Orders do
 
     case HTTPoison.get(url, [], recv_timeout: 5_000) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        with {:ok, %{"data" => [pedido | _]}} <- Jason.decode(body) do
-          pedido
-        else
+        case Jason.decode(body) do
+          {:ok, %{"data" => [pedido | _]}} -> pedido
           _ -> nil
         end
 

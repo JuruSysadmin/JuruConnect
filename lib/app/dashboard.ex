@@ -108,7 +108,7 @@ defmodule App.Dashboard do
     end
   end
 
-  defp fetch_raw_data(opts) do
+  defp fetch_raw_data(_opts) do
     case DashboardDataServer.get_data() do
       %{api_status: :ok, data: data} when not is_nil(data) ->
         {:ok, data}
@@ -122,19 +122,17 @@ defmodule App.Dashboard do
   end
 
   defp process_data(raw_data) do
-    try do
-      processed = %{
-        sales: extract_sales_data(raw_data),
-        costs: extract_costs_data(raw_data),
-        goals: extract_goals_data(raw_data),
-        stores: extract_stores_data(raw_data),
-        percentages: calculate_percentages(raw_data)
-      }
+    processed = %{
+      sales: extract_sales_data(raw_data),
+      costs: extract_costs_data(raw_data),
+      goals: extract_goals_data(raw_data),
+      stores: extract_stores_data(raw_data),
+      percentages: calculate_percentages(raw_data)
+    }
 
-      {:ok, processed}
-    rescue
-      error -> {:error, "Erro no processamento: #{inspect(error)}"}
-    end
+    {:ok, processed}
+  rescue
+    error -> {:error, "Erro no processamento: #{inspect(error)}"}
   end
 
   defp format_for_display(processed_data) do
@@ -253,7 +251,10 @@ defmodule App.Dashboard do
     alerts = []
 
     current_hour =
-      DateTime.utc_now() |> DateTime.to_time() |> Time.to_seconds_after_midnight() |> div(3600)
+      DateTime.utc_now()
+      |> DateTime.to_time()
+      |> Time.to_seconds_after_midnight()
+      |> Integer.floor_div(3600)
 
     alerts =
       if metrics.goal.percentage < 50 and current_hour > 14 do
@@ -272,7 +273,7 @@ defmodule App.Dashboard do
 
     alerts =
       if length(low_performance_stores) > 0 do
-        store_names = Enum.map(low_performance_stores, & &1.name) |> Enum.join(", ")
+        store_names = Enum.map_join(low_performance_stores, ", ", fn store -> store.name end)
         [create_alert(:info, "Lojas abaixo da meta: #{store_names}") | alerts]
       else
         alerts
@@ -338,117 +339,6 @@ defmodule App.Dashboard do
     :ok
   end
 
-  defp fetch_recent_sales(limit) do
-    []
-  end
-
-  @doc """
-  Simula o atingimento de uma meta para teste.
-  """
-  def simulate_goal_achievement do
-    lojas_teste = [
-      "Loja Centro - TESTE",
-      "Loja Norte - TESTE",
-      "Loja Sul - TESTE",
-      "Loja Shopping - TESTE",
-      "Loja Matriz - TESTE"
-    ]
-
-    loja_random = Enum.random(lojas_teste)
-    valor_base = Enum.random(30000..80000)
-    meta_base = valor_base - Enum.random(5000..15000)
-    percentual = (valor_base / meta_base * 100) |> Float.round(1)
-
-    goal_data = %{
-      store_name: loja_random,
-      achieved: valor_base * 1.0,
-      target: meta_base * 1.0,
-      percentage: percentual,
-      timestamp: DateTime.utc_now(),
-      celebration_id: System.unique_integer([:positive])
-    }
-
-    Phoenix.PubSub.broadcast(App.PubSub, "dashboard:goals", {:daily_goal_achieved, goal_data})
-    {:ok, goal_data}
-  end
-
-  @doc """
-  Simula uma venda para teste.
-  """
-  def simulate_sale do
-    sellers = [
-      %{name: "João Carlos", initials: "JC", color: "blue"},
-      %{name: "Maria Silva", initials: "MS", color: "green"},
-      %{name: "Roberto Alves", initials: "RA", color: "purple"},
-      %{name: "Ana Ferreira", initials: "AF", color: "yellow"},
-      %{name: "Pedro Costa", initials: "PC", color: "indigo"},
-      %{name: "Carla Santos", initials: "CS", color: "pink"},
-      %{name: "Rafael Oliveira", initials: "RO", color: "red"},
-      %{name: "Lucia Martins", initials: "LM", color: "orange"}
-    ]
-
-    products = [
-      %{
-        name: "Furadeira Bosch",
-        category: "Ferramentas Elétricas",
-        brand: "Bosch",
-        status: "Em Alta"
-      },
-      %{
-        name: "Tinta Suvinil",
-        category: "Tintas e Vernizes",
-        brand: "Suvinil",
-        status: "Crescendo"
-      },
-      %{
-        name: "Kit Banheiro Deca",
-        category: "Materiais Hidráulicos",
-        brand: "Deca",
-        status: "Destaque"
-      },
-      %{
-        name: "Cimento Votoran",
-        category: "Materiais de Construção",
-        brand: "Votoran",
-        status: "Estável"
-      },
-      %{
-        name: "Piso Portinari",
-        category: "Pisos e Revestimentos",
-        brand: "Portinari",
-        status: "Top Vendas"
-      },
-      %{name: "Parafuso Phillips", category: "Ferragens", brand: "Gerdau", status: "Forte"},
-      %{name: "Luminária LED", category: "Iluminação", brand: "Philips", status: "Brilhante"},
-      %{
-        name: "Torneira Docol",
-        category: "Materiais Hidráulicos",
-        brand: "Docol",
-        status: "Fluindo"
-      }
-    ]
-
-    seller = Enum.random(sellers)
-    product = Enum.random(products)
-    amount = Enum.random(500..5000) * 1.0
-
-    sale_data = %{
-      id: System.unique_integer([:positive]),
-      seller_name: seller.name,
-      seller_initials: seller.initials,
-      amount: amount,
-      product: product.name,
-      category: product.category,
-      brand: product.brand,
-      status: product.status,
-      timestamp: DateTime.utc_now(),
-      color: seller.color
-    }
-
-    Phoenix.PubSub.broadcast(App.PubSub, "sales:feed", {:new_sale, sale_data})
-    {:ok, sale_data}
-  end
-
   @doc """
   Exporta dados do dashboard em diferentes formatos.
   """
@@ -464,11 +354,43 @@ defmodule App.Dashboard do
     {:error, "Formato não suportado: #{format}"}
   end
 
-  defp format_sale(sale) do
-    Map.merge(sale, %{
-      amount_formatted: format_money(sale.amount),
-      timestamp_formatted: format_datetime(sale.timestamp)
-    })
+  @doc """
+  Processa dados brutos da API em métricas estruturadas.
+  """
+  def parse_api_data(raw_data) when is_map(raw_data) do
+    try do
+      with {:ok, processed_data} <- process_data(raw_data),
+           {:ok, formatted_data} <- format_for_display(processed_data) do
+        {:ok, formatted_data}
+      else
+        error -> {:error, "Erro no processamento: #{inspect(error)}"}
+      end
+    rescue
+      error -> {:error, "Erro ao processar dados: #{inspect(error)}"}
+    end
+  end
+
+  def parse_api_data(_), do: {:error, "Dados inválidos"}
+
+  @doc """
+  Retorna métricas padrão quando não há dados disponíveis.
+  """
+  def get_default_metrics do
+    %{
+      sales: %{total: 0.0, formatted: "R$ 0,00"},
+      costs: %{total: 0.0, formatted: "R$ 0,00", devolutions: 0.0},
+      goal: %{
+        total: 0.0,
+        formatted: "R$ 0,00",
+        percentage: 0.0,
+        formatted_percentage: "0,00%"
+      },
+      profit: %{percentage: 0.0, formatted: "0,00%"},
+      stores: [],
+      nfs_count: 0,
+      last_update: DateTime.utc_now(),
+      api_status: :no_data
+    }
   end
 
   defp format_sale_for_feed(sale_data) do
@@ -489,7 +411,7 @@ defmodule App.Dashboard do
     }
   end
 
-  defp get_store_metrics(store_id) do
+  defp get_store_metrics(_store_id) do
     {:ok, %{}}
   end
 
@@ -520,24 +442,25 @@ defmodule App.Dashboard do
   end
 
   @doc """
-  Formata valores monetários para o padrão brasileiro.
+  Formata valores monetários para o padrão brasileiro com separador de milhares.
 
   ## Examples
 
       iex> Dashboard.format_money(1500.0)
-      "R$ 1500,00"
+      "R$ 1.500,00"
 
-      iex> Dashboard.format_money(1500)
-      "R$ 1500,00"
+      iex> Dashboard.format_money(1234567.89)
+      "R$ 1.234.567,89"
 
       iex> Dashboard.format_money(nil)
       "R$ 0,00"
   """
   def format_money(amount) when is_float(amount) do
-    amount
-    |> :erlang.float_to_binary(decimals: 2)
-    |> String.replace(".", ",")
-    |> then(&"R$ #{&1}")
+    "R$ " <>
+      (amount
+       |> :erlang.float_to_binary(decimals: 2)
+       |> String.replace(".", ",")
+       |> add_thousands_separator())
   end
 
   def format_money(amount) when is_integer(amount) do
@@ -546,8 +469,27 @@ defmodule App.Dashboard do
 
   def format_money(_), do: "R$ 0,00"
 
+  @doc """
+  Adiciona separador de milhares no formato brasileiro.
+  """
+  defp add_thousands_separator(str) do
+    [int, frac] = String.split(str, ",")
+
+    # Adiciona pontos a cada 3 dígitos da direita para a esquerda
+    int_formatted =
+      int
+      |> String.reverse()
+      |> String.replace(~r/(...)(?=.)/, "\\1.")
+      |> String.reverse()
+
+    int_formatted <> "," <> frac
+  end
+
   defp format_percentage(percentage) when is_float(percentage) do
-    :erlang.float_to_binary(percentage, decimals: 2) <> "%"
+    percentage
+    |> :erlang.float_to_binary(decimals: 2)
+    |> String.replace(".", ",")
+    |> Kernel.<>("%")
   end
 
   defp format_percentage(percentage) when is_integer(percentage) do
@@ -576,8 +518,7 @@ defmodule App.Dashboard do
 
     csv_content =
       [headers | rows]
-      |> Enum.map(&Enum.join(&1, ","))
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &Enum.join(&1, ","))
 
     {:ok, csv_content}
   end

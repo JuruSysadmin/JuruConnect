@@ -16,6 +16,8 @@ defmodule App.Application do
       {AppWeb.Presence, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
+      # Oban for background jobs
+      {Oban, Application.fetch_env!(:app, Oban)},
       # DashboardDataServer centraliza o fetch da API
       App.DashboardDataServer,
       # Start a worker by calling: App.Worker.start_link(arg)

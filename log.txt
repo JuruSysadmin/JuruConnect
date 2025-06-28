@@ -360,9 +360,9 @@ nohup: ignoring input
     │
     └─ lib/app_web/live/dashboard_live.ex:95:8: AppWeb.DashboardLive (module)
 
-    warning: function extract_realizado/1 is unused
+    warning: function extract_Realizado:/1 is unused
     │
- 89 │   defp extract_realizado(data), do: data["percentualSale"] || 0.0
+ 89 │   defp extract_Realizado:(data), do: data["percentualSale"] || 0.0
     │        ~
     │
     └─ lib/app_web/live/dashboard_live.ex:89:8: AppWeb.DashboardLive (module)
@@ -906,9 +906,9 @@ Compiling 14 files (.ex)
     │
     └─ lib/app_web/live/dashboard_live.ex:95:8: AppWeb.DashboardLive (module)
 
-    warning: function extract_realizado/1 is unused
+    warning: function extract_Realizado:/1 is unused
     │
- 89 │   defp extract_realizado(data), do: data["percentualSale"] || 0.0
+ 89 │   defp extract_Realizado:(data), do: data["percentualSale"] || 0.0
     │        ~
     │
     └─ lib/app_web/live/dashboard_live.ex:89:8: AppWeb.DashboardLive (module)

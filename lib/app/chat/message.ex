@@ -1,4 +1,7 @@
 defmodule App.Chat.Message do
+  @moduledoc """
+  Schema e changesets para mensagens de chat.
+  """
   use Ecto.Schema
   import Ecto.Changeset, only: [cast: 3, validate_required: 2, put_change: 3]
 

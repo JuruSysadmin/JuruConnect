@@ -66,7 +66,7 @@ defmodule AppWeb.UserSessionLive.Index do
       {:ok, _user} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Cadastro realizado com sucesso! Faça login.")
+         |> put_flash(:info, "Cadastro Realizado: com sucesso! Faça login.")
          |> assign(show_register: false)}
 
       {:error, changeset} ->

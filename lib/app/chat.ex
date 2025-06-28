@@ -4,10 +4,9 @@ defmodule App.Chat do
   """
 
   import Ecto.Query, warn: false
-  alias App.Repo
   alias App.Chat.Message
   alias App.ChatSession
-  require Logger
+  alias App.Repo
 
   def list_recent_messages(chat_id, limit \\ 100) do
     from(m in Message,
@@ -104,7 +103,6 @@ defmodule App.Chat do
         {:ok, message}
 
       {:error, changeset} ->
-        Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}
     end
   end

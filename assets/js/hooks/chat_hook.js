@@ -1,4 +1,20 @@
+/**
+ * @fileoverview Hook do Phoenix LiveView para funcionalidades de chat em tempo real
+ * @author JuruConnect Team
+ * @version 1.0.0
+ */
+
+/**
+ * Hook para gerenciar funcionalidades do chat incluindo auto-scroll,
+ * redimensionamento automático do input e envio de mensagens
+ * @namespace ChatHook
+ */
 const ChatHook = {
+  /**
+   * Inicializa o hook quando o elemento é montado no DOM
+   * Configura listeners para scroll automático, redimensionamento de input e envio com Enter
+   * @memberof ChatHook
+   */
   mounted() {
     this.scrollToBottom();
     
@@ -28,6 +44,11 @@ const ChatHook = {
     }
   },
 
+  /**
+   * Faz scroll automático para a última mensagem do chat
+   * Usado para manter o chat sempre mostrando as mensagens mais recentes
+   * @memberof ChatHook
+   */
   scrollToBottom() {
     const messagesContainer = this.el.querySelector('#messages');
     if (messagesContainer) {
@@ -35,6 +56,11 @@ const ChatHook = {
     }
   },
 
+  /**
+   * Callback executado quando o componente é atualizado pelo LiveView
+   * Garante que o scroll seja mantido na posição correta após atualizações
+   * @memberof ChatHook
+   */
   updated() {
     // Scroll para baixo quando o componente é atualizado
     this.scrollToBottom();

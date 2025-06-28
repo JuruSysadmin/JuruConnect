@@ -26,10 +26,7 @@ defmodule AppWeb.Router do
     live "/chat/:order_id", ChatLive
     live "/buscar-pedido", OrderSearchLive
 
-    # PWA Routes
-    get "/manifest.json", PageController, :manifest
-    get "/sw.js", PageController, :service_worker
-    get "/offline", PageController, :offline
+
   end
 
   # Other scopes may use custom stacks.
@@ -46,11 +43,14 @@ defmodule AppWeb.Router do
     # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
-    scope "/dev" do
+                    scope "/dev" do
       pipe_through :browser
 
       live_dashboard "/dashboard", metrics: AppWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+
+      # Monitor Oban personalizado
+      live "/oban", AppWeb.ObanMonitorLive, :index
     end
   end
 end

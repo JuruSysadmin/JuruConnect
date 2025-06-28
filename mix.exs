@@ -69,6 +69,7 @@ defmodule App.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:igniter, "~> 0.5.40", only: :dev, runtime: false},
+      {:oban, "~> 2.15"},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
