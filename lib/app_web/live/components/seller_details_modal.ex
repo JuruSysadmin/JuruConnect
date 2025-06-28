@@ -1,32 +1,53 @@
 defmodule AppWeb.SellerDetailsModal do
   @moduledoc """
-  Modal para exibir detalhes completos de um vendedor específico.
+  Modal para exibir detalhes completos de um vendedor específico vindos da API real.
 
   Funcionalidades:
-  - Perfil completo do vendedor
+  - Busca dados reais da API do supervisor
+  - Perfil completo do vendedor com dados da API
   - Estatísticas detalhadas de performance
-  - Gráficos de histórico e tendências
-  - Comparação com metas
-  - Histórico de vendas
-  - Badges e conquistas
+  - Performance hoje e por hora
+  - Pré-vendas e informações adicionais
+  - Seletor de supervisores
   """
 
   use AppWeb, :live_component
   import AppWeb.DashboardUtils
 
+  @api_base_url "http://10.1.1.108:8065/api/v1/dashboard/sale"
+
   @impl true
   def mount(socket) do
+    socket =
+      socket
+      |> assign(
+        api_data: nil,
+        loading: true,
+        error: nil,
+        selected_supervisor: 12,
+        available_supervisors: [
+          %{id: 12, name: "Supervisor 12"},
+          %{id: 13, name: "Supervisor 13"},
+          %{id: 14, name: "Supervisor 14"},
+          %{id: 15, name: "Supervisor 15"}
+        ],
+        selected_seller: nil,
+        sellers_list: []
+      )
+
     {:ok, socket}
   end
 
   @impl true
   def update(%{seller_data: seller_data} = assigns, socket) do
+    # Busca dados da API baseado no seller_data inicial
+    supervisor_id = extract_supervisor_id(seller_data)
+
     socket =
       socket
       |> assign(assigns)
-      |> assign_seller_stats(seller_data)
-      |> assign_seller_history(seller_data)
-      |> assign_achievements(seller_data)
+      |> assign(selected_supervisor: supervisor_id)
+      |> fetch_api_data(supervisor_id)
 
     {:ok, socket}
   end
@@ -34,6 +55,36 @@ defmodule AppWeb.SellerDetailsModal do
   @impl true
   def handle_event("close_modal", _params, socket) do
     send(self(), {:close_seller_modal})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("change_supervisor", %{"supervisor_id" => supervisor_id}, socket) do
+    supervisor_id = String.to_integer(supervisor_id)
+
+    socket =
+      socket
+      |> assign(selected_supervisor: supervisor_id, loading: true, error: nil)
+      |> fetch_api_data(supervisor_id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_seller", %{"seller_id" => seller_id}, socket) do
+    seller_id = String.to_integer(seller_id)
+    selected_seller = Enum.find(socket.assigns.sellers_list, &(&1.sellerId == seller_id))
+
+    {:noreply, assign(socket, selected_seller: selected_seller)}
+  end
+
+  @impl true
+  def handle_event("refresh_data", _params, socket) do
+    socket =
+      socket
+      |> assign(loading: true, error: nil)
+      |> fetch_api_data(socket.assigns.selected_supervisor)
+
     {:noreply, socket}
   end
 
@@ -46,9 +97,9 @@ defmodule AppWeb.SellerDetailsModal do
       |> assign(is_favorite: is_favorite)
       |> put_flash(:info,
         if is_favorite do
-          "#{socket.assigns.seller_data.seller_name} adicionado aos favoritos!"
+          "Vendedor adicionado aos favoritos!"
         else
-          "#{socket.assigns.seller_data.seller_name} removido dos favoritos"
+          "Vendedor removido dos favoritos"
         end)
 
     {:noreply, socket}
@@ -56,160 +107,99 @@ defmodule AppWeb.SellerDetailsModal do
 
   # Funções privadas
 
-  defp assign_seller_stats(socket, seller_data) do
-    # Calcula estatísticas do vendedor
-    performance_score = calculate_performance_score(seller_data)
-    goal_percentage = calculate_goal_percentage(seller_data)
-    rank_position = calculate_rank_position(seller_data)
-    efficiency_score = calculate_efficiency_score(seller_data)
+  defp fetch_api_data(socket, supervisor_id) do
+    # Faz a chamada HTTP para buscar dados reais
+    case make_api_request(supervisor_id) do
+      {:ok, data} ->
+        sellers_list = if is_list(data), do: data, else: [data]
+        selected_seller = List.first(sellers_list)
 
-    stats = %{
-      performance_score: performance_score,
-      goal_percentage: goal_percentage,
-      rank_position: rank_position,
-      efficiency_score: efficiency_score,
-      trend: calculate_trend(seller_data),
-      is_top_performer: rank_position <= 3,
-      is_goal_achieved: goal_percentage >= 100
-    }
+        assign(socket,
+          api_data: data,
+          sellers_list: sellers_list,
+          selected_seller: selected_seller,
+          loading: false,
+          error: nil
+        )
 
-    assign(socket, seller_stats: stats)
-  end
-
-  defp assign_seller_history(socket, _seller_data) do
-    # Simula histórico de vendas dos últimos 30 dias
-    history =
-      1..30
-      |> Enum.map(fn day ->
-        %{
-          day: day,
-          sales: Enum.random(0..15000),
-          date: Date.add(Date.utc_today(), -day),
-          goal: Enum.random(8000..12000)
-        }
-      end)
-      |> Enum.reverse()
-
-    assign(socket, seller_history: history)
-  end
-
-  defp assign_achievements(socket, seller_data) do
-    # Simula conquistas baseadas na performance
-    base_achievements = [
-      %{
-        title: "Primeira Venda",
-        description: "Realizou sua primeira venda",
-        icon: "🎯",
-        earned: true,
-        date: "15/05/2024"
-      },
-      %{
-        title: "Meta Mensal",
-        description: "Atingiu a meta do mês",
-        icon: "🏆",
-        earned: seller_data.sale_value >= (seller_data.objetivo || 0),
-        date: if(seller_data.sale_value >= (seller_data.objetivo || 0), do: "Hoje", else: nil)
-      },
-      %{
-        title: "Top 3",
-        description: "Ficou entre os 3 melhores",
-        icon: "🥇",
-        earned: socket.assigns.seller_stats.rank_position <= 3,
-        date: if(socket.assigns.seller_stats.rank_position <= 3, do: "Hoje", else: nil)
-      },
-      %{
-        title: "Vendedor do Dia",
-        description: "Maior venda do dia",
-        icon: "⭐",
-        earned: socket.assigns.seller_stats.rank_position == 1,
-        date: if(socket.assigns.seller_stats.rank_position == 1, do: "Hoje", else: nil)
-      },
-      %{
-        title: "Consistência",
-        description: "30 dias consecutivos vendendo",
-        icon: "💪",
-        earned: Enum.random([true, false]),
-        date: if(Enum.random([true, false]), do: "28/12/2024", else: nil)
-      }
-    ]
-
-    assign(socket, achievements: base_achievements)
-  end
-
-  defp calculate_performance_score(seller_data) do
-    base_score = min(seller_data.sale_value / 1000, 100)
-    objetivo_bonus = if seller_data.objetivo > 0 and seller_data.sale_value >= seller_data.objetivo, do: 20, else: 0
-    recency_bonus = if is_recent?(seller_data.timestamp), do: 10, else: 0
-
-    (base_score + objetivo_bonus + recency_bonus)
-    |> Float.round(1)
-  end
-
-  defp calculate_goal_percentage(seller_data) do
-    if seller_data.objetivo > 0 do
-      (seller_data.sale_value / seller_data.objetivo * 100)
-      |> Float.round(1)
-    else
-      0.0
+      {:error, reason} ->
+        assign(socket,
+          api_data: nil,
+          sellers_list: [],
+          selected_seller: nil,
+          loading: false,
+          error: reason
+        )
     end
   end
 
-  defp calculate_rank_position(_seller_data) do
-    # Em produção, viria do ranking real
-    Enum.random(1..10)
+  defp make_api_request(supervisor_id) do
+    url = "#{@api_base_url}/#{supervisor_id}"
+
+    case HTTPoison.get(url, [], recv_timeout: 10_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, data} -> {:ok, data}
+          {:error, _} -> {:error, "Erro ao decodificar resposta da API"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, "API retornou status #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, "Erro de conexão: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Erro inesperado: #{inspect(reason)}"}
+    end
   end
 
-  defp calculate_efficiency_score(seller_data) do
-    # Simula score de eficiência baseado em tempo x valor
-    time_factor = DateTime.diff(DateTime.utc_now(), seller_data.timestamp, :hour)
-    efficiency = if time_factor > 0, do: seller_data.sale_value / time_factor, else: seller_data.sale_value
-    min(efficiency / 100, 100) |> Float.round(1)
+  defp extract_supervisor_id(_seller_data) do
+    # Por padrão usa supervisor 12, mas pode ser extraído dos dados se necessário
+    12
   end
 
-  defp calculate_trend(_seller_data) do
-    Enum.random([:up, :down, :stable])
+  defp format_currency(value) when is_number(value) do
+    :erlang.float_to_binary(value, decimals: 2)
+    |> String.replace(".", ",")
+    |> then(&("R$ " <> &1))
   end
+  defp format_currency(_), do: "R$ 0,00"
 
-  defp is_recent?(timestamp) do
-    DateTime.diff(DateTime.utc_now(), timestamp, :hour) <= 2
+  defp format_percentage(value) when is_number(value) do
+    :erlang.float_to_binary(value, decimals: 1)
+    |> String.replace(".", ",")
+    |> then(&(&1 <> "%"))
   end
+  defp format_percentage(_), do: "0,0%"
 
-  defp time_ago(datetime) do
-    now = DateTime.utc_now()
-    diff = DateTime.diff(now, datetime, :second)
-
+  defp get_performance_color(percentage) when is_number(percentage) do
     cond do
-      diff < 60 -> "agora"
-      diff < 3600 -> "#{Kernel.div(diff, 60)}m"
-      diff < 86_400 -> "#{Kernel.div(diff, 3600)}h"
-      true -> Calendar.strftime(datetime, "%d/%m")
+      percentage >= 100 -> "text-green-600"
+      percentage >= 80 -> "text-yellow-600"
+      true -> "text-red-600"
     end
   end
+  defp get_performance_color(_), do: "text-gray-600"
 
-  defp trend_color(trend) do
-    case trend do
-      :up -> "text-green-500"
-      :down -> "text-red-500"
-      :stable -> "text-yellow-500"
+  defp get_performance_badge(percentage) when is_number(percentage) do
+    cond do
+      percentage >= 100 ->
+        %{label: "Meta Atingida", color: "bg-green-100 text-green-800"}
+      percentage >= 80 ->
+        %{label: "Próximo da Meta", color: "bg-yellow-100 text-yellow-800"}
+      true ->
+        %{label: "Abaixo da Meta", color: "bg-red-100 text-red-800"}
     end
   end
+  defp get_performance_badge(_), do: %{label: "Sem Dados", color: "bg-gray-100 text-gray-800"}
 
-  defp trend_icon(trend) do
-    case trend do
-      :up -> "📈"
-      :down -> "📉"
-      :stable -> "➡️"
-    end
+  defp clean_seller_name(name) when is_binary(name) do
+    name
+    |> String.replace(~r/^CN - |^CX - |^CRED - |^CN-|^CX-/, "")
+    |> String.trim()
   end
-
-  defp rank_badge(rank) do
-    case rank do
-      1 -> %{icon: "🥇", color: "bg-yellow-500", text: "1º Lugar"}
-      2 -> %{icon: "🥈", color: "bg-gray-400", text: "2º Lugar"}
-      3 -> %{icon: "🥉", color: "bg-orange-500", text: "3º Lugar"}
-      _ -> %{icon: "🏷️", color: "bg-blue-500", text: "#{rank}º Lugar"}
-    end
-  end
+  defp clean_seller_name(_), do: "Nome não disponível"
 
   @impl true
   def render(assigns) do
@@ -222,42 +212,34 @@ defmodule AppWeb.SellerDetailsModal do
     >
       <!-- Modal Container -->
       <div
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100"
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100"
         phx-click={JS.stop_propagation()}
       >
-        <!-- Header com perfil do vendedor -->
+        <!-- Header -->
         <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
           <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <!-- Avatar do vendedor -->
-              <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-2xl font-bold">
-                {String.first(@seller_data.seller_name)}
-              </div>
-
-              <div>
-                <h2 class="text-2xl font-bold">{@seller_data.seller_name}</h2>
-                <p class="text-indigo-100">{@seller_data.store}</p>
-                <div class="flex items-center space-x-2 mt-1">
-                  <span class={["text-sm", trend_color(@seller_stats.trend)]}>{trend_icon(@seller_stats.trend)}</span>
-                  <span class="text-indigo-100 text-sm">Tendência: {@seller_stats.trend}</span>
-                </div>
-              </div>
+            <div>
+              <h2 class="text-2xl font-bold flex items-center space-x-2">
+                <span>📊</span>
+                <span>Dashboard de Vendedor</span>
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Dados em tempo real da API de vendas
+              </p>
             </div>
 
-            <!-- Rank e Favorite -->
+            <!-- Controls -->
             <div class="flex items-center space-x-3">
-              <!-- Rank Badge -->
-              <div class={["px-3 py-1 rounded-full text-white text-sm font-medium", rank_badge(@seller_stats.rank_position).color]}>
-                {rank_badge(@seller_stats.rank_position).icon} {rank_badge(@seller_stats.rank_position).text}
-              </div>
-
-              <!-- Favorite Button -->
+              <!-- Refresh Button -->
               <button
-                phx-click="toggle_favorite"
+                phx-click="refresh_data"
                 phx-target={@myself}
                 class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
+                title="Atualizar dados"
               >
-                {if Map.get(assigns, :is_favorite, false), do: "❤️", else: "🤍"}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
               </button>
 
               <!-- Close Button -->
@@ -276,147 +258,324 @@ defmodule AppWeb.SellerDetailsModal do
 
         <!-- Content -->
         <div class="p-6 max-h-[70vh] overflow-y-auto">
-          <!-- Stats Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <!-- Venda Atual -->
-            <div class="bg-green-50 border border-green-200 rounded-xl p-4">
-              <div class="text-green-600 text-sm font-medium">Venda Atual</div>
-              <div class="text-2xl font-bold text-green-800">{@seller_data.sale_value_formatted}</div>
-              <div class="text-green-600 text-xs mt-1">{time_ago(@seller_data.timestamp)}</div>
-            </div>
-
-            <!-- Meta -->
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div class="text-blue-600 text-sm font-medium">Meta</div>
-              <div class="text-2xl font-bold text-blue-800">{@seller_data.objetivo_formatted}</div>
-              <div class="text-blue-600 text-xs mt-1">{@seller_stats.goal_percentage}% atingida</div>
-            </div>
-
-            <!-- Performance Score -->
-            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <div class="text-purple-600 text-sm font-medium">Score</div>
-              <div class="text-2xl font-bold text-purple-800">{@seller_stats.performance_score}</div>
-              <div class="text-purple-600 text-xs mt-1">Excelente performance</div>
-            </div>
-
-            <!-- Eficiência -->
-            <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <div class="text-orange-600 text-sm font-medium">Eficiência</div>
-              <div class="text-2xl font-bold text-orange-800">{@seller_stats.efficiency_score}</div>
-              <div class="text-orange-600 text-xs mt-1">Vendas/hora</div>
-            </div>
-          </div>
-
-          <!-- Progress da Meta -->
-          <div class="bg-gray-50 rounded-xl p-4 mb-6">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="font-medium text-gray-900">Progresso da Meta</h3>
-              <span class="text-sm text-gray-600">{@seller_stats.goal_percentage}%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-4">
-              <div
-                class={[
-                  "h-4 rounded-full transition-all duration-500",
-                  if(@seller_stats.goal_percentage >= 100,
-                    do: "bg-gradient-to-r from-green-500 to-emerald-500",
-                    else: "bg-gradient-to-r from-blue-500 to-purple-500")
-                ]}
-                style={"width: #{min(@seller_stats.goal_percentage, 100)}%"}
-              ></div>
-            </div>
-            <%= if @seller_stats.is_goal_achieved do %>
-              <div class="text-green-600 text-sm mt-1 flex items-center">
-                🎉 Meta atingida! Parabéns!
+          <%= if @loading do %>
+            <!-- Loading State -->
+            <div class="space-y-6">
+              <div class="animate-pulse">
+                <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <%= for _ <- 1..4 do %>
+                    <div class="h-20 bg-gray-200 rounded"></div>
+                  <% end %>
+                </div>
+                <div class="h-32 bg-gray-200 rounded"></div>
               </div>
+            </div>
+
+          <% else %>
+            <%= if @error do %>
+              <!-- Error State -->
+              <div class="text-center py-8">
+                <div class="w-16 h-16 mx-auto mb-4 text-red-500">
+                  <svg fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">Erro ao carregar dados</h3>
+                <p class="text-gray-600 mb-4">{@error}</p>
+                <button
+                  phx-click="refresh_data"
+                  phx-target={@myself}
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  🔄 Tentar Novamente
+                </button>
+              </div>
+
             <% else %>
-              <div class="text-gray-600 text-sm mt-1">
-                Faltam {format_money(@seller_data.objetivo - @seller_data.sale_value)} para atingir a meta
-              </div>
-            <% end %>
-          </div>
-
-          <!-- Gráfico de Histórico -->
-          <div class="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-            <h3 class="font-medium text-gray-900 mb-4">📊 Histórico de Vendas (últimos 30 dias)</h3>
-            <div class="h-32 flex items-end space-x-1">
-              <%= for {day_data, index} <- Enum.with_index(@seller_history) do %>
-                <div class="flex-1 flex flex-col items-center">
-                  <div
-                    class={[
-                      "w-full rounded-t transition-all duration-300 hover:opacity-80",
-                      if(day_data.sales >= day_data.goal, do: "bg-green-400", else: "bg-blue-400")
-                    ]}
-                    style={"height: #{max(day_data.sales / 15000 * 100, 5)}%"}
-                    title="Dia #{31 - day_data.day}: #{format_money(day_data.sales)}"
-                  ></div>
-                  <%= if rem(index, 5) == 0 do %>
-                    <div class="text-xs text-gray-400 mt-1">{Calendar.strftime(day_data.date, "%d/%m")}</div>
+              <!-- Supervisor Selector -->
+              <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="font-medium text-gray-900 mb-3">Selecionar Supervisor:</h3>
+                <div class="flex flex-wrap gap-2">
+                  <%= for supervisor <- @available_supervisors do %>
+                    <button
+                      phx-click="change_supervisor"
+                      phx-value-supervisor_id={supervisor.id}
+                      phx-target={@myself}
+                      class={[
+                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                        if(@selected_supervisor == supervisor.id,
+                          do: "bg-blue-600 text-white",
+                          else: "bg-white text-gray-700 border hover:bg-blue-50")
+                      ]}
+                    >
+                      {supervisor.name}
+                    </button>
                   <% end %>
                 </div>
-              <% end %>
-            </div>
-            <div class="flex items-center justify-center space-x-4 mt-3 text-xs">
-              <div class="flex items-center space-x-1">
-                <div class="w-3 h-3 bg-green-400 rounded"></div>
-                <span>Meta atingida</span>
               </div>
-              <div class="flex items-center space-x-1">
-                <div class="w-3 h-3 bg-blue-400 rounded"></div>
-                <span>Abaixo da meta</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Conquistas -->
-          <div class="bg-white border border-gray-200 rounded-xl p-4">
-            <h3 class="font-medium text-gray-900 mb-4">🏆 Conquistas</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <%= for achievement <- @achievements do %>
-                <div class={[
-                  "p-3 rounded-lg border-2 transition-all",
-                  if(achievement.earned,
-                    do: "bg-green-50 border-green-200",
-                    else: "bg-gray-50 border-gray-200 opacity-50")
-                ]}>
-                  <div class="flex items-center space-x-2 mb-1">
-                    <span class="text-lg">{achievement.icon}</span>
-                    <span class={[
-                      "font-medium text-sm",
-                      if(achievement.earned, do: "text-green-800", else: "text-gray-500")
-                    ]}>
-                      {achievement.title}
-                    </span>
+              <!-- Sellers List -->
+              <%= if length(@sellers_list) > 0 do %>
+                <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+                  <h3 class="font-medium text-gray-900 mb-3">Selecionar Vendedor:</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                    <%= for seller <- @sellers_list do %>
+                      <button
+                        phx-click="select_seller"
+                        phx-value-seller_id={seller.sellerId}
+                        phx-target={@myself}
+                        class={[
+                          "text-left p-3 rounded border transition-colors",
+                          if(@selected_seller && @selected_seller.sellerId == seller.sellerId,
+                            do: "bg-blue-50 border-blue-300",
+                            else: "bg-gray-50 border-gray-200 hover:bg-blue-50")
+                        ]}
+                      >
+                        <div class="font-medium text-sm">
+                          {clean_seller_name(seller.sellerName)}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                          {format_percentage(seller.percentualObjective)} da meta
+                        </div>
+                      </button>
+                    <% end %>
                   </div>
-                  <div class={[
-                    "text-xs",
-                    if(achievement.earned, do: "text-green-600", else: "text-gray-400")
-                  ]}>
-                    {achievement.description}
-                  </div>
-                  <%= if achievement.earned and achievement.date do %>
-                    <div class="text-xs text-green-500 mt-1">
-                      🗓️ {achievement.date}
+                </div>
+
+                <!-- Selected Seller Details -->
+                <%= if @selected_seller do %>
+                  <div class="space-y-6">
+                    <!-- Seller Header -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                      <div class="flex items-start justify-between mb-4">
+                        <div class="space-y-2">
+                          <h3 class="text-2xl font-bold text-gray-900">
+                            {clean_seller_name(@selected_seller.sellerName)}
+                          </h3>
+                          <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <span>🏪 {@selected_seller.store}</span>
+                            <span class="text-gray-400">•</span>
+                            <span>ID: {@selected_seller.sellerId}</span>
+                          </div>
+                        </div>
+                        <div class={["px-3 py-1 rounded-full text-sm font-medium", get_performance_badge(@selected_seller.percentualObjective).color]}>
+                          {get_performance_badge(@selected_seller.percentualObjective).label}
+                        </div>
+                      </div>
+
+                      <!-- Performance Principal -->
+                      <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                          <h4 class="font-medium text-gray-900 flex items-center gap-2">
+                            🎯 Performance de Vendas
+                          </h4>
+                          <span class={["font-bold text-lg", get_performance_color(@selected_seller.percentualObjective)]}>
+                            {format_percentage(@selected_seller.percentualObjective)}
+                          </span>
+                        </div>
+
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            class="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                            style={"width: #{min(@selected_seller.percentualObjective, 100)}%"}
+                          ></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span class="text-gray-600">Vendido:</span>
+                            <p class="font-bold text-green-600 text-lg">{format_currency(@selected_seller.saleValue)}</p>
+                          </div>
+                          <div>
+                            <span class="text-gray-600">Meta:</span>
+                            <p class="font-bold text-lg">{format_currency(@selected_seller.objetivo)}</p>
+                          </div>
+                        </div>
+
+                        <%= if @selected_seller.dif != 0 do %>
+                          <div class={[
+                            "flex items-center gap-2 p-3 rounded-lg",
+                            if(@selected_seller.dif > 0, do: "bg-green-50", else: "bg-red-50")
+                          ]}>
+                            <span class="text-lg">
+                              {if @selected_seller.dif > 0, do: "📈", else: "📉"}
+                            </span>
+                            <span class="text-sm">
+                              {if @selected_seller.dif > 0, do: "Acima da meta em ", else: "Faltam "}
+                              <span class={[
+                                "font-bold",
+                                if(@selected_seller.dif > 0, do: "text-green-600", else: "text-red-600")
+                              ]}>
+                                {format_currency(abs(@selected_seller.dif))}
+                              </span>
+                            </span>
+                          </div>
+                        <% end %>
+                      </div>
                     </div>
-                  <% end %>
+
+                    <!-- Métricas Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-1">🛒</div>
+                        <p class="text-xs text-gray-600 mb-1">Vendas</p>
+                        <p class="font-bold text-blue-600">{@selected_seller.qtdeInvoice}</p>
+                      </div>
+
+                      <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-1">💰</div>
+                        <p class="text-xs text-gray-600 mb-1">Ticket Médio</p>
+                        <p class="font-bold text-green-600">{format_currency(@selected_seller.ticket)}</p>
+                      </div>
+
+                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-1">🎯</div>
+                        <p class="text-xs text-gray-600 mb-1">Mix</p>
+                        <p class="font-bold text-purple-600">{@selected_seller.mix}</p>
+                      </div>
+
+                      <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
+                        <div class="text-2xl mb-1">📅</div>
+                        <p class="text-xs text-gray-600 mb-1">Dias Úteis</p>
+                        <p class="font-bold text-orange-600">
+                          {@selected_seller.qtdeDays}/{@selected_seller.qtdeDaysMonth}
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Performance Hoje -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6">
+                      <h4 class="font-medium text-gray-900 flex items-center gap-2 mb-4">
+                        ⏰ Performance Hoje
+                      </h4>
+
+                      <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <span class="text-sm text-gray-600">Meta Hoje</span>
+                          <p class="font-bold text-lg">{format_currency(@selected_seller.objetiveToday)}</p>
+                        </div>
+                        <div>
+                          <span class="text-sm text-gray-600">Vendido Hoje</span>
+                          <p class="font-bold text-green-600 text-lg">{format_currency(@selected_seller.saleToday)}</p>
+                        </div>
+                      </div>
+
+                      <%= if @selected_seller.objetiveToday > 0 do %>
+                        <div class="space-y-2">
+                          <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                              style={"width: #{min((@selected_seller.saleToday / @selected_seller.objetiveToday) * 100, 100)}%"}
+                            ></div>
+                          </div>
+                          <div class="text-xs text-gray-600 text-center">
+                            {format_percentage((@selected_seller.saleToday / @selected_seller.objetiveToday) * 100)} da meta diária
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <!-- Performance por Hora -->
+                    <%= if @selected_seller.percentualObjectiveHour > 0 do %>
+                      <div class="bg-white border border-gray-200 rounded-xl p-6">
+                        <h4 class="font-medium text-gray-900 flex items-center gap-2 mb-4">
+                          ⏱️ Performance por Hora
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div>
+                            <span class="text-sm text-gray-600">Meta/Hora:</span>
+                            <p class="font-bold">{format_currency(@selected_seller.objetiveHour)}</p>
+                          </div>
+                          <div>
+                            <span class="text-sm text-gray-600">Performance:</span>
+                            <p class={["font-bold", get_performance_color(@selected_seller.percentualObjectiveHour)]}>
+                              {format_percentage(@selected_seller.percentualObjectiveHour)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <!-- Pré-vendas -->
+                    <%= if @selected_seller.preSaleQtde > 0 do %>
+                      <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
+                        <h4 class="font-bold text-indigo-900 mb-4">📋 Pré-vendas</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                          <div>
+                            <span class="text-indigo-600 text-sm">Quantidade:</span>
+                            <p class="font-bold">{@selected_seller.preSaleQtde}</p>
+                          </div>
+                          <div>
+                            <span class="text-indigo-600 text-sm">Valor:</span>
+                            <p class="font-bold">{format_currency(@selected_seller.preSaleValue)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <!-- Informações Adicionais -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                      <h4 class="font-medium text-gray-900 mb-4">📊 Informações Adicionais</h4>
+                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span class="text-gray-600">Devoluções:</span>
+                          <p class="font-medium">{format_currency(@selected_seller.devolution)}</p>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">Desconto:</span>
+                          <p class="font-medium">{format_percentage(@selected_seller.percentOff)}</p>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">NFs Hoje:</span>
+                          <p class="font-medium">{@selected_seller.qtdeInvoiceDay}</p>
+                        </div>
+                        <div>
+                          <span class="text-gray-600">Preço Lista:</span>
+                          <p class="font-medium">{format_currency(@selected_seller.listPrice)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              <% else %>
+                <!-- No Data -->
+                <div class="text-center py-8">
+                  <div class="text-6xl mb-4">📊</div>
+                  <h3 class="text-xl font-medium text-gray-900 mb-2">Nenhum dado encontrado</h3>
+                  <p class="text-gray-500">Não há vendedores para o supervisor selecionado</p>
                 </div>
               <% end %>
-            </div>
-          </div>
+            <% end %>
+          <% end %>
         </div>
 
         <!-- Footer -->
         <div class="border-t border-gray-200 bg-gray-50 p-4">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
             <div class="text-sm text-gray-600">
-              🔄 Dados atualizados em tempo real
+              🔄 Conectado à API: {@api_base_url}/{@selected_supervisor}
+              <%= if @selected_seller do %>
+                • Vendedor: {clean_seller_name(@selected_seller.sellerName)}
+              <% end %>
             </div>
-            <button
-              phx-click="close_modal"
-              phx-target={@myself}
-              class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-            >
-              Fechar
-            </button>
+            <div class="flex items-center space-x-3">
+              <button
+                phx-click="refresh_data"
+                phx-target={@myself}
+                class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+              >
+                🔄 Atualizar
+              </button>
+              <button
+                phx-click="close_modal"
+                phx-target={@myself}
+                class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       </div>

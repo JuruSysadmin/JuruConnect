@@ -289,17 +289,17 @@ defmodule AppWeb.DashboardResumoLive do
 
 
   @impl true
-  def handle_event("open_seller_details", %{"seller_id" => seller_id}, socket) do
-    # Encontra o vendedor no feed
-    selected_seller = Enum.find(socket.assigns.sales_feed, fn sale ->
-      to_string(sale.id) == seller_id
-    end)
+  def handle_event("open_seller_details", %{"seller_name" => seller_name}, socket) do
+    # Cria dados básicos do vendedor para passar para a modal
+    seller_data = %{
+      seller_name: seller_name,
+      store: "Loja Principal", # Pode ser extraído dos dados se disponível
+      sale_value: 0.0,
+      objetivo: 0.0,
+      timestamp: DateTime.utc_now()
+    }
 
-    if selected_seller do
-      {:noreply, assign(socket, show_seller_modal: true, selected_seller: selected_seller)}
-    else
-      {:noreply, socket}
-    end
+    {:noreply, assign(socket, show_seller_modal: true, selected_seller: seller_data)}
   end
 
   @impl true
@@ -913,7 +913,7 @@ defmodule AppWeb.DashboardResumoLive do
                       end
                     ]}
                     phx-click="open_seller_details"
-                    phx-value-seller_id={sale.id}
+                    phx-value-seller_name={sale.seller_name}
                     >
                       <!-- Posição -->
                       <td class="py-3 px-4">
