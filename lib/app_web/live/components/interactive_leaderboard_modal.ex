@@ -206,14 +206,23 @@ defmodule AppWeb.InteractiveLeaderboardModal do
     end)
   end
 
-  defp calculate_performance_score(sale) do
+      defp calculate_performance_score(sale) do
     base_score = min(sale.sale_value / 1000, 100)
-    objetivo_bonus = if sale.objetivo > 0 and sale.sale_value >= sale.objetivo, do: 20, else: 0
-    recency_bonus = if is_recent?(sale.timestamp), do: 10, else: 0
+    objetivo_bonus = if sale.objetivo > 0 and sale.sale_value >= sale.objetivo, do: 20.0, else: 0.0
+    recency_bonus = if is_recent?(sale.timestamp), do: 10.0, else: 0.0
 
-    (base_score + objetivo_bonus + recency_bonus)
+    total_score = base_score + objetivo_bonus + recency_bonus
+
+    # Garantir que sempre seja um float antes de arredondar
+    total_score
+    |> ensure_float()
     |> Float.round(1)
   end
+
+  # Função auxiliar para garantir que o valor seja float
+  defp ensure_float(value) when is_float(value), do: value
+  defp ensure_float(value) when is_integer(value), do: value * 1.0
+  defp ensure_float(value), do: 0.0
 
   defp calculate_trend(_sale) do
     # Simulação de tendência - em produção viria de dados históricos
@@ -479,10 +488,10 @@ defmodule AppWeb.InteractiveLeaderboardModal do
                     <div class="flex items-center space-x-2 mb-2">
                       <span class="text-xs text-gray-500">Score:</span>
                       <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div
-                          class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                          style={"width: #{min(sale.performance_score, 100)}%"}
-                        ></div>
+                                                 <div
+                           class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                           style={"width: #{min(ensure_float(sale.performance_score), 100.0)}%"}
+                         ></div>
                       </div>
                       <span class="text-xs font-medium text-gray-700">{sale.performance_score}</span>
                     </div>
@@ -505,15 +514,15 @@ defmodule AppWeb.InteractiveLeaderboardModal do
 
                       <!-- Progress bar -->
                       <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div
-                          class={[
-                            "h-2 rounded-full transition-all duration-500",
-                            if(sale.sale_value >= sale.objetivo,
-                              do: "bg-gradient-to-r from-green-500 to-emerald-500",
-                              else: "bg-gradient-to-r from-yellow-500 to-orange-500")
-                          ]}
-                          style={"width: #{min((sale.sale_value / sale.objetivo * 100), 100)}%"}
-                        ></div>
+                                                 <div
+                           class={[
+                             "h-2 rounded-full transition-all duration-500",
+                             if(sale.sale_value >= sale.objetivo,
+                               do: "bg-gradient-to-r from-green-500 to-emerald-500",
+                               else: "bg-gradient-to-r from-yellow-500 to-orange-500")
+                           ]}
+                           style={"width: #{min(ensure_float(sale.sale_value / sale.objetivo * 100), 100.0)}%"}
+                         ></div>
                       </div>
                     <% end %>
                   </div>
@@ -532,9 +541,9 @@ defmodule AppWeb.InteractiveLeaderboardModal do
                       <div class="grid grid-cols-2 gap-3 text-sm">
                         <div class="bg-blue-50 p-3 rounded-lg">
                           <span class="text-blue-700 font-medium">Meta Atingida</span>
-                          <div class="text-blue-900 font-bold">
-                            {if sale.objetivo > 0, do: :erlang.float_to_binary((sale.sale_value / sale.objetivo * 100), decimals: 1), else: "N/A"}%
-                          </div>
+                                                     <div class="text-blue-900 font-bold">
+                             {if sale.objetivo > 0, do: :erlang.float_to_binary(ensure_float(sale.sale_value / sale.objetivo * 100), decimals: 1), else: "N/A"}%
+                           </div>
                         </div>
 
                         <div class="bg-green-50 p-3 rounded-lg">
@@ -547,12 +556,12 @@ defmodule AppWeb.InteractiveLeaderboardModal do
                       <div class="bg-gray-50 p-3 rounded-lg">
                         <div class="text-xs text-gray-600 mb-1">Histórico (últimos 7 dias)</div>
                         <div class="flex items-end space-x-1 h-8">
-                          <%= for i <- 1..7 do %>
-                            <div
-                              class="bg-blue-400 rounded-sm opacity-70 flex-1"
-                              style={"height: #{Enum.random(20..100)}%"}
-                            ></div>
-                          <% end %>
+                                                     <%= for i <- 1..7 do %>
+                             <div
+                               class="bg-blue-400 rounded-sm opacity-70 flex-1"
+                               style={"height: #{ensure_float(Enum.random(20..100))}%"}
+                             ></div>
+                           <% end %>
                         </div>
                       </div>
                     </div>
