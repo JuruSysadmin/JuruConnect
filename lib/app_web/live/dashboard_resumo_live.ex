@@ -24,16 +24,19 @@ defmodule AppWeb.DashboardResumoLive do
         show_celebration: false,
         sales_feed: [],
         feed_mode: :normal,
-        show_leaderboard_modal: false
+        show_seller_modal: false,
+        selected_seller: nil
       )
       |> fetch_and_assign_data_safe()
 
     {:ok, socket}
   end
 
+
+
   @impl true
-  def handle_info({:close_leaderboard_modal}, socket) do
-    {:noreply, assign(socket, show_leaderboard_modal: false)}
+  def handle_info({:close_seller_modal}, socket) do
+    {:noreply, assign(socket, show_seller_modal: false, selected_seller: nil)}
   end
 
   @impl true
@@ -283,14 +286,25 @@ defmodule AppWeb.DashboardResumoLive do
     {:noreply, socket}
   end
 
+
+
   @impl true
-  def handle_event("open_leaderboard_modal", _params, socket) do
-    {:noreply, assign(socket, show_leaderboard_modal: true)}
+  def handle_event("open_seller_details", %{"seller_id" => seller_id}, socket) do
+    # Encontra o vendedor no feed
+    selected_seller = Enum.find(socket.assigns.sales_feed, fn sale ->
+      to_string(sale.id) == seller_id
+    end)
+
+    if selected_seller do
+      {:noreply, assign(socket, show_seller_modal: true, selected_seller: selected_seller)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
-  def handle_event("close_leaderboard_modal", _params, socket) do
-    {:noreply, assign(socket, show_leaderboard_modal: false)}
+  def handle_event("close_seller_modal", _params, socket) do
+    {:noreply, assign(socket, show_seller_modal: false, selected_seller: nil)}
   end
 
   defp assign_loading_state(socket) do
@@ -831,153 +845,149 @@ defmodule AppWeb.DashboardResumoLive do
             </div>
           </div>
 
-        <!-- Feed de Vendas - Dinâmico baseado no modo -->
-          <%= if @feed_mode == :advanced do %>
-            <.live_component
-              module={AppWeb.SalesFeedComponent}
-              id="sales-feed-advanced"
-              sales_feed={@sales_feed}
-            />
-          <% else %>
-            <!-- Feed Normal -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 min-h-[400px] sm:min-h-[550px]">
-              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
-                <div>
-                  <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leadeboards</h2>
-                  <p class="text-xs text-gray-500 mobile-hide">
-                    Clique em "🏆 Ver Detalhes" para análise completa
-                  </p>
-                </div>
-                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-                  <!-- Novo botão da modal interativa -->
-                  <button
-                    phx-click="open_leaderboard_modal"
-                    class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-xs font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto flex items-center justify-center space-x-1"
-                    title="Abrir leaderboard interativo"
-                  >
-                    <span>🏆</span>
-                    <span>Ver Detalhes</span>
-                  </button>
-
-                  <button
-                    phx-click="toggle_advanced_feed"
-                    class={[
-                      "px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors border w-full sm:w-auto",
-                      if(@feed_mode == :advanced,
-                        do: "bg-blue-100 text-blue-700 border-blue-300",
-                        else: "bg-gray-100 text-gray-700 border-gray-300")
-                    ]}
-                    title="Alternar modo do feed"
-                  >
-                    <%= if @feed_mode == :advanced, do: "✨ Minimalista", else: "📊 Detalhado" %>
-                  </button>
-                  <button
-                    phx-click="refresh_feed"
-                    class="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors border w-full sm:w-auto"
-                    title="Atualizar feed"
-                  >
-                    Atualizar
-                  </button>
-                  <div class="flex items-center space-x-2 justify-center sm:justify-start w-full sm:w-auto">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span class="text-xs text-gray-600">AO VIVO</span>
-                  </div>
-                </div>
+                <!-- Tabela Simples de Vendedores -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 min-h-[400px] sm:min-h-[550px]">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+            <div>
+              <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leaderboard</h2>
+              <p class="text-xs text-gray-500">
+                Clique no nome do vendedor para ver detalhes completos
+              </p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button
+                phx-click="refresh_feed"
+                class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-medium transition-colors border border-blue-300"
+                title="Atualizar lista"
+              >
+                🔄 Atualizar
+              </button>
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-xs text-gray-600">AO VIVO</span>
               </div>
+            </div>
+          </div>
 
-    <!-- Feed Container - Estilo Twitter -->
-            <div class="h-[350px] sm:h-[450px] overflow-y-auto space-y-2 sm:space-y-3 pr-1" id="sales-feed">
-              <%= if Enum.empty?(@sales_feed) do %>
-                <!-- Estado vazio -->
-                <div class="text-center py-6 sm:py-8">
-                  <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                    <!-- Ícone removido -->
-                  </div>
-                  <p class="text-gray-500 text-sm font-medium mb-1">Feed vazio</p>
+          <!-- Tabela Simples -->
+          <div class="overflow-x-auto">
+            <%= if Enum.empty?(@sales_feed) do %>
+              <!-- Estado vazio -->
+              <div class="text-center py-12">
+                <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <span class="text-2xl">🏆</span>
                 </div>
-              <% else %>
-                <!-- Cards de dados do Supervisor -->
-                <%= for {sale, index} <- Enum.with_index(@sales_feed) do %>
-                  <div
-                    class={
-                      [
-                        "rounded p-2 sm:p-3 hover:shadow-sm transition-shadow relative",
-                        case index do
-                          # 1º lugar - Ouro
-                          0 -> "bg-yellow-50 border-2 border-yellow-300"
-                          # 2º lugar - Prata
-                          1 -> "bg-gray-50 border-2 border-gray-400"
-                          # 3º lugar - Bronze
-                          2 -> "bg-orange-50 border-2 border-orange-300"
-                          _ -> "bg-white border border-gray-200"
-                        end
-                      ]
-                    }
-                    id={"sale-#{sale.id}"}
-                  >
-                    <!-- Posição no ranking -->
-                    <div class={[
-                      "absolute top-1 sm:top-2 right-1 sm:right-2 text-xs px-1 sm:px-2 py-1 rounded",
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum vendedor no ranking</h3>
+                <p class="text-gray-500">Aguardando vendas para exibir o leaderboard</p>
+              </div>
+            <% else %>
+              <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                      Posição
+                    </th>
+                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                      Vendedor
+                    </th>
+                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider mobile-hide">
+                      Loja
+                    </th>
+                    <th class="text-right py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
+                      Valor
+                    </th>
+                    <th class="text-center py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider mobile-hide">
+                      Tempo
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <%= for {sale, index} <- Enum.with_index(@sales_feed) do %>
+                    <tr class={[
+                      "hover:bg-gray-50 transition-colors cursor-pointer",
                       case index do
-                        0 -> "bg-yellow-200 text-yellow-800 font-medium"
-                        1 -> "bg-gray-200 text-gray-800 font-medium"
-                        2 -> "bg-orange-200 text-orange-800 font-medium"
-                        _ -> "bg-gray-100 text-gray-600"
+                        0 -> "bg-gradient-to-r from-yellow-50 to-yellow-100"
+                        1 -> "bg-gradient-to-r from-gray-50 to-gray-100"
+                        2 -> "bg-gradient-to-r from-orange-50 to-orange-100"
+                        _ -> ""
                       end
-                    ]}>
-                      #{index + 1}
-                    </div>
-
-    <!-- Cabeçalho -->
-                    <div class="flex items-center justify-between mb-2 pr-6 sm:pr-8">
-                      <h4 class="font-medium text-gray-900 text-xs sm:text-sm">{sale.seller_name}</h4>
-                      <span class="text-xs text-gray-500">{time_ago(sale.timestamp)}</span>
-                    </div>
-
-    <!-- Loja -->
-                    <div class="text-gray-600 mb-2 sm:mb-3 text-xs sm:text-sm">
-                      <span class="font-medium">{sale.store}</span>
-                    </div>
-
-    <!-- Dados -->
-                    <div class="space-y-1 sm:space-y-2">
-                      <%= if sale.objetivo > 0 do %>
-                        <div class="flex justify-between text-xs sm:text-sm">
-                          <span class="text-gray-600">Objetivo:</span>
-                          <span class="font-mono text-gray-900">{sale.objetivo_formatted}</span>
-                        </div>
-                      <% end %>
-
-                      <%= if sale.sale_value > 0 do %>
-                        <div class="flex justify-between text-xs sm:text-sm">
-                          <span class="text-gray-600">Realizado:</span>
-                          <div class="text-right">
-                            <span class="font-mono text-green-600">
-                              {sale.sale_value_formatted}
+                    ]}
+                    phx-click="open_seller_details"
+                    phx-value-seller_id={sale.id}
+                    >
+                      <!-- Posição -->
+                      <td class="py-3 px-4">
+                        <div class="flex items-center">
+                          <span class={[
+                            "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                            case index do
+                              0 -> "bg-yellow-500 text-white"
+                              1 -> "bg-gray-400 text-white"
+                              2 -> "bg-orange-500 text-white"
+                              _ -> "bg-blue-100 text-blue-800"
+                            end
+                          ]}>
+                            #{index + 1}
+                          </span>
+                          <%= if index < 3 do %>
+                            <span class="ml-2 text-lg">
+                              {case index do
+                                0 -> "🥇"
+                                1 -> "🥈"
+                                2 -> "🥉"
+                              end}
                             </span>
-                            <div class="text-xs text-gray-400 mobile-hide">
-                              ({if is_number(sale.sale_value),
-                                do: (sale.sale_value * 1.0 |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")),
-                                                                 else: "0,00"})
+                          <% end %>
+                        </div>
+                      </td>
+
+                      <!-- Nome do Vendedor (Clicável) -->
+                      <td class="py-3 px-4">
+                        <div class="flex items-center">
+                          <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                            {String.first(sale.seller_name)}
+                          </div>
+                          <div>
+                            <div class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                              {sale.seller_name}
+                            </div>
+                            <div class="text-xs text-gray-500 sm:hidden">
+                              {sale.store}
                             </div>
                           </div>
                         </div>
-                      <% end %>
-                    </div>
+                      </td>
 
-    <!-- Rodapé -->
-                    <div class="mt-2 sm:mt-3 pt-2 border-t border-gray-100">
-                      <div class="flex items-center justify-between text-xs text-gray-400">
-                        <span>{sale.timestamp_formatted}</span>
-                        <span class="mobile-hide">Vendaweb</span>
-                      </div>
-                    </div>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-            </div>
-          <% end %>
+                      <!-- Loja -->
+                      <td class="py-3 px-4 mobile-hide">
+                        <span class="text-sm text-gray-900">{sale.store}</span>
+                      </td>
+
+                      <!-- Valor -->
+                      <td class="py-3 px-4 text-right">
+                        <div class="text-sm font-mono font-bold text-green-600">
+                          {sale.sale_value_formatted}
+                        </div>
+                        <%= if sale.objetivo > 0 do %>
+                          <div class="text-xs text-gray-500">
+                            Meta: {sale.objetivo_formatted}
+                          </div>
+                        <% end %>
+                      </td>
+
+                      <!-- Tempo -->
+                      <td class="py-3 px-4 text-center mobile-hide">
+                        <span class="text-xs text-gray-500">
+                          {time_ago(sale.timestamp)}
+                        </span>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            <% end %>
+          </div>
+        </div>
         </div>
 
     <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva -->
@@ -1190,12 +1200,12 @@ defmodule AppWeb.DashboardResumoLive do
         </div>
       <% end %>
 
-      <!-- Modal Interativa do Leaderboard -->
-      <%= if @show_leaderboard_modal do %>
+      <!-- Modal de Detalhes do Vendedor -->
+      <%= if @show_seller_modal and @selected_seller do %>
         <.live_component
-          module={AppWeb.InteractiveLeaderboardModal}
-          id="interactive-leaderboard-modal"
-          sales_feed={@sales_feed}
+          module={AppWeb.SellerDetailsModal}
+          id="seller-details-modal"
+          seller_data={@selected_seller}
         />
       <% end %>
     </div>

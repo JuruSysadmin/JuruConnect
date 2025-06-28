@@ -25729,3 +25729,779 @@ PATH=/home/juru/.asdf/shims:/home/juru/.local/share/.burrito/next_ls_erts-15.2_0
 12:40:11.095 [debug] handled notification client -> server textDocument/didOpen in 999µs
 
 12:40:11.100 [debug] handled notification client -> server textDocument/didClose in 87µs
+
+12:40:18.164 [debug] handled notification client -> server textDocument/didClose in 115µs
+
+12:40:57.330 [debug] handled notification client -> server textDocument/didOpen in 679µs
+
+12:40:57.330 [debug] handled notification client -> server textDocument/didClose in 84µs
+
+12:44:57.019 [debug] handled notification client -> server textDocument/didOpen in 477µs
+
+12:44:57.020 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:44:57.048 [debug] handled notification client -> server textDocument/didOpen in 860µs
+
+12:44:57.048 [debug] handled notification client -> server textDocument/didClose in 106µs
+
+12:44:57.064 [debug] handled notification client -> server textDocument/didOpen in 595µs
+
+12:44:57.065 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+12:44:57.091 [debug] handled notification client -> server textDocument/didOpen in 732µs
+
+12:44:57.091 [debug] handled notification client -> server textDocument/didClose in 92µs
+
+12:44:57.135 [debug] handled notification client -> server textDocument/didOpen in 426µs
+
+12:44:57.136 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+12:44:57.161 [debug] handled notification client -> server textDocument/didOpen in 846µs
+
+12:44:57.161 [debug] handled notification client -> server textDocument/didClose in 118µs
+
+12:44:57.186 [debug] handled notification client -> server textDocument/didOpen in 598µs
+
+12:44:57.186 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+12:44:57.219 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:44:57.220 [debug] handled notification client -> server textDocument/didClose in 110µs
+
+12:44:57.312 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:44:57.312 [debug] handled notification client -> server textDocument/didClose in 202µs
+
+12:44:57.352 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:44:57.352 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+12:44:57.370 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:44:57.370 [debug] handled notification client -> server textDocument/didClose in 294µs
+
+12:44:57.406 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:44:57.648 [debug] handled notification client -> server textDocument/didChange in 683µs
+
+12:44:59.581 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:44:59.581 [debug] sent notification server -> client window/logMessage
+
+12:44:59.581 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+12:44:59.582 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 265µs
+
+12:47:04.180 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:47:04.181 [debug] handled notification client -> server textDocument/didClose in 702µs
+
+12:47:04.202 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:47:04.202 [debug] handled notification client -> server textDocument/didClose in 93µs
+
+12:47:04.220 [debug] handled notification client -> server textDocument/didOpen in 6ms
+
+12:47:04.220 [debug] handled notification client -> server textDocument/didClose in 77µs
+
+12:47:04.244 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:47:04.244 [debug] handled notification client -> server textDocument/didClose in 110µs
+
+12:47:04.465 [debug] handled notification client -> server textDocument/didOpen in 559µs
+
+12:47:04.465 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:47:04.508 [debug] handled notification client -> server textDocument/didOpen in 611µs
+
+12:47:04.513 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+12:47:04.556 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:47:04.558 [debug] handled notification client -> server textDocument/didClose in 82µs
+
+12:47:04.597 [debug] handled notification client -> server textDocument/didOpen in 646µs
+
+12:47:04.601 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:47:04.717 [debug] handled notification client -> server textDocument/didOpen in 645µs
+
+12:47:04.717 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+12:47:16.280 [debug] handled notification client -> server textDocument/didOpen in 831µs
+
+12:47:16.281 [debug] handled notification client -> server textDocument/didClose in 104µs
+
+12:47:16.316 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:47:16.316 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+12:47:16.329 [debug] handled notification client -> server textDocument/didOpen in 489µs
+
+12:47:16.331 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+12:47:16.368 [debug] handled notification client -> server textDocument/didOpen in 612µs
+
+12:47:16.368 [debug] handled notification client -> server textDocument/didClose in 74µs
+
+12:48:23.103 [debug] handled notification client -> server textDocument/didOpen in 118µs
+
+12:48:23.139 [debug] handled notification client -> server textDocument/didClose in 94µs
+
+12:48:23.163 [debug] handled notification client -> server textDocument/didOpen in 170µs
+
+12:48:23.163 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+12:48:23.197 [debug] handled notification client -> server textDocument/didOpen in 102µs
+
+12:48:23.338 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 206µs
+
+12:48:24.195 [debug] handled notification client -> server textDocument/didChange in 857µs
+
+12:48:25.102 [debug] handled notification client -> server textDocument/didChange in 750µs
+
+12:48:26.106 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:26.106 [debug] sent notification server -> client window/logMessage
+
+12:48:26.106 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 364µs
+
+12:48:27.108 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:27.108 [debug] sent notification server -> client window/logMessage
+
+12:48:27.109 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 188µs
+
+12:48:27.109 [debug] handled notification client -> server textDocument/didOpen in 420µs
+
+12:48:27.109 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:48:27.110 [debug] handled notification client -> server textDocument/didOpen in 578µs
+
+12:48:27.110 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+12:48:27.110 [debug] handled notification client -> server textDocument/didOpen in 552µs
+
+12:48:27.110 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:48:27.111 [debug] handled notification client -> server textDocument/didOpen in 781µs
+
+12:48:27.111 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+12:48:31.282 [debug] handled notification client -> server textDocument/didClose in 116µs
+
+12:48:31.911 [debug] handled notification client -> server textDocument/didOpen in 438µs
+
+12:48:31.911 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+12:48:31.949 [debug] handled notification client -> server textDocument/didOpen in 596µs
+
+12:48:31.950 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:48:31.982 [debug] handled notification client -> server textDocument/didOpen in 612µs
+
+12:48:31.982 [debug] handled notification client -> server textDocument/didClose in 65µs
+
+12:48:32.015 [debug] handled notification client -> server textDocument/didOpen in 874µs
+
+12:48:32.015 [debug] handled notification client -> server textDocument/didClose in 72µs
+
+12:48:32.161 [debug] handled notification client -> server textDocument/didOpen in 627µs
+
+12:48:32.161 [debug] handled notification client -> server textDocument/didClose in 99µs
+
+12:48:34.420 [debug] handled notification client -> server textDocument/didChange in 678µs
+
+12:48:35.432 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:35.432 [debug] sent notification server -> client window/logMessage
+
+12:48:36.434 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:36.434 [debug] sent notification server -> client window/logMessage
+
+12:48:36.434 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 261µs
+
+12:48:36.435 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 255µs
+
+12:48:36.435 [debug] handled notification client -> server textDocument/didOpen in 429µs
+
+12:48:36.435 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:48:36.436 [debug] handled notification client -> server textDocument/didOpen in 725µs
+
+12:48:36.436 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+12:48:36.437 [debug] handled notification client -> server textDocument/didOpen in 512µs
+
+12:48:36.437 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+12:48:36.437 [debug] handled notification client -> server textDocument/didOpen in 566µs
+
+12:48:36.437 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+12:48:36.448 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:48:36.448 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:48:39.718 [debug] handled notification client -> server textDocument/didOpen in 875µs
+
+12:48:39.718 [debug] handled notification client -> server textDocument/didClose in 110µs
+
+12:48:39.764 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:48:39.764 [debug] handled notification client -> server textDocument/didClose in 119µs
+
+12:48:39.856 [debug] handled notification client -> server textDocument/didOpen in 64ms
+
+12:48:39.857 [debug] handled notification client -> server textDocument/didClose in 114µs
+
+12:48:39.858 [debug] handled notification client -> server textDocument/didOpen in 999µs
+
+12:48:39.858 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:48:39.858 [debug] handled notification client -> server textDocument/didOpen in 552µs
+
+12:48:39.883 [debug] handled notification client -> server textDocument/didClose in 98µs
+
+12:48:42.628 [debug] handled notification client -> server textDocument/didChange in 674µs
+
+12:48:43.634 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:43.634 [debug] sent notification server -> client window/logMessage
+
+12:48:44.636 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:44.636 [debug] sent notification server -> client window/logMessage
+
+12:48:44.637 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 238µs
+
+12:48:44.637 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 159µs
+
+12:48:44.637 [debug] handled notification client -> server textDocument/didOpen in 411µs
+
+12:48:44.637 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:48:44.638 [debug] handled notification client -> server textDocument/didOpen in 923µs
+
+12:48:44.638 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+12:48:44.639 [debug] handled notification client -> server textDocument/didOpen in 442µs
+
+12:48:44.639 [debug] handled notification client -> server textDocument/didClose in 51µs
+
+12:48:44.639 [debug] handled notification client -> server textDocument/didOpen in 559µs
+
+12:48:44.639 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+12:48:44.647 [debug] handled notification client -> server textDocument/didOpen in 626µs
+
+12:48:44.647 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+12:48:48.915 [debug] handled notification client -> server textDocument/didOpen in 600µs
+
+12:48:48.915 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+12:48:48.970 [debug] handled notification client -> server textDocument/didOpen in 594µs
+
+12:48:48.970 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+12:48:49.004 [debug] handled notification client -> server textDocument/didOpen in 514µs
+
+12:48:49.005 [debug] handled notification client -> server textDocument/didClose in 89µs
+
+12:48:49.030 [debug] handled notification client -> server textDocument/didOpen in 628µs
+
+12:48:49.030 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+12:48:49.165 [debug] handled notification client -> server textDocument/didOpen in 786µs
+
+12:48:49.165 [debug] handled notification client -> server textDocument/didClose in 80µs
+
+12:48:52.641 [debug] handled notification client -> server textDocument/didChange in 732µs
+
+12:48:53.652 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:53.652 [debug] sent notification server -> client window/logMessage
+
+12:48:54.654 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:48:54.654 [debug] sent notification server -> client window/logMessage
+
+12:48:54.656 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 1ms
+
+12:48:54.656 [debug] handled notification client -> server textDocument/didOpen in 410µs
+
+12:48:54.656 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:48:54.657 [debug] handled notification client -> server textDocument/didOpen in 561µs
+
+12:48:54.657 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+12:48:54.658 [debug] handled notification client -> server textDocument/didOpen in 629µs
+
+12:48:54.658 [debug] handled notification client -> server textDocument/didClose in 86µs
+
+12:48:54.658 [debug] handled notification client -> server textDocument/didOpen in 597µs
+
+12:48:54.658 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:48:54.659 [debug] handled notification client -> server textDocument/didOpen in 549µs
+
+12:48:54.659 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+12:48:59.098 [debug] handled notification client -> server textDocument/didOpen in 485µs
+
+12:48:59.098 [debug] handled notification client -> server textDocument/didClose in 62µs
+
+12:48:59.164 [debug] handled notification client -> server textDocument/didOpen in 880µs
+
+12:48:59.179 [debug] handled notification client -> server textDocument/didClose in 85µs
+
+12:48:59.216 [debug] handled notification client -> server textDocument/didOpen in 519µs
+
+12:48:59.216 [debug] handled notification client -> server textDocument/didClose in 69µs
+
+12:48:59.235 [debug] handled notification client -> server textDocument/didOpen in 628µs
+
+12:48:59.235 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+12:48:59.262 [debug] handled notification client -> server textDocument/didOpen in 2ms
+
+12:48:59.262 [debug] handled notification client -> server textDocument/didClose in 73µs
+
+12:49:30.524 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:49:30.524 [debug] sent notification server -> client window/logMessage
+
+12:49:30.524 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 333µs
+
+12:49:52.941 [debug] handled notification client -> server textDocument/didChange in 1ms
+
+12:49:53.953 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:49:53.953 [debug] sent notification server -> client window/logMessage
+
+12:49:53.954 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 428µs
+
+12:49:54.956 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:49:54.956 [debug] sent notification server -> client window/logMessage
+
+12:49:54.957 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 266µs
+
+12:49:54.957 [debug] handled notification client -> server textDocument/didOpen in 596µs
+
+12:49:54.957 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:49:54.958 [debug] handled notification client -> server textDocument/didOpen in 557µs
+
+12:49:54.958 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+12:49:54.958 [debug] handled notification client -> server textDocument/didOpen in 447µs
+
+12:49:54.958 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+12:49:54.959 [debug] handled notification client -> server textDocument/didOpen in 549µs
+
+12:49:54.959 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:49:55.011 [debug] handled notification client -> server textDocument/didOpen in 848µs
+
+12:49:55.011 [debug] handled notification client -> server textDocument/didClose in 75µs
+
+12:50:01.561 [debug] handled notification client -> server textDocument/didOpen in 442µs
+
+12:50:01.564 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:50:01.606 [debug] handled notification client -> server textDocument/didOpen in 578µs
+
+12:50:01.606 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:50:01.641 [debug] handled notification client -> server textDocument/didOpen in 454µs
+
+12:50:01.642 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+12:50:01.671 [debug] handled notification client -> server textDocument/didOpen in 695µs
+
+12:50:01.671 [debug] handled notification client -> server textDocument/didClose in 276µs
+
+12:50:01.751 [debug] handled notification client -> server textDocument/didOpen in 62ms
+
+12:50:01.751 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:50:04.787 [debug] handled notification client -> server textDocument/didChange in 954µs
+
+12:50:05.795 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:05.795 [debug] sent notification server -> client window/logMessage
+
+12:50:05.796 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 281µs
+
+12:50:06.797 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:06.797 [debug] sent notification server -> client window/logMessage
+
+12:50:06.798 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 228µs
+
+12:50:06.798 [debug] handled notification client -> server textDocument/didOpen in 413µs
+
+12:50:06.798 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:50:06.799 [debug] handled notification client -> server textDocument/didOpen in 565µs
+
+12:50:06.799 [debug] handled notification client -> server textDocument/didClose in 53µs
+
+12:50:06.799 [debug] handled notification client -> server textDocument/didOpen in 457µs
+
+12:50:06.799 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:50:06.800 [debug] handled notification client -> server textDocument/didOpen in 749µs
+
+12:50:06.800 [debug] handled notification client -> server textDocument/didClose in 67µs
+
+12:50:06.801 [debug] handled notification client -> server textDocument/didOpen in 588µs
+
+12:50:06.801 [debug] handled notification client -> server textDocument/didClose in 50µs
+
+12:50:11.851 [debug] handled notification client -> server textDocument/didOpen in 418µs
+
+12:50:11.852 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+12:50:11.883 [debug] handled notification client -> server textDocument/didOpen in 580µs
+
+12:50:11.883 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+12:50:11.952 [debug] handled notification client -> server textDocument/didOpen in 724µs
+
+12:50:11.953 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+12:50:11.984 [debug] handled notification client -> server textDocument/didOpen in 659µs
+
+12:50:11.984 [debug] handled notification client -> server textDocument/didClose in 81µs
+
+12:50:12.005 [debug] handled notification client -> server textDocument/didOpen in 669µs
+
+12:50:12.005 [debug] handled notification client -> server textDocument/didClose in 76µs
+
+12:50:14.493 [debug] handled notification client -> server textDocument/didChange in 938µs
+
+12:50:15.501 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:15.501 [debug] sent notification server -> client window/logMessage
+
+12:50:16.503 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:16.503 [debug] sent notification server -> client window/logMessage
+
+12:50:16.504 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 326µs
+
+12:50:16.504 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 415µs
+
+12:50:16.504 [debug] handled notification client -> server textDocument/didOpen in 384µs
+
+12:50:16.504 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:16.505 [debug] handled notification client -> server textDocument/didOpen in 584µs
+
+12:50:16.505 [debug] handled notification client -> server textDocument/didClose in 60µs
+
+12:50:16.506 [debug] handled notification client -> server textDocument/didOpen in 493µs
+
+12:50:16.506 [debug] handled notification client -> server textDocument/didClose in 446µs
+
+12:50:16.507 [debug] handled notification client -> server textDocument/didOpen in 642µs
+
+12:50:16.507 [debug] handled notification client -> server textDocument/didClose in 239µs
+
+12:50:16.514 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:50:16.514 [debug] handled notification client -> server textDocument/didClose in 54µs
+
+12:50:19.837 [debug] handled notification client -> server textDocument/didOpen in 418µs
+
+12:50:19.838 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:19.868 [debug] handled notification client -> server textDocument/didOpen in 572µs
+
+12:50:19.868 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:19.887 [debug] handled notification client -> server textDocument/didOpen in 494µs
+
+12:50:19.887 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:50:19.913 [debug] handled notification client -> server textDocument/didOpen in 695µs
+
+12:50:19.913 [debug] handled notification client -> server textDocument/didClose in 66µs
+
+12:50:19.972 [debug] handled notification client -> server textDocument/didOpen in 632µs
+
+12:50:19.972 [debug] handled notification client -> server textDocument/didClose in 57µs
+
+12:50:21.089 [debug] handled notification client -> server textDocument/didChange in 684µs
+
+12:50:22.096 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:22.096 [debug] sent notification server -> client window/logMessage
+
+12:50:23.098 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:23.098 [debug] sent notification server -> client window/logMessage
+
+12:50:23.099 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 258µs
+
+12:50:23.099 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 165µs
+
+12:50:23.100 [debug] handled notification client -> server textDocument/didOpen in 830µs
+
+12:50:23.100 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:50:23.100 [debug] handled notification client -> server textDocument/didOpen in 617µs
+
+12:50:23.100 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:23.101 [debug] handled notification client -> server textDocument/didOpen in 465µs
+
+12:50:23.101 [debug] handled notification client -> server textDocument/didClose in 63µs
+
+12:50:23.102 [debug] handled notification client -> server textDocument/didOpen in 576µs
+
+12:50:23.102 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:23.196 [debug] handled notification client -> server textDocument/didOpen in 1ms
+
+12:50:23.199 [debug] handled notification client -> server textDocument/didClose in 91µs
+
+12:50:27.511 [debug] handled notification client -> server textDocument/didOpen in 485µs
+
+12:50:27.518 [debug] handled notification client -> server textDocument/didClose in 107µs
+
+12:50:27.548 [debug] handled notification client -> server textDocument/didOpen in 635µs
+
+12:50:27.548 [debug] handled notification client -> server textDocument/didClose in 64µs
+
+12:50:27.565 [debug] handled notification client -> server textDocument/didOpen in 546µs
+
+12:50:27.566 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:50:27.596 [debug] handled notification client -> server textDocument/didOpen in 795µs
+
+12:50:27.596 [debug] handled notification client -> server textDocument/didClose in 68µs
+
+12:50:27.611 [debug] handled notification client -> server textDocument/didOpen in 621µs
+
+12:50:27.611 [debug] handled notification client -> server textDocument/didClose in 56µs
+
+12:50:29.368 [debug] handled notification client -> server textDocument/didChange in 808µs
+
+12:50:30.375 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:30.375 [debug] sent notification server -> client window/logMessage
+
+12:50:30.376 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 288µs
+
+12:50:31.377 [error] ** (BadMapError) expected a map, got: :timeout
+    (stdlib 6.2) :maps.merge(%{#Reference<0.697095143.2409103361.124537> => {"Kqv79STt", "Compiled JuruConnect!"}}, :timeout)
+    (next_ls 0.23.3) lib/next_ls.ex:983: anonymous fn/2 in NextLS.handle_notification/2
+    (elixir 1.17.3) lib/map.ex:916: Map.update!/3
+    (next_ls 0.23.3) lib/next_ls.ex:983: NextLS.handle_notification/2
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:478: anonymous fn/2 in GenLSP.loop/3
+    (telemetry 1.2.1) /Users/runner/work/next-ls/next-ls/deps/telemetry/src/telemetry.erl:321: :telemetry.span/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:474: anonymous fn/7 in GenLSP.loop/3
+    (gen_lsp 0.10.0) lib/gen_lsp.ex:553: GenLSP.attempt/4
+
+
+12:50:31.377 [debug] sent notification server -> client window/logMessage
+
+12:50:31.378 [debug] handled notification client -> server workspace/didChangeWatchedFiles in 291µs
+
+12:50:31.378 [debug] handled notification client -> server textDocument/didOpen in 421µs
+
+12:50:31.378 [debug] handled notification client -> server textDocument/didClose in 55µs
+
+12:50:31.379 [debug] handled notification client -> server textDocument/didOpen in 808µs
+
+12:50:31.379 [debug] handled notification client -> server textDocument/didClose in 49µs
+
+12:50:31.400 [debug] handled notification client -> server textDocument/didOpen in 598µs
+
+12:50:31.401 [debug] handled notification client -> server textDocument/didClose in 59µs
+
+12:50:31.470 [debug] handled notification client -> server textDocument/didOpen in 619µs
+
+12:50:31.470 [debug] handled notification client -> server textDocument/didClose in 58µs
+
+12:50:31.544 [debug] handled notification client -> server textDocument/didOpen in 630µs
+
+12:50:31.558 [debug] handled notification client -> server textDocument/didClose in 83µs
