@@ -38,16 +38,25 @@ defmodule AppWeb.SellerDetailsModal do
     {:ok, socket}
   end
 
-  @impl true
+    @impl true
   def update(%{seller_data: seller_data} = assigns, socket) do
-    # Busca dados da API baseado no seller_data inicial
+    # Os dados já vêm da API quando clica no vendedor
+    # Processa os dados do supervisor que já estão disponíveis
+    sellers_list = extract_sellers_from_data(seller_data)
+    selected_seller = List.first(sellers_list)
     supervisor_id = extract_supervisor_id(seller_data)
 
     socket =
       socket
       |> assign(assigns)
-      |> assign(selected_supervisor: supervisor_id)
-      |> fetch_api_data(supervisor_id)
+      |> assign(
+        api_data: seller_data,
+        sellers_list: sellers_list,
+        selected_seller: selected_seller,
+        selected_supervisor: supervisor_id,
+        loading: false,
+        error: nil
+      )
 
     {:ok, socket}
   end
@@ -58,34 +67,12 @@ defmodule AppWeb.SellerDetailsModal do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("change_supervisor", %{"supervisor_id" => supervisor_id}, socket) do
-    supervisor_id = String.to_integer(supervisor_id)
-
-    socket =
-      socket
-      |> assign(selected_supervisor: supervisor_id, loading: true, error: nil)
-      |> fetch_api_data(supervisor_id)
-
-    {:noreply, socket}
-  end
-
-  @impl true
+    @impl true
   def handle_event("select_seller", %{"seller_id" => seller_id}, socket) do
     seller_id = String.to_integer(seller_id)
     selected_seller = Enum.find(socket.assigns.sellers_list, &(&1.sellerId == seller_id))
 
     {:noreply, assign(socket, selected_seller: selected_seller)}
-  end
-
-  @impl true
-  def handle_event("refresh_data", _params, socket) do
-    socket =
-      socket
-      |> assign(loading: true, error: nil)
-      |> fetch_api_data(socket.assigns.selected_supervisor)
-
-    {:noreply, socket}
   end
 
   @impl true
@@ -105,58 +92,50 @@ defmodule AppWeb.SellerDetailsModal do
     {:noreply, socket}
   end
 
-  # Funções privadas
+    # Funções privadas
 
-  defp fetch_api_data(socket, supervisor_id) do
-    # Faz a chamada HTTP para buscar dados reais
-    case make_api_request(supervisor_id) do
-      {:ok, data} ->
-        sellers_list = if is_list(data), do: data, else: [data]
-        selected_seller = List.first(sellers_list)
-
-        assign(socket,
-          api_data: data,
-          sellers_list: sellers_list,
-          selected_seller: selected_seller,
-          loading: false,
-          error: nil
-        )
-
-      {:error, reason} ->
-        assign(socket,
-          api_data: nil,
-          sellers_list: [],
-          selected_seller: nil,
-          loading: false,
-          error: reason
-        )
+  defp extract_supervisor_id(seller_data) do
+    # Extrai supervisor_id dos dados da API se disponível
+    case seller_data do
+      %{"saleSupervisor" => [first_seller | _]} ->
+        Map.get(first_seller, "supervisorId", 12)
+      _ -> 12
     end
   end
 
-  defp make_api_request(supervisor_id) do
-    url = "#{@api_base_url}/#{supervisor_id}"
-
-    case HTTPoison.get(url, [], recv_timeout: 10_000) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, data} -> {:ok, data}
-          {:error, _} -> {:error, "Erro ao decodificar resposta da API"}
-        end
-
-      {:ok, %HTTPoison.Response{status_code: status_code}} ->
-        {:error, "API retornou status #{status_code}"}
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, "Erro de conexão: #{reason}"}
-
-      {:error, reason} ->
-        {:error, "Erro inesperado: #{inspect(reason)}"}
+  defp extract_sellers_from_data(seller_data) do
+    # Extrai lista de vendedores dos dados da API
+    case seller_data do
+      %{"saleSupervisor" => sellers} when is_list(sellers) ->
+        Enum.map(sellers, fn seller ->
+          %{
+            sellerId: Map.get(seller, "sellerId"),
+            sellerName: Map.get(seller, "sellerName", ""),
+            store: Map.get(seller, "store", ""),
+            supervisorId: Map.get(seller, "supervisorId"),
+            saleValue: Map.get(seller, "saleValue", 0),
+            objetivo: Map.get(seller, "objetivo", 0),
+            percentualObjective: Map.get(seller, "percentualObjective", 0),
+            ticket: Map.get(seller, "ticket", 0),
+            mix: Map.get(seller, "mix", 0),
+            qtdeInvoice: Map.get(seller, "qtdeInvoice", 0),
+            qtdeDays: Map.get(seller, "qtdeDays", 0),
+            qtdeDaysMonth: Map.get(seller, "qtdeDaysMonth", 0),
+            objetiveToday: Map.get(seller, "objetiveToday", 0),
+            saleToday: Map.get(seller, "saleToday", 0),
+            objetiveHour: Map.get(seller, "objetiveHour", 0),
+            percentualObjectiveHour: Map.get(seller, "percentualObjectiveHour", 0),
+            preSaleQtde: Map.get(seller, "preSaleQtde", 0),
+            preSaleValue: Map.get(seller, "preSaleValue", 0),
+            devolution: Map.get(seller, "devolution", 0),
+            percentOff: Map.get(seller, "percentOff", 0),
+            qtdeInvoiceDay: Map.get(seller, "qtdeInvoiceDay", 0),
+            listPrice: Map.get(seller, "listPrice", 0),
+            dif: Map.get(seller, "dif", 0)
+          }
+        end)
+      _ -> []
     end
-  end
-
-  defp extract_supervisor_id(_seller_data) do
-    # Por padrão usa supervisor 12, mas pode ser extraído dos dados se necessário
-    12
   end
 
   defp format_currency(value) when is_number(value) do
@@ -211,9 +190,8 @@ defmodule AppWeb.SellerDetailsModal do
       phx-target={@myself}
     >
       <!-- Modal Container -->
-      <div
+                  <div
         class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100"
-        phx-click={JS.stop_propagation()}
       >
         <!-- Header -->
         <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
@@ -228,31 +206,16 @@ defmodule AppWeb.SellerDetailsModal do
               </p>
             </div>
 
-            <!-- Controls -->
-            <div class="flex items-center space-x-3">
-              <!-- Refresh Button -->
-              <button
-                phx-click="refresh_data"
-                phx-target={@myself}
-                class="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
-                title="Atualizar dados"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-              </button>
-
-              <!-- Close Button -->
-              <button
-                phx-click="close_modal"
-                phx-target={@myself}
-                class="text-white hover:text-red-300 transition-colors p-1"
-              >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
+            <!-- Close Button -->
+            <button
+              phx-click="close_modal"
+              phx-target={@myself}
+              class="text-white hover:text-red-300 transition-colors p-1"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -294,28 +257,6 @@ defmodule AppWeb.SellerDetailsModal do
               </div>
 
             <% else %>
-              <!-- Supervisor Selector -->
-              <div class="bg-gray-50 p-4 rounded-lg mb-6">
-                <h3 class="font-medium text-gray-900 mb-3">Selecionar Supervisor:</h3>
-                <div class="flex flex-wrap gap-2">
-                  <%= for supervisor <- @available_supervisors do %>
-                    <button
-                      phx-click="change_supervisor"
-                      phx-value-supervisor_id={supervisor.id}
-                      phx-target={@myself}
-                      class={[
-                        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                        if(@selected_supervisor == supervisor.id,
-                          do: "bg-blue-600 text-white",
-                          else: "bg-white text-gray-700 border hover:bg-blue-50")
-                      ]}
-                    >
-                      {supervisor.name}
-                    </button>
-                  <% end %>
-                </div>
-              </div>
-
               <!-- Sellers List -->
               <%= if length(@sellers_list) > 0 do %>
                 <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
@@ -554,28 +495,19 @@ defmodule AppWeb.SellerDetailsModal do
         <!-- Footer -->
         <div class="border-t border-gray-200 bg-gray-50 p-4">
           <div class="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
-            <div class="text-sm text-gray-600">
-              🔄 Conectado à API: {@api_base_url}/{@selected_supervisor}
-              <%= if @selected_seller do %>
-                • Vendedor: {clean_seller_name(@selected_seller.sellerName)}
-              <% end %>
-            </div>
-            <div class="flex items-center space-x-3">
-              <button
-                phx-click="refresh_data"
-                phx-target={@myself}
-                class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
-              >
-                🔄 Atualizar
-              </button>
-              <button
-                phx-click="close_modal"
-                phx-target={@myself}
-                class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-              >
-                Fechar
-              </button>
-            </div>
+                         <div class="text-sm text-gray-600">
+               🔄 Dados da API • Supervisor: {@selected_supervisor}
+               <%= if @selected_seller do %>
+                 • Vendedor: {clean_seller_name(@selected_seller.sellerName)}
+               <% end %>
+             </div>
+                         <button
+               phx-click="close_modal"
+               phx-target={@myself}
+               class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+             >
+               Fechar
+             </button>
           </div>
         </div>
       </div>

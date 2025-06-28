@@ -290,16 +290,20 @@ defmodule AppWeb.DashboardResumoLive do
 
   @impl true
   def handle_event("open_seller_details", %{"seller_name" => seller_name}, socket) do
-    # Cria dados básicos do vendedor para passar para a modal
-    seller_data = %{
-      seller_name: seller_name,
-      store: "Loja Principal", # Pode ser extraído dos dados se disponível
-      sale_value: 0.0,
-      objetivo: 0.0,
-      timestamp: DateTime.utc_now()
-    }
+    # Busca dados reais da API para o vendedor selecionado
+    case fetch_seller_api_data(seller_name) do
+      {:ok, api_data} ->
+        {:noreply, assign(socket, show_seller_modal: true, selected_seller: api_data)}
 
-    {:noreply, assign(socket, show_seller_modal: true, selected_seller: seller_data)}
+      {:error, _reason} ->
+        # Se falhar, usa dados básicos
+        seller_data = %{
+          "seller_name" => seller_name,
+          "store" => "Loja Principal",
+          "saleSupervisor" => []
+        }
+        {:noreply, assign(socket, show_seller_modal: true, selected_seller: seller_data)}
+    end
   end
 
   @impl true
@@ -483,6 +487,29 @@ defmodule AppWeb.DashboardResumoLive do
 
   defp normalize_decimal(nil), do: 0.0
   defp normalize_decimal(_), do: 0.0
+
+  defp fetch_seller_api_data(_seller_name) do
+    # Busca dados da API do supervisor 12 (padrão)
+    supervisor_id = 12
+    url = "http://10.1.1.108:8065/api/v1/dashboard/sale/#{supervisor_id}"
+
+    case HTTPoison.get(url, [], recv_timeout: 10_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, data} -> {:ok, data}
+          {:error, _} -> {:error, "Erro ao decodificar resposta da API"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        {:error, "API retornou status #{status_code}"}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, "Erro de conexão: #{reason}"}
+
+      {:error, reason} ->
+        {:error, "Erro inesperado: #{inspect(reason)}"}
+    end
+  end
 
   @impl true
   def render(assigns) do
