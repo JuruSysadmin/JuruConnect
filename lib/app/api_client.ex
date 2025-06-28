@@ -5,26 +5,32 @@ defmodule App.ApiClient do
 
   @base_url "http://10.1.1.212:8065/api/v1"
 
-  @doc """
+    @doc """
   Busca dados resumidos do dashboard
   """
   def fetch_dashboard_summary do
-    with {:ok, sale_data} <- fetch_sale_data(),
-         {:ok, company_result} <- fetch_companies_data() do
-      summary = %{
-        "sale" => Map.get(sale_data, "sale", 0.0),
-        "cost" => Map.get(sale_data, "cost", 0.0),
-        "devolution" => Map.get(sale_data, "devolution", 0.0),
-        "objetivo" => Map.get(sale_data, "objetivo", 0.0),
-        "profit" => Map.get(sale_data, "profit", 0.0),
-        "percentual" => Map.get(sale_data, "percentual", 0.0),
-        "percentualSale" => Map.get(company_result, :percentualSale, 0.0),
-        "nfs" => Map.get(sale_data, "nfs", 0)
-      }
+    case fetch_companies_data() do
+      {:ok, company_result} ->
+        # Buscar dados também da API /dashboard/sale para campos não disponíveis em /company
+        sale_data_result = fetch_sale_data()
 
-      {:ok, summary}
-    else
-      {:error, reason} -> {:error, reason}
+        summary = %{
+          # Dados principais da API /dashboard/sale/company
+          "sale" => Map.get(company_result, :sale, 0.0),
+          "objetivo" => Map.get(company_result, :objetive, 0.0),
+          "devolution" => Map.get(company_result, :devolution, 0.0),
+          "nfs" => Map.get(company_result, :nfs, 0),
+          "percentualSale" => Map.get(company_result, :percentualSale, 0.0),
+          # Campos calculados ou da API auxiliar
+          "percentual" => calculate_percentual(company_result),
+          "cost" => get_cost_data(sale_data_result),
+          "profit" => get_profit_data(sale_data_result)
+        }
+
+        {:ok, summary}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -148,7 +154,12 @@ defmodule App.ApiClient do
 
             result = %{
               companies: companies,
-              percentualSale: Map.get(data, "percentualSale", 0.0)
+              percentualSale: Map.get(data, "percentualSale", 0.0),
+              # Dados do nível raiz da API
+              objetive: Map.get(data, "objetive", 0.0),
+              sale: Map.get(data, "sale", 0.0),
+              devolution: Map.get(data, "devolution", 0.0),
+              nfs: Map.get(data, "nfs", 0)
             }
 
             {:ok, result}
@@ -180,6 +191,31 @@ defmodule App.ApiClient do
       venda_hoje == 0 -> :sem_vendas
       perc_hora >= 100 -> :atingida_hora
       true -> :abaixo_meta
+    end
+  end
+
+  defp calculate_percentual(company_result) do
+    sale = Map.get(company_result, :sale, 0.0)
+    objetive = Map.get(company_result, :objetive, 0.0)
+
+    if objetive > 0 do
+      sale / objetive * 100
+    else
+      0.0
+    end
+  end
+
+  defp get_cost_data(sale_data_result) do
+    case sale_data_result do
+      {:ok, sale_data} -> Map.get(sale_data, "cost", 0.0)
+      _ -> 0.0
+    end
+  end
+
+  defp get_profit_data(sale_data_result) do
+    case sale_data_result do
+      {:ok, sale_data} -> Map.get(sale_data, "profit", 0.0)
+      _ -> 0.0
     end
   end
 end

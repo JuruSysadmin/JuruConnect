@@ -309,6 +309,15 @@ Hooks.GoalCelebration = {
     this.handleEvent("goal-achieved", (data) => {
       this.celebrate(data);
     });
+
+    this.handleEvent("goal-achieved-multiple", (data) => {
+      this.celebrateMultiple(data);
+    });
+
+    // Novo handler para celebrações reais baseadas em dados da API
+    this.handleEvent("goal-achieved-real", (data) => {
+      this.celebrateReal(data);
+    });
   },
   
   /**
@@ -432,6 +441,415 @@ Hooks.GoalCelebration = {
         confetti.parentNode.removeChild(confetti);
       }
     }, 3000);
+  },
+
+  /**
+   * Celebração múltipla com efeitos mais intensos
+   * @memberof Hooks.GoalCelebration
+   * @param {Object} data - Dados da celebração múltipla
+   */
+  celebrateMultiple(data) {
+    // Som mais elaborado
+    this.playAdvancedSound();
+    
+    // Toast com informações extra
+    this.showEnhancedToast(data.store_name, data.achieved, data.celebration_id);
+    
+    // Confetti mais intenso
+    this.createIntenseConfetti();
+  },
+
+  /**
+   * Celebração real baseada em dados da API com níveis diferentes
+   * @memberof Hooks.GoalCelebration
+   * @param {Object} data - Dados da celebração real
+   */
+  celebrateReal(data) {
+    // Som baseado no nível
+    this.playLevelSound(data.level);
+    
+    // Toast personalizado baseado no tipo
+    this.showRealToast(data);
+    
+    // Confetti baseado no nível
+    this.createLevelConfetti(data.level);
+    
+    // Efeito especial para níveis épicos
+    if (data.level === 'legendary' || data.level === 'epic') {
+      this.createFireworks();
+    }
+  },
+
+  /**
+   * Som mais elaborado para celebrações múltiplas
+   * @memberof Hooks.GoalCelebration
+   */
+  playAdvancedSound() {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Sequência de notas
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      
+      notes.forEach((freq, index) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.3);
+        }, index * 200);
+      });
+    } catch (e) {
+      // Som não disponível
+    }
+  },
+
+  /**
+   * Som baseado no nível da celebração
+   * @memberof Hooks.GoalCelebration
+   * @param {string} level - Nível da celebração
+   */
+  playLevelSound(level) {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      let frequency, duration, gain;
+      
+      switch (level) {
+        case 'legendary':
+          frequency = [440, 554.37, 659.25, 880]; // A4-C#5-E5-A5
+          duration = 0.6;
+          gain = 0.4;
+          break;
+        case 'epic':
+          frequency = [523.25, 659.25, 783.99]; // C5-E5-G5
+          duration = 0.5;
+          gain = 0.3;
+          break;
+        case 'major':
+          frequency = [440, 554.37]; // A4-C#5
+          duration = 0.4;
+          gain = 0.25;
+          break;
+        case 'standard':
+          frequency = [523.25]; // C5
+          duration = 0.3;
+          gain = 0.2;
+          break;
+        default:
+          frequency = [440]; // A4
+          duration = 0.2;
+          gain = 0.15;
+      }
+      
+      frequency.forEach((freq, index) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+          gainNode.gain.setValueAtTime(gain, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+        }, index * 150);
+      });
+    } catch (e) {
+      // Som não disponível
+    }
+  },
+
+  /**
+   * Toast aprimorado para celebrações múltiplas
+   * @memberof Hooks.GoalCelebration
+   */
+  showEnhancedToast(storeName, achieved, celebrationId) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-lg shadow-2xl z-50 transform translate-x-full transition-all duration-500 border-2 border-yellow-300';
+    toast.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <div>
+          <div class="font-bold text-lg">META ATINGIDA!</div>
+          <div class="text-sm font-medium">${storeName}</div>
+          <div class="text-lg font-mono font-bold text-yellow-200">${achieved}</div>
+          <div class="text-xs opacity-75">#${celebrationId}</div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() =>toast.classList.remove('translate-x-full'), 100);
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => document.body.removeChild(toast), 500);
+    }, 6000);
+  },
+
+  /**
+   * Toast personalizado para celebrações reais
+   * @memberof Hooks.GoalCelebration
+   */
+  showRealToast(data) {
+    const levelColors = {
+      legendary: 'from-purple-600 to-pink-600 border-yellow-400',
+      epic: 'from-orange-500 to-red-600 border-orange-300',
+      major: 'from-blue-500 to-indigo-600 border-blue-300',
+      standard: 'from-green-500 to-emerald-600 border-green-300',
+      minor: 'from-gray-500 to-gray-600 border-gray-300'
+    };
+
+    const colorClass = levelColors[data.level] || levelColors.standard;
+
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 bg-gradient-to-r ${colorClass} text-white p-4 rounded-xl shadow-2xl z-50 transform translate-x-full transition-all duration-500 border-2 max-w-sm`;
+    
+    let storeInfo = data.store_name !== 'Sistema' ? `<div class="text-sm font-medium">${data.store_name}</div>` : '';
+    
+    toast.innerHTML = `
+      <div class="flex items-start space-x-3">
+        <div class="flex-1">
+          <div class="font-bold text-base">${data.message}</div>
+          ${storeInfo}
+          <div class="text-lg font-mono font-bold text-yellow-100">${data.achieved}</div>
+          <div class="text-xs opacity-75 mt-1">
+            ${data.type} • ${data.percentage}% • Nível ${data.level}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    
+    // Duração baseada no nível
+    const duration = this.getToastDuration(data.level);
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => document.body.removeChild(toast), 500);
+    }, duration);
+  },
+
+  /**
+   * Confetti mais intenso para celebrações múltiplas
+   * @memberof Hooks.GoalCelebration
+   */
+  createIntenseConfetti() {
+    // Mais partículas e mais coloridas
+    for (let i = 0; i < 100; i++) {
+      setTimeout(() => {
+        this.createEnhancedConfettiPiece();
+      }, i * 30);
+    }
+  },
+
+  /**
+   * Confetti baseado no nível da celebração
+   * @memberof Hooks.GoalCelebration
+   */
+  createLevelConfetti(level) {
+    const particleCount = {
+      legendary: 150,
+      epic: 100,
+      major: 75,
+      standard: 50,
+      minor: 25
+    };
+
+    const count = particleCount[level] || 50;
+    
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        this.createLevelConfettiPiece(level);
+      }, i * 40);
+    }
+  },
+
+  /**
+   * Partícula de confetti aprimorada
+   * @memberof Hooks.GoalCelebration
+   */
+  createEnhancedConfettiPiece() {
+    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF69B4'];
+    const shapes = ['circle', 'square', 'triangle'];
+    
+    const confetti = document.createElement('div');
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    const size = Math.random() * 8 + 4; // 4-12px
+    
+    confetti.style.position = 'fixed';
+    confetti.style.top = '-20px';
+    confetti.style.left = Math.random() * window.innerWidth + 'px';
+    confetti.style.width = size + 'px';
+    confetti.style.height = size + 'px';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.pointerEvents = 'none';
+    confetti.style.zIndex = '9999';
+    confetti.style.animation = `confettifall 4s linear forwards`;
+    
+    if (shape === 'circle') {
+      confetti.style.borderRadius = '50%';
+    } else if (shape === 'triangle') {
+      confetti.style.transform = 'rotate(45deg)';
+    }
+    
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => {
+      if (confetti.parentNode) {
+        confetti.parentNode.removeChild(confetti);
+      }
+    }, 4000);
+  },
+
+  /**
+   * Partícula de confetti por nível
+   * @memberof Hooks.GoalCelebration
+   */
+  createLevelConfettiPiece(level) {
+    const levelColors = {
+      legendary: ['#FFD700', '#FFA500', '#FF69B4', '#9932CC'],
+      epic: ['#FF6347', '#FF4500', '#FF1493', '#FF8C00'],
+      major: ['#4169E1', '#00BFFF', '#1E90FF', '#6495ED'],
+      standard: ['#32CD32', '#00FF7F', '#98FB98', '#90EE90'],
+      minor: ['#C0C0C0', '#A9A9A9', '#D3D3D3', '#DCDCDC']
+    };
+
+    const colors = levelColors[level] || levelColors.standard;
+    const confetti = document.createElement('div');
+    const size = level === 'legendary' ? Math.random() * 12 + 6 : Math.random() * 8 + 4;
+    
+    confetti.style.position = 'fixed';
+    confetti.style.top = '-20px';
+    confetti.style.left = Math.random() * window.innerWidth + 'px';
+    confetti.style.width = size + 'px';
+    confetti.style.height = size + 'px';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.borderRadius = '50%';
+    confetti.style.pointerEvents = 'none';
+    confetti.style.zIndex = '9999';
+    confetti.style.animation = `confettifall ${3 + Math.random() * 2}s linear forwards`;
+    confetti.style.boxShadow = level === 'legendary' ? '0 0 20px rgba(255, 215, 0, 0.8)' : 'none';
+    
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => {
+      if (confetti.parentNode) {
+        confetti.parentNode.removeChild(confetti);
+      }
+    }, 5000);
+  },
+
+  /**
+   * Efeito de fogos de artifício para celebrações épicas
+   * @memberof Hooks.GoalCelebration
+   */
+  createFireworks() {
+    // Simula fogos de artifício com explosões radiais
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        this.createFireworkExplosion();
+      }, i * 800);
+    }
+  },
+
+  /**
+   * Cria uma explosão de fogos de artifício
+   * @memberof Hooks.GoalCelebration
+   */
+  createFireworkExplosion() {
+    const centerX = Math.random() * window.innerWidth;
+    const centerY = Math.random() * (window.innerHeight / 2) + 50;
+    
+    // Cria partículas em todas as direções
+    for (let i = 0; i < 20; i++) {
+      const angle = (i / 20) * Math.PI * 2;
+      const velocity = 100 + Math.random() * 100;
+      
+      this.createFireworkParticle(centerX, centerY, angle, velocity);
+    }
+  },
+
+  /**
+   * Cria uma partícula de fogo de artifício
+   * @memberof Hooks.GoalCelebration
+   */
+  createFireworkParticle(startX, startY, angle, velocity) {
+    const particle = document.createElement('div');
+    const colors = ['#FFD700', '#FF6B35', '#F7931E', '#FFE15D', '#FF69B4'];
+    
+    particle.style.position = 'fixed';
+    particle.style.left = startX + 'px';
+    particle.style.top = startY + 'px';
+    particle.style.width = '4px';
+    particle.style.height = '4px';
+    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.borderRadius = '50%';
+    particle.style.pointerEvents = 'none';
+    particle.style.zIndex = '9999';
+    particle.style.boxShadow = '0 0 10px currentColor';
+    
+    document.body.appendChild(particle);
+    
+    // Anima a partícula
+    let currentX = startX;
+    let currentY = startY;
+    let currentVelocity = velocity;
+    const gravity = 200; // pixels/s²
+    const startTime = performance.now();
+    
+    const animate = (currentTime) => {
+      const elapsed = (currentTime - startTime) / 1000; // em segundos
+      
+      currentX = startX + Math.cos(angle) * velocity * elapsed;
+      currentY = startY + Math.sin(angle) * velocity * elapsed + 0.5 * gravity * elapsed * elapsed;
+      currentVelocity -= gravity * elapsed;
+      
+      particle.style.left = currentX + 'px';
+      particle.style.top = currentY + 'px';
+      
+      // Fade out
+      const opacity = Math.max(0, 1 - elapsed / 2);
+      particle.style.opacity = opacity;
+      
+      if (elapsed < 2 && currentY < window.innerHeight) {
+        requestAnimationFrame(animate);
+      } else {
+        if (particle.parentNode) {
+          particle.parentNode.removeChild(particle);
+        }
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  },
+
+  /**
+   * Retorna a duração do toast baseada no nível
+   * @memberof Hooks.GoalCelebration
+   */
+  getToastDuration(level) {
+    const durations = {
+      legendary: 10000, // 10 segundos
+      epic: 8000,       // 8 segundos
+      major: 6000,      // 6 segundos
+      standard: 4000,   // 4 segundos
+      minor: 3000       // 3 segundos
+    };
+    
+    return durations[level] || 4000;
   }
 }
 

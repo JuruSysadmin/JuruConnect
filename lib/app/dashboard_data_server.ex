@@ -229,13 +229,17 @@ defmodule App.DashboardDataServer do
       companies = Map.get(company_result, :companies, [])
       percentual_sale = Map.get(company_result, :percentualSale, 0.0)
 
-      check_goal_achievements(companies)
-
       merged_data =
         Map.merge(sale_data, %{
           "companies" => companies,
           "percentualSale" => percentual_sale
         })
+
+      # Nova verificação de celebrações REAL baseada nos dados da API
+      App.CelebrationManager.process_api_data(merged_data)
+
+      # Sistema legado desabilitado para evitar celebrações duplicadas
+      # check_goal_achievements(companies)
 
       {:ok, merged_data}
     else

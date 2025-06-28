@@ -20,6 +20,8 @@ defmodule App.Application do
       {Oban, Application.fetch_env!(:app, Oban)},
       # DashboardDataServer centraliza o fetch da API
       App.DashboardDataServer,
+      # CelebrationManager gerencia celebrações com cache
+      App.CelebrationManager,
       # Start a worker by calling: App.Worker.start_link(arg)
       # {App.Worker, arg},
       # Start to serve requests, typically the last entry

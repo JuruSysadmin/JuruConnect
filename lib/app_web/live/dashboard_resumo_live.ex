@@ -24,19 +24,16 @@ defmodule AppWeb.DashboardResumoLive do
         show_celebration: false,
         sales_feed: [],
         feed_mode: :normal,
-        show_seller_modal: false,
-        selected_seller: nil
+        show_leaderboard_modal: false
       )
       |> fetch_and_assign_data_safe()
 
     {:ok, socket}
   end
 
-
-
   @impl true
-  def handle_info({:close_seller_modal}, socket) do
-    {:noreply, assign(socket, show_seller_modal: false, selected_seller: nil)}
+  def handle_info({:close_leaderboard_modal}, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: false)}
   end
 
   @impl true
@@ -111,6 +108,52 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   @impl true
+  def handle_info({:goal_achieved_real, celebration_data}, socket) do
+    # Handler para celebrações REAIS baseadas em dados da API
+    celebration_id = celebration_data.celebration_id
+
+    new_notification = %{
+      id: celebration_id,
+      store_name: get_celebration_store_name(celebration_data),
+      achieved: get_celebration_achieved(celebration_data),
+      target: get_celebration_target(celebration_data),
+      percentage: celebration_data.percentage,
+      timestamp: celebration_data.timestamp,
+      celebration_id: celebration_id,
+      type: celebration_data.type,
+      level: celebration_data.level,
+      message: get_celebration_message(celebration_data)
+    }
+
+    updated_notifications =
+      [new_notification | socket.assigns.notifications]
+      |> Enum.take(10)
+
+    socket =
+      socket
+      |> assign(
+        notifications: updated_notifications,
+        show_celebration: true
+      )
+      |> push_event("goal-achieved-real", %{
+        type: celebration_data.type,
+        level: celebration_data.level,
+        message: new_notification.message,
+        store_name: new_notification.store_name,
+        achieved: AppWeb.DashboardUtils.format_money(new_notification.achieved),
+        celebration_id: celebration_id,
+        timestamp: DateTime.to_unix(celebration_data.timestamp, :millisecond),
+        sound: Map.get(celebration_data.data, :sound, "goal_achieved.mp3")
+      })
+
+    # Duração baseada no nível da celebração
+    duration = get_celebration_duration(celebration_data.level)
+    Process.send_after(self(), {:hide_specific_notification, celebration_id}, duration)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info(:hide_celebration, socket) do
     {:noreply, assign(socket, show_celebration: false)}
   end
@@ -179,6 +222,15 @@ defmodule AppWeb.DashboardResumoLive do
       )
       |> push_event("update-gauge", %{value: updated_percentual_hoje})
       |> push_event("update-gauge-monthly", %{value: updated_percentual_sale})
+
+    # Verifica celebrações para a nova venda
+    current_totals = %{
+      sale_num: updated_sale_num,
+      percentual_hoje: updated_percentual_hoje,
+      percentual_sale: updated_percentual_sale
+    }
+
+    App.CelebrationManager.process_new_sale(new_sale, current_totals)
 
     {:noreply, socket}
   end
@@ -286,29 +338,14 @@ defmodule AppWeb.DashboardResumoLive do
     {:noreply, socket}
   end
 
-
-
   @impl true
-  def handle_event("open_seller_details", %{"seller_name" => seller_name}, socket) do
-    # Busca dados reais da API para o vendedor selecionado
-    case fetch_seller_api_data(seller_name) do
-      {:ok, api_data} ->
-        {:noreply, assign(socket, show_seller_modal: true, selected_seller: api_data)}
-
-      {:error, _reason} ->
-        # Se falhar, usa dados básicos
-        seller_data = %{
-          "seller_name" => seller_name,
-          "store" => "Loja Principal",
-          "saleSupervisor" => []
-        }
-        {:noreply, assign(socket, show_seller_modal: true, selected_seller: seller_data)}
-    end
+  def handle_event("open_leaderboard_modal", _params, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: true)}
   end
 
   @impl true
-  def handle_event("close_seller_modal", _params, socket) do
-    {:noreply, assign(socket, show_seller_modal: false, selected_seller: nil)}
+  def handle_event("close_leaderboard_modal", _params, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: false)}
   end
 
   defp assign_loading_state(socket) do
@@ -436,9 +473,11 @@ defmodule AppWeb.DashboardResumoLive do
       percentual: "0,00%",
       percentual_num: 0,
       percentual_sale: 0,
-             realizado_hoje_percent: 0,
-                    realizado_hoje_formatted: "0,00%",
+      realizado_hoje_percent: 0,
+      realizado_hoje_formatted: "0,00%",
       nfs: 0,
+      sale_num: 0.0,
+      objetivo_num: 0.0,
       lojas_data: get_companies_data(%{}),
       api_status: :error,
       api_error: reason,
@@ -488,26 +527,47 @@ defmodule AppWeb.DashboardResumoLive do
   defp normalize_decimal(nil), do: 0.0
   defp normalize_decimal(_), do: 0.0
 
-  defp fetch_seller_api_data(_seller_name) do
-    # Busca dados da API do supervisor 12 (padrão)
-    supervisor_id = 12
-    url = "http://10.1.1.108:8065/api/v1/dashboard/sale/#{supervisor_id}"
+  # Funções auxiliares para celebrações reais
+  defp get_celebration_store_name(celebration_data) do
+    case celebration_data.type do
+      :top_seller ->
+        Map.get(celebration_data.data, :store, "Loja Desconhecida")
+      _ ->
+        Map.get(celebration_data.data, :store_name, "Sistema")
+    end
+  end
 
-    case HTTPoison.get(url, [], recv_timeout: 10_000) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, data} -> {:ok, data}
-          {:error, _} -> {:error, "Erro ao decodificar resposta da API"}
-        end
+  defp get_celebration_achieved(celebration_data) do
+    Map.get(celebration_data.data, :achieved, 0.0)
+  end
 
-      {:ok, %HTTPoison.Response{status_code: status_code}} ->
-        {:error, "API retornou status #{status_code}"}
+  defp get_celebration_target(celebration_data) do
+    Map.get(celebration_data.data, :target, 0.0)
+  end
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, "Erro de conexão: #{reason}"}
+  defp get_celebration_message(celebration_data) do
+    base_message = Map.get(celebration_data.data, :message, "Meta Atingida!")
 
-      {:error, reason} ->
-        {:error, "Erro inesperado: #{inspect(reason)}"}
+    case celebration_data.type do
+      :top_seller ->
+        seller_name = Map.get(celebration_data.data, :seller_name, "Vendedor")
+        "#{base_message} - #{seller_name}"
+      :exceptional_individual_sale ->
+        seller_name = Map.get(celebration_data.data, :seller_name, "Vendedor")
+        "#{base_message} - #{seller_name}"
+      _ ->
+        base_message
+    end
+  end
+
+  defp get_celebration_duration(level) do
+    case level do
+      :legendary -> 15_000  # 15 segundos
+      :epic -> 12_000       # 12 segundos
+      :major -> 10_000      # 10 segundos
+      :standard -> 8_000    # 8 segundos
+      :minor -> 5_000       # 5 segundos
+      _ -> 8_000            # padrão
     end
   end
 
@@ -815,7 +875,7 @@ defmodule AppWeb.DashboardResumoLive do
     <!-- Layout principal - Responsivo -->
       <div class="flex flex-col xl:flex-row gap-3 sm:gap-4 px-3 sm:px-6">
         <!-- Coluna esquerda: Cards e Gráficos -->
-        <div class="flex-1 space-y-3 sm:space-y-4 w-full xl:w-auto">
+        <div class="flex-1 space-y-3 sm:space-y-4 w-full xl:w-4/12">
           <!-- Cards de métricas - Grid responsivo -->
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-3 gap-2 sm:gap-4">
             <.card title="Meta diaria" value={@objetivo} subtitle="" icon_bg="bg-yellow-50"></.card>
@@ -831,14 +891,14 @@ defmodule AppWeb.DashboardResumoLive do
 
             <.card
               title="Realizado: Hoje"
-                             value={@realizado_hoje_formatted}
+              value={@realizado_hoje_formatted}
               subtitle=""
               icon_bg="bg-blue-50"
             >
             </.card>
           </div>
 
-    <!-- Seção de Metas em Tempo Real -->
+          <!-- Seção de Metas em Tempo Real -->
           <div class="grid grid-cols-1 gap-3 sm:gap-4">
             <!-- Card - Realizado: até ontem -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
@@ -846,180 +906,220 @@ defmodule AppWeb.DashboardResumoLive do
                 <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Realizado: Mensal</h2>
               </div>
 
-              <div class="flex justify-center">
-                <%= if @loading do %>
-                  <div class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
-                    <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
-                  </div>
-                <% else %>
-                  <div class="relative">
-                    <canvas
-                      id="gauge-chart-2"
-                      phx-hook="GaugeChartMonthly"
-                      phx-update="ignore"
-                      data-value={min(@percentual_sale, 100)}
-                      class="w-24 h-24 sm:w-32 sm:h-32"
-                    >
-                    </canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span class="text-lg sm:text-xl font-medium text-gray-800">
-                        {format_percent(@percentual_sale)}
-                      </span>
+              <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-4">
+                <!-- Gráfico Circular -->
+                <div class="flex justify-center">
+                  <%= if @loading do %>
+                    <div class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+                      <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  <% else %>
+                    <div class="relative">
+                      <canvas
+                        id="gauge-chart-2"
+                        phx-hook="GaugeChartMonthly"
+                        phx-update="ignore"
+                        data-value={min(@percentual_sale, 100)}
+                        class="w-24 h-24 sm:w-32 sm:h-32"
+                      >
+                      </canvas>
+                      <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-lg sm:text-xl font-medium text-gray-800">
+                          {format_percent(@percentual_sale)}
+                        </span>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+
+                <!-- Dados Absolutos -->
+                <div class="flex flex-col space-y-2 text-center sm:text-left">
+                  <div class="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div class="text-xs text-gray-600 mb-1">Meta Mensal</div>
+                    <div class="font-mono text-sm sm:text-base font-medium text-gray-900">
+                      {@objetivo}
                     </div>
                   </div>
+
+                  <div class="bg-blue-50 rounded-lg p-2 sm:p-3">
+                    <div class="text-xs text-gray-600 mb-1">Vendas Mensais</div>
+                    <div class="font-mono text-sm sm:text-base font-medium text-blue-700">
+                      {@sale}
+                    </div>
+                  </div>
+
+                  <div class="bg-red-50 rounded-lg p-2 sm:p-3">
+                    <div class="text-xs text-gray-600 mb-1">Devoluções</div>
+                    <div class="font-mono text-sm sm:text-base font-medium text-red-700">
+                      {@devolution}
+                    </div>
+                  </div>
+
+                  <%= if @sale_num > 0 and @objetivo_num > 0 do %>
+                    <div class="bg-green-50 rounded-lg p-2 sm:p-3">
+                      <div class="text-xs text-gray-600 mb-1">Falta Atingir</div>
+                      <div class="font-mono text-sm sm:text-base font-medium text-green-700">
+                        {format_money(@objetivo_num - @sale_num)}
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feed de Vendas - Dinâmico baseado no modo -->
+          <%= if @feed_mode == :advanced do %>
+            <.live_component
+              module={AppWeb.SalesFeedComponent}
+              id="sales-feed-advanced"
+              sales_feed={@sales_feed}
+            />
+          <% else %>
+            <!-- Feed Normal -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 min-h-[400px] sm:min-h-[550px]">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+                <div>
+                  <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leadeboards</h2>
+                  <p class="text-xs text-gray-500 mobile-hide">
+                    Clique em "🏆 Ver Detalhes" para análise completa
+                  </p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                  <!-- Novo botão da modal interativa -->
+                  <button
+                    phx-click="open_leaderboard_modal"
+                    class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-xs font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto flex items-center justify-center space-x-1"
+                    title="Abrir leaderboard interativo"
+                  >
+                    <span>🏆</span>
+                    <span>Ver Detalhes</span>
+                  </button>
+
+                  <button
+                    phx-click="toggle_advanced_feed"
+                    class={[
+                      "px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors border w-full sm:w-auto",
+                      if(@feed_mode == :advanced,
+                        do: "bg-blue-100 text-blue-700 border-blue-300",
+                        else: "bg-gray-100 text-gray-700 border-gray-300")
+                    ]}
+                    title="Alternar modo do feed"
+                  >
+                    <%= if @feed_mode == :advanced, do: "✨ Minimalista", else: "📊 Detalhado" %>
+                  </button>
+                  <button
+                    phx-click="refresh_feed"
+                    class="px-2 sm:px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors border w-full sm:w-auto"
+                    title="Atualizar feed"
+                  >
+                    Atualizar
+                  </button>
+                  <div class="flex items-center space-x-2 justify-center sm:justify-start w-full sm:w-auto">
+                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span class="text-xs text-gray-600">AO VIVO</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Feed Container - Estilo Twitter -->
+              <div class="h-[350px] sm:h-[450px] overflow-y-auto space-y-2 sm:space-y-3 pr-1" id="sales-feed">
+                <%= if Enum.empty?(@sales_feed) do %>
+                  <!-- Estado vazio -->
+                  <div class="text-center py-6 sm:py-8">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                      <!-- Ícone removido -->
+                    </div>
+                    <p class="text-gray-500 text-sm font-medium mb-1">Feed vazio</p>
+                  </div>
+                <% else %>
+                  <!-- Cards de dados do Supervisor -->
+                  <%= for {sale, index} <- Enum.with_index(@sales_feed) do %>
+                    <div
+                      class={
+                        [
+                          "rounded p-2 sm:p-3 hover:shadow-sm transition-shadow relative",
+                          case index do
+                            # 1º lugar - Ouro
+                            0 -> "bg-yellow-50 border-2 border-yellow-300"
+                            # 2º lugar - Prata
+                            1 -> "bg-gray-50 border-2 border-gray-400"
+                            # 3º lugar - Bronze
+                            2 -> "bg-orange-50 border-2 border-orange-300"
+                            _ -> "bg-white border border-gray-200"
+                          end
+                        ]
+                      }
+                      id={"sale-#{sale.id}"}
+                    >
+                      <!-- Posição no ranking -->
+                      <div class={[
+                        "absolute top-1 sm:top-2 right-1 sm:right-2 text-xs px-1 sm:px-2 py-1 rounded",
+                        case index do
+                          0 -> "bg-yellow-200 text-yellow-800 font-medium"
+                          1 -> "bg-gray-200 text-gray-800 font-medium"
+                          2 -> "bg-orange-200 text-orange-800 font-medium"
+                          _ -> "bg-gray-100 text-gray-600"
+                        end
+                      ]}>
+                        #{index + 1}
+                      </div>
+
+                      <!-- Cabeçalho -->
+                      <div class="flex items-center justify-between mb-2 pr-6 sm:pr-8">
+                        <h4 class="font-medium text-gray-900 text-xs sm:text-sm">{sale.seller_name}</h4>
+                        <span class="text-xs text-gray-500">{time_ago(sale.timestamp)}</span>
+                      </div>
+
+                      <!-- Loja -->
+                      <div class="text-gray-600 mb-2 sm:mb-3 text-xs sm:text-sm">
+                        <span class="font-medium">{sale.store}</span>
+                      </div>
+
+                      <!-- Dados -->
+                      <div class="space-y-1 sm:space-y-2">
+                        <%= if sale.objetivo > 0 do %>
+                          <div class="flex justify-between text-xs sm:text-sm">
+                            <span class="text-gray-600">Objetivo:</span>
+                            <span class="font-mono text-gray-900">{sale.objetivo_formatted}</span>
+                          </div>
+                        <% end %>
+
+                        <%= if sale.sale_value > 0 do %>
+                          <div class="flex justify-between text-xs sm:text-sm">
+                            <span class="text-gray-600">Realizado:</span>
+                            <div class="text-right">
+                              <span class="font-mono text-green-600">
+                                {sale.sale_value_formatted}
+                              </span>
+                              <div class="text-xs text-gray-400 mobile-hide">
+                                ({if is_number(sale.sale_value),
+                                  do: (sale.sale_value * 1.0 |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")),
+                                  else: "0,00"})
+                              </div>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <!-- Rodapé -->
+                      <div class="mt-2 sm:mt-3 pt-2 border-t border-gray-100">
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                          <span>{sale.timestamp_formatted}</span>
+                          <span class="mobile-hide">Vendaweb</span>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
                 <% end %>
               </div>
             </div>
-          </div>
-
-                <!-- Tabela Simples de Vendedores -->
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 min-h-[400px] sm:min-h-[550px]">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
-            <div>
-              <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leaderboard</h2>
-              <p class="text-xs text-gray-500">
-                Clique no nome do vendedor para ver detalhes completos
-              </p>
-            </div>
-            <div class="flex items-center space-x-2">
-              <button
-                phx-click="refresh_feed"
-                class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-medium transition-colors border border-blue-300"
-                title="Atualizar lista"
-              >
-                🔄 Atualizar
-              </button>
-              <div class="flex items-center space-x-2">
-                <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                <span class="text-xs text-gray-600">AO VIVO</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tabela Simples -->
-          <div class="overflow-x-auto">
-            <%= if Enum.empty?(@sales_feed) do %>
-              <!-- Estado vazio -->
-              <div class="text-center py-12">
-                <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <span class="text-2xl">🏆</span>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum vendedor no ranking</h3>
-                <p class="text-gray-500">Aguardando vendas para exibir o leaderboard</p>
-              </div>
-            <% else %>
-              <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Posição
-                    </th>
-                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Vendedor
-                    </th>
-                    <th class="text-left py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider mobile-hide">
-                      Loja
-                    </th>
-                    <th class="text-right py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th class="text-center py-3 px-4 text-xs font-medium text-gray-600 uppercase tracking-wider mobile-hide">
-                      Tempo
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <%= for {sale, index} <- Enum.with_index(@sales_feed) do %>
-                    <tr class={[
-                      "hover:bg-gray-50 transition-colors cursor-pointer",
-                      case index do
-                        0 -> "bg-gradient-to-r from-yellow-50 to-yellow-100"
-                        1 -> "bg-gradient-to-r from-gray-50 to-gray-100"
-                        2 -> "bg-gradient-to-r from-orange-50 to-orange-100"
-                        _ -> ""
-                      end
-                    ]}
-                    phx-click="open_seller_details"
-                    phx-value-seller_name={sale.seller_name}
-                    >
-                      <!-- Posição -->
-                      <td class="py-3 px-4">
-                        <div class="flex items-center">
-                          <span class={[
-                            "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                            case index do
-                              0 -> "bg-yellow-500 text-white"
-                              1 -> "bg-gray-400 text-white"
-                              2 -> "bg-orange-500 text-white"
-                              _ -> "bg-blue-100 text-blue-800"
-                            end
-                          ]}>
-                            #{index + 1}
-                          </span>
-                          <%= if index < 3 do %>
-                            <span class="ml-2 text-lg">
-                              {case index do
-                                0 -> "🥇"
-                                1 -> "🥈"
-                                2 -> "🥉"
-                              end}
-                            </span>
-                          <% end %>
-                        </div>
-                      </td>
-
-                      <!-- Nome do Vendedor (Clicável) -->
-                      <td class="py-3 px-4">
-                        <div class="flex items-center">
-                          <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
-                            {String.first(sale.seller_name)}
-                          </div>
-                          <div>
-                            <div class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
-                              {sale.seller_name}
-                            </div>
-                            <div class="text-xs text-gray-500 sm:hidden">
-                              {sale.store}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <!-- Loja -->
-                      <td class="py-3 px-4 mobile-hide">
-                        <span class="text-sm text-gray-900">{sale.store}</span>
-                      </td>
-
-                      <!-- Valor -->
-                      <td class="py-3 px-4 text-right">
-                        <div class="text-sm font-mono font-bold text-green-600">
-                          {sale.sale_value_formatted}
-                        </div>
-                        <%= if sale.objetivo > 0 do %>
-                          <div class="text-xs text-gray-500">
-                            Meta: {sale.objetivo_formatted}
-                          </div>
-                        <% end %>
-                      </td>
-
-                      <!-- Tempo -->
-                      <td class="py-3 px-4 text-center mobile-hide">
-                        <span class="text-xs text-gray-500">
-                          {time_ago(sale.timestamp)}
-                        </span>
-                      </td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            <% end %>
-          </div>
-        </div>
+          <% end %>
         </div>
 
-    <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva -->
-        <div class="w-full xl:w-6/12 order-first xl:order-last">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4">
+        <!-- Coluna direita: Tabela de Performance das Lojas - Responsiva (MAIOR) -->
+        <div class="w-full xl:w-8/12 order-first xl:order-last">
+          <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-6">
             <!-- Header igual ao feed de vendas -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
               <div>
@@ -1037,28 +1137,28 @@ defmodule AppWeb.DashboardResumoLive do
             <!-- Tabela Responsiva -->
             <div class="overflow-x-auto">
               <!-- Versão Desktop/Tablet da Tabela -->
-              <table class="w-full animate-fade-in-scale text-xs sm:text-sm hidden sm:table">
+              <table class="w-full animate-fade-in-scale text-sm hidden sm:table">
                 <thead class="bg-gray-100">
                   <tr>
-                    <th class="text-left py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
+                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-600">
                       Loja
                     </th>
-                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
                       Meta Dia
                     </th>
-                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
                       Meta Hora
                     </th>
-                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
+                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600">
                       NFs
                     </th>
-                    <th class="text-right py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
+                    <th class="text-right py-3 px-4 text-sm font-medium text-gray-600">
                       Venda Dia
                     </th>
-                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600 tablet-hide">
+                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600 tablet-hide">
                       % Hora
                     </th>
-                    <th class="text-center py-1 px-1 sm:px-2 text-xs font-medium text-gray-600">
+                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-600">
                       % Dia
                     </th>
                   </tr>
@@ -1067,41 +1167,42 @@ defmodule AppWeb.DashboardResumoLive do
                   <%= if @loading do %>
                     <%= for _i <- 1..5 do %>
                       <tr class="animate-pulse">
-                        <td class="py-2 sm:py-4 px-1 sm:px-6">
-                          <div class="flex items-center space-x-2 sm:space-x-4">
-                            <div class="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded-full shimmer-effect"></div>
-                            <div class="h-3 sm:h-4 bg-gray-300 rounded w-24 sm:w-48 shimmer-effect"></div>
+                        <td class="py-4 px-4">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-4 h-4 bg-gray-300 rounded-full shimmer-effect"></div>
+                            <div class="h-4 bg-gray-300 rounded w-32 shimmer-effect"></div>
                           </div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
-                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
+                        <td class="py-4 px-4 tablet-hide">
+                          <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
-                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
+                        <td class="py-4 px-4 tablet-hide">
+                          <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6">
-                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-8 sm:w-12 mx-auto shimmer-effect"></div>
+                        <td class="py-4 px-4">
+                          <div class="h-4 bg-gray-300 rounded-full w-10 mx-auto shimmer-effect"></div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6">
-                          <div class="h-3 sm:h-4 bg-gray-300 rounded w-16 sm:w-24 shimmer-effect"></div>
+                        <td class="py-4 px-4">
+                          <div class="h-4 bg-gray-300 rounded w-20 shimmer-effect"></div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6 tablet-hide">
-                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-12 sm:w-16 mx-auto shimmer-effect"></div>
+                        <td class="py-4 px-4 tablet-hide">
+                          <div class="h-4 bg-gray-300 rounded-full w-14 mx-auto shimmer-effect"></div>
                         </td>
-                        <td class="py-2 sm:py-4 px-1 sm:px-6">
-                          <div class="h-4 sm:h-6 bg-gray-300 rounded-full w-12 sm:w-16 mx-auto shimmer-effect"></div>
+                        <td class="py-4 px-4">
+                          <div class="h-4 bg-gray-300 rounded-full w-14 mx-auto shimmer-effect"></div>
                         </td>
                       </tr>
                     <% end %>
                   <% else %>
                     <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
                       <tr class={[
-                        if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50")
+                        if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50"),
+                        "hover:bg-gray-100 transition-colors duration-200"
                       ]}>
-                        <td class="py-1 sm:py-2 px-1 sm:px-3">
-                          <div class="flex items-center space-x-1 sm:space-x-2">
+                        <td class="py-4 px-4">
+                          <div class="flex items-center space-x-3">
                             <div class={[
-                              "w-2 h-2 sm:w-3 sm:h-3 rounded-full",
+                              "w-3 h-3 rounded-full",
                               case loja.status do
                                 :atingida_hora -> "bg-green-500"
                                 :abaixo_meta -> "bg-red-500"
@@ -1111,30 +1212,30 @@ defmodule AppWeb.DashboardResumoLive do
                             ]}>
                             </div>
                             <div>
-                              <div class="font-medium text-gray-900 text-xs">
+                              <div class="font-medium text-gray-900 text-sm">
                                 {loja.nome}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
-                          <span class="font-mono text-gray-800 text-xs">
+                        <td class="text-right py-4 px-4 tablet-hide">
+                          <span class="font-mono text-gray-800 text-sm">
                             {format_money(loja.meta_dia)}
                           </span>
                         </td>
-                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
-                          <span class="font-mono text-gray-800 text-xs">
+                        <td class="text-right py-4 px-4 tablet-hide">
+                          <span class="font-mono text-gray-800 text-sm">
                             {format_money(loja.meta_hora)}
                           </span>
                         </td>
-                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2">
-                          <span class="text-xs text-gray-800">
+                        <td class="text-center py-4 px-4">
+                          <span class="text-sm text-gray-800 font-medium">
                             {loja.qtde_nfs}
                           </span>
                         </td>
-                        <td class="text-right py-1 sm:py-2 px-1 sm:px-2">
+                        <td class="text-right py-4 px-4">
                           <span class={[
-                            "font-mono text-xs",
+                            "font-mono text-sm font-medium",
                             if(loja.venda_dia >= loja.meta_dia,
                               do: "text-green-700",
                               else: "text-gray-800"
@@ -1143,15 +1244,22 @@ defmodule AppWeb.DashboardResumoLive do
                             {format_money(loja.venda_dia)}
                           </span>
                         </td>
-                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2 tablet-hide">
-                          <span class="text-xs text-gray-800">
+                        <td class="text-center py-4 px-4 tablet-hide">
+                          <span class="text-sm text-gray-800 font-medium">
                                                           {if is_number(loja.perc_hora),
                                do: (loja.perc_hora * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
                                 else: "0,0"}%
                           </span>
                         </td>
-                        <td class="text-center py-1 sm:py-2 px-1 sm:px-2">
-                          <span class="text-xs text-gray-800">
+                        <td class="text-center py-4 px-4">
+                          <span class={[
+                            "text-sm font-medium",
+                            cond do
+                              is_number(loja.perc_dia) and loja.perc_dia >= 100 -> "text-green-700"
+                              is_number(loja.perc_dia) and loja.perc_dia >= 80 -> "text-yellow-700"
+                              true -> "text-red-700"
+                            end
+                          ]}>
                                                           {if is_number(loja.perc_dia),
                                do: (loja.perc_dia * 1.0 |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", ",")),
                                 else: "0,0"}%
@@ -1227,12 +1335,12 @@ defmodule AppWeb.DashboardResumoLive do
         </div>
       <% end %>
 
-      <!-- Modal de Detalhes do Vendedor -->
-      <%= if @show_seller_modal and @selected_seller do %>
+      <!-- Modal Interativa do Leaderboard -->
+      <%= if @show_leaderboard_modal do %>
         <.live_component
-          module={AppWeb.SellerDetailsModal}
-          id="seller-details-modal"
-          seller_data={@selected_seller}
+          module={AppWeb.InteractiveLeaderboardModal}
+          id="interactive-leaderboard-modal"
+          sales_feed={@sales_feed}
         />
       <% end %>
     </div>
