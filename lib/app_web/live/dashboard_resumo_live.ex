@@ -23,11 +23,17 @@ defmodule AppWeb.DashboardResumoLive do
         notifications: [],
         show_celebration: false,
         sales_feed: [],
-        feed_mode: :normal
+        feed_mode: :normal,
+        show_leaderboard_modal: false
       )
       |> fetch_and_assign_data_safe()
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_info({:close_leaderboard_modal}, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: false)}
   end
 
   @impl true
@@ -275,6 +281,16 @@ defmodule AppWeb.DashboardResumoLive do
       |> put_flash(:info, "Feed alterado para modo #{new_mode}")
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("open_leaderboard_modal", _params, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: true)}
+  end
+
+  @impl true
+  def handle_event("close_leaderboard_modal", _params, socket) do
+    {:noreply, assign(socket, show_leaderboard_modal: false)}
   end
 
   defp assign_loading_state(socket) do
@@ -829,9 +845,20 @@ defmodule AppWeb.DashboardResumoLive do
                 <div>
                   <h2 class="text-sm sm:text-base font-medium text-gray-900 mb-1">Leadeboards</h2>
                   <p class="text-xs text-gray-500 mobile-hide">
+                    Clique em "🏆 Ver Detalhes" para análise completa
                   </p>
                 </div>
                 <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                  <!-- Novo botão da modal interativa -->
+                  <button
+                    phx-click="open_leaderboard_modal"
+                    class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg text-xs font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto flex items-center justify-center space-x-1"
+                    title="Abrir leaderboard interativo"
+                  >
+                    <span>🏆</span>
+                    <span>Ver Detalhes</span>
+                  </button>
+
                   <button
                     phx-click="toggle_advanced_feed"
                     class={[
@@ -1161,6 +1188,15 @@ defmodule AppWeb.DashboardResumoLive do
             </span>
           </div>
         </div>
+      <% end %>
+
+      <!-- Modal Interativa do Leaderboard -->
+      <%= if @show_leaderboard_modal do %>
+        <.live_component
+          module={AppWeb.InteractiveLeaderboardModal}
+          id="interactive-leaderboard-modal"
+          sales_feed={@sales_feed}
+        />
       <% end %>
     </div>
     """
