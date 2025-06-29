@@ -12,7 +12,7 @@ defmodule AppWeb.DashboardResumoLiveTest do
 
     # Simula publicação de novos dados
     novos_dados = %{
-      sale: 9999.99,
+      sale: 9_999.99,
       cost: 1234.56,
       devolution: 100.0,
       objetivo: 5000.0,

@@ -6,21 +6,10 @@ defmodule App.Config do
   para facilitar manutenção e ajustes.
   """
 
-    @doc """
-  Limite padrão para busca do feed de vendas.
-
-  Configurado para incluir todos os parceiros conhecidos.
-  """
   def sales_feed_limit, do: 50
 
-  @doc """
-  Limite máximo permitido para busca do feed de vendas.
-  """
   def sales_feed_max_limit, do: 100
 
-  @doc """
-  URLs das APIs externas.
-  """
   def api_urls do
     %{
       sales_feed: "http://vendaweb.jurunense.com.br/api/v1/dashboard/sale",
@@ -30,14 +19,5 @@ defmodule App.Config do
     }
   end
 
-  @doc """
-  Configurações do leaderboard.
-  """
-  def leaderboard_config do
-    %{
-      default_limit: sales_feed_limit(),
-      update_interval_seconds: 30,
-      max_displayed_sellers: 100
-    }
-  end
+
 end

@@ -1,4 +1,12 @@
 defmodule App.Chat.Room do
+  @moduledoc """
+  GenServer que gerencia salas de chat para pedidos específicos.
+
+  Cada sala de chat mantém o estado das mensagens, usuários conectados
+  e usuários que estão digitando. Monitora inatividade para encerrar
+  salas não utilizadas automaticamente.
+  """
+
   use GenServer
   alias App.Chat
   alias App.ChatConfig

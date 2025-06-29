@@ -17,7 +17,63 @@
     
 
   </head>
-  <body class="bg-white">
-    {@inner_content}
+  <body class="bg-gray-50 antialiased min-h-screen">
+    <!-- Header com informações do usuário (apenas se logado) -->
+    <%= if assigns[:current_user] do %>
+      <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <span class="text-xl font-bold text-blue-600">JuruConnect</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="text-sm text-gray-700">
+                Olá, <span class="font-medium"><%= @current_user.name || @current_user.username %></span>
+                <span class="text-gray-500">(<%= @current_user.role %>)</span>
+              </div>
+              <a 
+                href="/logout" 
+                class="text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+              >
+                Sair
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+    <% end %>
+
+    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+      <%= if @current_user do %>
+        <li class="text-[0.8125rem] leading-6 text-zinc-900">
+          <%= @current_user.username %>
+        </li>
+        <li>
+          <.link
+            href="/logout"
+            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+          >
+            Sair
+          </.link>
+        </li>
+      <% else %>
+        <li>
+          <.link
+            href="/auth/login"
+            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
+          >
+            Entrar
+          </.link>
+        </li>
+      <% end %>
+    </ul>
+    <main class="px-4 py-20 sm:px-6 lg:px-8">
+      <div class="mx-auto">
+        <.flash_group flash={@flash} />
+        <%= @inner_content %>
+      </div>
+    </main>
   </body>
 </html>

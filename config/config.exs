@@ -47,6 +47,13 @@ config :app, AppWeb.Auth.Guardian,
     System.get_env("GUARDIAN_SECRET") ||
       "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
 
+# Configure Guardian.DB
+config :guardian, Guardian.DB,
+  repo: App.Repo,
+  schema_name: "guardian_tokens",
+  token_types: ["access", "refresh"],
+  sweep_interval: 60
+
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "3.4.3",
@@ -71,13 +78,7 @@ config :phoenix, :json_library, Jason
 config :app, Oban,
   repo: App.Repo,
   plugins: [
-    Oban.Plugins.Pruner,
-    {Oban.Plugins.Cron,
-     crontab: [
-       # Coleta dados de supervisores a cada hora
-       {"0 * * * *", JuruConnect.Workers.SupervisorDataWorker,
-        args: %{"api_url" => "http://10.1.1.108:8065/api/v1/dashboard/sale/12"}}
-     ]}
+    Oban.Plugins.Pruner
   ],
   queues: [
     default: 10,

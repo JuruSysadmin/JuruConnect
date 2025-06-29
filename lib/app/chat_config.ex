@@ -6,30 +6,14 @@ defmodule App.ChatConfig do
   incluindo limites de mensagens, timeouts, circuit breakers e valores padrão.
   """
 
-  @doc """
-  Retorna o limite padrão de mensagens carregadas ao entrar em uma sala.
-  """
   def default_message_limit, do: 50
 
-  @doc """
-  Retorna o limite máximo de mensagens que podem ser carregadas de uma vez.
-  """
   def max_message_limit, do: 100
 
-  @doc """
-  Retorna o nome de usuário padrão quando não é possível determinar o nome real.
-  """
   def default_username, do: "Usuário"
 
-  @doc """
-  Retorna o timeout de inatividade para salas de chat (em minutos).
-  Após este período, a sala será automaticamente encerrada.
-  """
   def room_inactivity_timeout, do: 30
 
-  @doc """
-  Retorna a configuração do circuit breaker para o serviço de preview de links.
-  """
   def link_preview_circuit_breaker do
     %{
       # Número máximo de falhas antes de abrir o circuito
@@ -41,9 +25,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna a configuração de paginação para carregamento de mensagens antigas.
-  """
   def pagination_config do
     %{
       # Número padrão de mensagens por página
@@ -55,9 +36,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna configurações de performance para o chat.
-  """
   def performance_config do
     %{
       # Tamanho do cache de mensagens em memória
@@ -69,9 +47,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna configurações de segurança para o chat.
-  """
   def security_config do
     %{
       # Comprimento máximo de uma mensagem
@@ -83,9 +58,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna configurações de notificação para o chat.
-  """
   def notification_config do
     %{
       # Habilitar som para novas mensagens
@@ -97,9 +69,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna configurações de UI/UX para o chat.
-  """
   def ui_config do
     %{
       # Habilitar scroll automático para novas mensagens
@@ -113,9 +82,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna configurações de desenvolvimento/debug.
-  """
   def debug_config do
     %{
       # Habilitar logs de debug
@@ -129,9 +95,6 @@ defmodule App.ChatConfig do
     }
   end
 
-  @doc """
-  Retorna todas as configurações como um mapa.
-  """
   def all_configs do
     %{
       default_message_limit: default_message_limit(),

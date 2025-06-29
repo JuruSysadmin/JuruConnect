@@ -3,9 +3,6 @@ defmodule AppWeb.DashboardUtils do
   Utilidades compartilhadas para formatação de dados do dashboard
   """
 
-  @doc """
-  Formata um valor numérico como moeda brasileira
-  """
   def format_money(value) when is_float(value) do
     "R$\u00A0" <>
       (value
@@ -27,9 +24,6 @@ defmodule AppWeb.DashboardUtils do
 
   def format_money(_), do: "R$ 0,00"
 
-  @doc """
-  Formata um valor numérico como percentual
-  """
   def format_percent(value) when is_float(value) do
     value
     |> :erlang.float_to_binary(decimals: 2)
@@ -50,18 +44,12 @@ defmodule AppWeb.DashboardUtils do
 
   def format_percent(_), do: "0,00%"
 
-  @doc """
-  Adiciona separador de milhares no formato brasileiro
-  """
   def add_thousands_separator(str) do
     [int, frac] = String.split(str, ",")
     int = int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
     int <> "," <> frac
   end
 
-  @doc """
-  Converte percentual string para número, tratando vírgula decimal e símbolo %
-  """
   def parse_percent_to_number(value) when is_binary(value) do
     value
     |> String.replace(",", ".")
@@ -84,9 +72,6 @@ defmodule AppWeb.DashboardUtils do
   def parse_percent_to_number(nil), do: 0.0
   def parse_percent_to_number(_), do: 0.0
 
-  @doc """
-  Calcula margem de Margem
-  """
   def calculate_margin(data) do
     sale = get_numeric_value(data, "sale")
     discount = get_numeric_value(data, "discount")
@@ -98,9 +83,6 @@ defmodule AppWeb.DashboardUtils do
     end
   end
 
-  @doc """
-  Calcula ticket médio
-  """
   def calculate_ticket(data) do
     sale = get_numeric_value(data, "sale")
     nfs = get_numeric_value(data, "nfs")
@@ -112,9 +94,6 @@ defmodule AppWeb.DashboardUtils do
     end
   end
 
-  @doc """
-  Extrai valor numérico de um mapa, com fallback para 0
-  """
   def get_numeric_value(data, key) when is_map(data) do
     case Map.get(data, key, 0) do
       value when is_float(value) ->

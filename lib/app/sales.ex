@@ -10,17 +10,6 @@ defmodule App.Sales do
   alias App.Repo
   alias App.Schemas.Sale
 
-  @doc """
-  Cria uma nova venda no sistema.
-
-  ## Exemplos
-
-      iex> create_sale(%{seller_name: "João Silva", sale_value: 1500.0, ...})
-      {:ok, %Sale{}}
-
-      iex> create_sale(%{invalid: "data"})
-      {:error, %Ecto.Changeset{}}
-  """
   @spec create_sale(map()) :: {:ok, Sale.t()} | {:error, Ecto.Changeset.t()}
   def create_sale(attrs) do
     attrs_with_timestamp = Map.put_new(attrs, :timestamp, DateTime.utc_now())
@@ -30,19 +19,6 @@ defmodule App.Sales do
     |> Repo.insert()
   end
 
-  @doc """
-  Lista vendas com paginação e filtros opcionais.
-
-  ## Opções
-
-  - `:limit` - Número máximo de registros (padrão: 15)
-  - `:offset` - Deslocamento para paginação (padrão: 0)
-  - `:date_from` - Data inicial do filtro
-  - `:date_to` - Data final do filtro
-  - `:type` - Tipo de venda (:simulated, :api, :sale_supervisor)
-  - `:store` - Nome da loja
-  - `:seller_name` - Nome do vendedor
-  """
   @spec list_sales(keyword()) :: [Sale.t()]
   def list_sales(opts \\ []) do
     limit = Keyword.get(opts, :limit, 15)
@@ -64,9 +40,6 @@ defmodule App.Sales do
     |> Repo.all()
   end
 
-  @doc """
-  Busca vendas para o feed do dashboard.
-  """
   @spec get_sales_feed(integer()) :: {:ok, [map()]} | {:error, term()}
   def get_sales_feed(limit \\ 50) do
     try do
@@ -84,17 +57,11 @@ defmodule App.Sales do
     end
   end
 
-  @doc """
-  Busca uma venda por ID.
-  """
   @spec get_sale(integer()) :: Sale.t() | nil
   def get_sale(id) do
     Repo.get(Sale, id)
   end
 
-  @doc """
-  Calcula métricas de vendas para um período.
-  """
   @spec calculate_sales_metrics(keyword()) :: map()
   def calculate_sales_metrics(opts \\ []) do
     date_from = Keyword.get(opts, :date_from, Date.utc_today())
@@ -123,9 +90,6 @@ defmodule App.Sales do
     end
   end
 
-  @doc """
-  Remove vendas antigas (mais de 30 dias).
-  """
   @spec cleanup_old_sales() :: {integer(), nil}
   def cleanup_old_sales do
     cutoff_date = DateTime.utc_now() |> DateTime.add(-30, :day)

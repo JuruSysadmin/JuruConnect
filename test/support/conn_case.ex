@@ -19,20 +19,29 @@ defmodule AppWeb.ConnCase do
 
   using do
     quote do
-      # The default endpoint for testing
       @endpoint AppWeb.Endpoint
 
       use AppWeb, :verified_routes
 
-      # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
       import AppWeb.ConnCase
+      import App.Factory
     end
   end
 
-  setup tags do
+    setup tags do
     App.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+
+    conn =
+      Phoenix.ConnTest.build_conn()
+      |> Plug.Session.call(Plug.Session.init(
+        store: :cookie,
+        key: "_app_key",
+        signing_salt: "test_salt"
+      ))
+      |> Plug.Conn.fetch_session()
+
+    {:ok, conn: conn}
   end
 end

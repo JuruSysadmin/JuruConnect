@@ -18,10 +18,16 @@ defmodule App.Application do
       {Finch, name: App.Finch},
       # Oban for background jobs
       {Oban, Application.fetch_env!(:app, Oban)},
-      # DashboardDataServer centraliza o fetch da API
+      # Nova arquitetura do Dashboard (separação de responsabilidades)
+      App.Dashboard.Supervisor,
+      # Mantém o antigo para compatibilidade (será removido depois)
       App.DashboardDataServer,
       # CelebrationManager gerencia celebrações com cache
       App.CelebrationManager,
+      # RateLimiter cleanup process para limpeza automática
+      App.Auth.RateLimiterCleanup,
+      # Password Reset system para recuperação segura
+      App.Auth.PasswordReset,
       # Start a worker by calling: App.Worker.start_link(arg)
       # {App.Worker, arg},
       # Start to serve requests, typically the last entry

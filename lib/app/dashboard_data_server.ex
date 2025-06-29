@@ -20,18 +20,6 @@ defmodule App.DashboardDataServer do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  @doc """
-  Busca dados com timeout configurável.
-
-  ## Retorna
-  - `{:ok, data}` - Dados disponíveis
-  - `{:loading, nil}` - Ainda carregando dados
-  - `{:error, reason}` - Erro ao buscar dados
-  - `{:timeout, reason}` - Timeout na comunicação
-
-  ## Opções
-  - `:timeout` - Timeout em ms (default: 10_000)
-  """
   def get_data(opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @call_timeout)
 
@@ -43,10 +31,6 @@ defmodule App.DashboardDataServer do
     end
   end
 
-  @doc """
-  Versão síncrona que aguarda dados estarem disponíveis.
-  Útil para testes ou casos onde você precisa garantir que há dados.
-  """
   def get_data_sync(opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @call_timeout)
     max_attempts = Keyword.get(opts, :max_attempts, 10)
@@ -72,16 +56,10 @@ defmodule App.DashboardDataServer do
     end)
   end
 
-  @doc """
-  Força uma nova busca de dados imediatamente.
-  """
   def force_refresh do
     GenServer.cast(__MODULE__, :force_fetch)
   end
 
-  @doc """
-  Retorna o status atual do servidor.
-  """
   def status do
     GenServer.call(__MODULE__, :status, 5_000)
   end
@@ -238,8 +216,7 @@ defmodule App.DashboardDataServer do
       # Nova verificação de celebrações REAL baseada nos dados da API
       App.CelebrationManager.process_api_data(merged_data)
 
-      # Sistema legado desabilitado para evitar celebrações duplicadas
-      # check_goal_achievements(companies)
+
 
       {:ok, merged_data}
     else
@@ -247,26 +224,5 @@ defmodule App.DashboardDataServer do
     end
   end
 
-  defp check_goal_achievements(companies) when is_list(companies) do
-    Enum.each(companies, &check_company_goal/1)
-  end
 
-  defp check_company_goal(company) do
-    perc_dia = Map.get(company, :perc_dia, 0.0)
-
-    if perc_dia >= 99.9 and perc_dia <= 100.1 do
-      goal_data = %{
-        store_name: company.nome,
-        achieved: company.venda_dia,
-        target: company.meta_dia,
-        percentage: perc_dia,
-        timestamp: DateTime.utc_now(),
-        celebration_id: System.unique_integer([:positive])
-      }
-
-      Phoenix.PubSub.broadcast(App.PubSub, "dashboard:goals", {:daily_goal_achieved, goal_data})
-
-      :ok
-    end
-  end
 end

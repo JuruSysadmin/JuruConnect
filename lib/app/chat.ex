@@ -24,15 +24,8 @@ defmodule App.Chat do
     |> Repo.all()
   end
 
-  @doc """
-  Verifies if a user has access to a specific chat.
-  TODO: Implement real access logic based on your application's rules.
-  """
   def user_has_access?(_user_id, _chat_id), do: true
 
-  @doc """
-  Lists messages for a given chat, with pagination.
-  """
   def list_messages(chat_id, opts \\ []) do
     offset = Keyword.get(opts, :offset, 0)
     limit = Keyword.get(opts, :limit, 50)
@@ -51,9 +44,6 @@ defmodule App.Chat do
     {:ok, messages, has_more_messages}
   end
 
-  @doc """
-  Creates and persists a new message.
-  """
   def create_message(params) do
     %Message{}
     |> Message.changeset(params)
@@ -64,9 +54,6 @@ defmodule App.Chat do
     ChatSession.get_messages(chat_id)
   end
 
-  @doc """
-  Lista mensagens para um pedido (order_id), com limite e offset opcional.
-  """
   def list_messages_for_order(order_id, limit \\ 50, offset \\ 0) do
     query =
       from(m in Message,
@@ -81,9 +68,6 @@ defmodule App.Chat do
     {:ok, messages, has_more_messages}
   end
 
-  @doc """
-  Envia uma mensagem para um pedido específico, com suporte a imagem.
-  """
   def send_message(order_id, sender_id, text, image_url \\ nil) do
     params = %{
       text: text,

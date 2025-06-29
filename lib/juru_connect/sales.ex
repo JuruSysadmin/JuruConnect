@@ -10,17 +10,6 @@ defmodule JuruConnect.Sales do
   alias App.Repo
   alias JuruConnect.Schemas.SupervisorData
 
-  @doc """
-  Salva dados de supervisor vindos da API.
-
-  ## Exemplos
-
-      iex> create_supervisor_data(%{objective: 100000, sale: 85000, ...})
-      {:ok, %SupervisorData{}}
-
-      iex> create_supervisor_data(%{invalid: "data"})
-      {:error, %Ecto.Changeset{}}
-  """
   @spec create_supervisor_data(map()) :: {:ok, SupervisorData.t()} | {:error, Ecto.Changeset.t()}
   def create_supervisor_data(attrs) do
     attrs_with_timestamp = Map.put(attrs, :collected_at, DateTime.utc_now())
@@ -30,23 +19,12 @@ defmodule JuruConnect.Sales do
     |> Repo.insert()
   end
 
-  @doc """
-  Salva dados de supervisor convertendo keys do camelCase para snake_case.
-
-  ## Exemplos
-
-      iex> create_supervisor_data_from_api(%{"objetive" => 100000, "saleSupervisor" => [...]})
-      {:ok, %SupervisorData{}}
-  """
   @spec create_supervisor_data_from_api(map()) :: {:ok, SupervisorData.t()} | {:error, Ecto.Changeset.t()}
   def create_supervisor_data_from_api(api_data) do
     normalized_data = normalize_api_data(api_data)
     create_supervisor_data(normalized_data)
   end
 
-  @doc """
-  Lista dados de supervisor com paginação e filtros opcionais.
-  """
   @spec list_supervisor_data(keyword()) :: [SupervisorData.t()]
   def list_supervisor_data(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
@@ -60,9 +38,6 @@ defmodule JuruConnect.Sales do
     |> Repo.all()
   end
 
-  @doc """
-  Busca dados mais recentes de supervisor.
-  """
   @spec get_latest_supervisor_data() :: SupervisorData.t() | nil
   def get_latest_supervisor_data do
     SupervisorData
@@ -71,9 +46,6 @@ defmodule JuruConnect.Sales do
     |> Repo.one()
   end
 
-  @doc """
-  Busca vendedores com melhor performance em um período.
-  """
   @spec get_top_performers(integer(), DateTime.t(), DateTime.t()) :: [map()]
   def get_top_performers(limit \\ 10, date_from, date_to) do
     from(sd in SupervisorData,
@@ -91,9 +63,6 @@ defmodule JuruConnect.Sales do
     end
   end
 
-  @doc """
-  Busca histórico de performance de um vendedor específico.
-  """
   @spec get_seller_history(integer(), DateTime.t(), DateTime.t()) :: [map()]
   def get_seller_history(seller_id, date_from, date_to) do
     from(sd in SupervisorData,
@@ -111,8 +80,6 @@ defmodule JuruConnect.Sales do
     end)
     |> Enum.filter(& &1.seller_data)
   end
-
-  # Private functions
 
   defp maybe_filter_by_date_range(query, nil, nil), do: query
   defp maybe_filter_by_date_range(query, date_from, nil) do

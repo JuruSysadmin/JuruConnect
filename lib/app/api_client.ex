@@ -5,9 +5,6 @@ defmodule App.ApiClient do
 
   @base_url "http://10.1.1.212:8065/api/v1"
 
-        @doc """
-  Busca dados resumidos do dashboard
-  """
   def fetch_dashboard_summary do
     with {:ok, sale_data} <- fetch_sale_data(),
          {:ok, company_result} <- fetch_companies_data() do
@@ -53,17 +50,11 @@ defmodule App.ApiClient do
     end
   end
 
-  @doc """
-  Busca dados do feed de vendas em tempo real com fallback incremental.
-
-  Se o limite alto falhar, tenta buscar com limites menores para garantir
-  que todos os parceiros sejam incluídos.
-  """
   def fetch_sales_feed_robust(desired_limit \\ nil) do
     actual_limit = desired_limit || App.Config.sales_feed_limit()
 
          case fetch_sales_feed_with_limit(actual_limit) do
-      {:ok, sales} when length(sales) > 0 ->
+      {:ok, [_ | _] = sales} ->
         {:ok, sales}
 
              _ ->
@@ -97,9 +88,6 @@ defmodule App.ApiClient do
     end
   end
 
-  @doc """
-  Busca dados do feed de vendas em tempo real (compatibilidade).
-  """
   def fetch_sales_feed(limit \\ nil) do
     fetch_sales_feed_robust(limit)
   end
@@ -109,7 +97,7 @@ defmodule App.ApiClient do
 
     Enum.reduce_while(limits_to_try, {:error, "Nenhum limite funcionou"}, fn limit, _acc ->
       case fetch_sales_feed_with_limit(limit) do
-        {:ok, sales} when length(sales) > 0 ->
+        {:ok, [_ | _] = sales} ->
           {:halt, {:ok, sales}}
         _ ->
           {:cont, {:error, "Limite #{limit} falhou"}}
@@ -145,9 +133,6 @@ defmodule App.ApiClient do
   defp normalize_decimal(nil), do: 0.0
   defp normalize_decimal(_), do: 0.0
 
-  @doc """
-  Busca dados das lojas/companies do dashboard
-  """
   def fetch_companies_data do
     url = "http://10.1.1.212:8065/api/v1/dashboard/sale/company"
 

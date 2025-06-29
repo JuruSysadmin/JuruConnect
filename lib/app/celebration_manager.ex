@@ -10,7 +10,7 @@ defmodule App.CelebrationManager do
 
   use GenServer
   require Logger
-  alias App.DashboardDataServer
+
 
   # Cache de celebrações por 1 hora
   @cache_ttl_ms 3_600_000
@@ -50,20 +50,24 @@ defmodule App.CelebrationManager do
 
   ## GenServer API
 
-  def start_link(opts \\ []) do
+  def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
   @impl true
-  def init(state) do
+  def init(_state) do
     # Limpa cache periodicamente
     schedule_cache_cleanup()
-    {:ok, %{celebrations_cache: %{}}}
+    {:ok, %{
+      celebrations_cache: %{},
+      daily_notifications: %{}  # Controle específico para notificações diárias
+    }}
   end
 
   @impl true
   def handle_info(:cleanup_cache, state) do
     current_time = System.monotonic_time(:millisecond)
+    today = Date.utc_today() |> Date.to_string()
 
     cleaned_cache =
       state.celebrations_cache
@@ -72,10 +76,22 @@ defmodule App.CelebrationManager do
       end)
       |> Enum.into(%{})
 
+    # Limpa notificações diárias de dias anteriores
+    cleaned_daily_notifications =
+      state.daily_notifications
+      |> Enum.filter(fn {_key, date} ->
+        date == today
+      end)
+      |> Enum.into(%{})
+
     Logger.debug("Cache limpo: #{map_size(state.celebrations_cache)} -> #{map_size(cleaned_cache)} entradas")
+    Logger.debug("Notificações diárias: #{map_size(state.daily_notifications)} -> #{map_size(cleaned_daily_notifications)} entradas")
 
     schedule_cache_cleanup()
-    {:noreply, %{state | celebrations_cache: cleaned_cache}}
+    {:noreply, %{state |
+      celebrations_cache: cleaned_cache,
+      daily_notifications: cleaned_daily_notifications
+    }}
   end
 
   @impl true
@@ -99,12 +115,33 @@ defmodule App.CelebrationManager do
     end
   end
 
+  @impl true
+  def handle_call({:check_daily_notification, store_name}, _from, state) do
+    today = Date.utc_today() |> Date.to_string()
+    daily_key = "#{store_name}:#{today}"
+
+    case Map.get(state.daily_notifications, daily_key) do
+      nil ->
+        # Primeira notificação desta loja hoje
+        new_daily_notifications = Map.put(state.daily_notifications, daily_key, today)
+        Logger.debug("Primeira notificação de meta diária para #{store_name} hoje")
+        {:reply, :not_notified, %{state | daily_notifications: new_daily_notifications}}
+
+      ^today ->
+        # Já foi notificada hoje
+        Logger.debug("Loja #{store_name} já foi notificada hoje - ignorando duplicata")
+        {:reply, :already_notified, state}
+
+      _other_date ->
+        # Notificação de outro dia, atualiza para hoje
+        new_daily_notifications = Map.put(state.daily_notifications, daily_key, today)
+        Logger.debug("Atualizando notificação de meta diária para #{store_name} - novo dia")
+        {:reply, :not_notified, %{state | daily_notifications: new_daily_notifications}}
+    end
+  end
+
   ## Public API
 
-  @doc """
-  Processa dados recebidos da API e verifica celebrações.
-  Inclui cache para evitar duplicatas.
-  """
   def process_api_data(api_data) when is_map(api_data) do
     celebrations = []
 
@@ -137,13 +174,8 @@ defmodule App.CelebrationManager do
 
   def process_api_data(_), do: {:ok, []}
 
-  @doc """
-  Processa nova venda e verifica se gera celebração.
-  """
-    def process_new_sale(sale_data, current_totals) do
+    def process_new_sale(_sale_data, _current_totals) do
     # Celebrações de vendas individuais desabilitadas - apenas meta diária
-    celebrations = []
-
     # Verificações desabilitadas conforme solicitado
     # celebrations = check_individual_sale_celebration(sale_data, celebrations)
     # celebrations = check_milestone_celebrations(current_totals, celebrations)
@@ -160,14 +192,29 @@ defmodule App.CelebrationManager do
   end
 
   defp should_send_celebration?(celebration) do
+    case celebration.type do
+      :daily_goal ->
+        # Controle específico para metas diárias
+        store_name = get_in(celebration.data, [:store_name]) || "unknown"
+
+        case GenServer.call(__MODULE__, {:check_daily_notification, store_name}) do
+          :not_notified -> true   # Primeira vez hoje
+          :already_notified -> false  # Já foi notificada hoje
+        end
+
+      _ ->
+        # Outros tipos usam o cache tradicional
     cache_key = create_cache_key(celebration)
 
     case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
       :not_found -> true   # Nova celebração
       :found -> false      # Já foi enviada
+        end
     end
   rescue
-    _error -> true  # Se há erro no cache, permite a celebração
+    error ->
+      Logger.warning("Erro ao verificar cache de celebração: #{inspect(error)}")
+      true  # Se há erro no cache, permite a celebração
   end
 
     defp create_cache_key(celebration) do
@@ -282,193 +329,11 @@ defmodule App.CelebrationManager do
     end
   end
 
-  defp check_hourly_goal(company, celebrations) do
-    perc_hora = get_numeric_value(company, :perc_hora, 0.0)
 
-    if perc_hora >= @celebration_types.hourly_goal.threshold do
-      celebration = create_celebration(
-        :hourly_goal,
-        company,
-        perc_hora,
-        %{
-          achieved: get_numeric_value(company, :venda_dia, 0.0),
-          hourly_target: get_numeric_value(company, :meta_hora, 0.0),
-          store_name: Map.get(company, :nome, "Loja Desconhecida")
-        }
-      )
 
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
 
-  defp check_exceptional_performance(company, celebrations) do
-    perc_dia = get_numeric_value(company, :perc_dia, 0.0)
 
-    if perc_dia >= @celebration_types.exceptional_performance.threshold do
-      celebration = create_celebration(
-        :exceptional_performance,
-        company,
-        perc_dia,
-        %{
-          achieved: get_numeric_value(company, :venda_dia, 0.0),
-          target: get_numeric_value(company, :meta_dia, 0.0),
-          store_name: Map.get(company, :nome, "Loja Desconhecida"),
-          performance_level: get_performance_level(perc_dia)
-        }
-      )
-
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
-
-  defp check_individual_sellers(celebrations, companies) when is_list(companies) do
-    # Extrai dados de vendedores de todas as lojas
-    all_sellers =
-      companies
-      |> Enum.flat_map(fn company ->
-        case Map.get(company, "saleSupervisor") do
-          sellers when is_list(sellers) -> sellers
-          _ -> []
-        end
-      end)
-
-    # Verifica vendedores top
-    new_celebrations =
-      all_sellers
-      |> Enum.filter(&is_top_seller/1)
-      |> Enum.map(&create_seller_celebration/1)
-
-    celebrations ++ new_celebrations
-  end
-
-  defp check_individual_sellers(celebrations, _), do: celebrations
-
-  defp is_top_seller(seller) do
-    percentual_objective = get_numeric_value(seller, "percentualObjective", 0.0)
-    percentual_objective >= @celebration_types.top_seller.threshold
-  end
-
-  defp create_seller_celebration(seller) do
-    percentual = get_numeric_value(seller, "percentualObjective", 0.0)
-
-    create_celebration(
-      :top_seller,
-      seller,
-      percentual,
-      %{
-        seller_name: Map.get(seller, "sellerName", "Vendedor Desconhecido"),
-        store: Map.get(seller, "store", "Loja Desconhecida"),
-        achieved: get_numeric_value(seller, "saleValue", 0.0),
-        target: get_numeric_value(seller, "objetivo", 0.0),
-        performance_level: get_performance_level(percentual)
-      }
-    )
-  end
-
-  defp check_monthly_goals(celebrations, api_data) do
-    percentual_sale = get_numeric_value(api_data, "percentualSale", 0.0)
-
-    if percentual_sale >= @celebration_types.monthly_milestone.threshold do
-      celebration = create_celebration(
-        :monthly_milestone,
-        api_data,
-        percentual_sale,
-        %{
-          achieved: get_numeric_value(api_data, "sale", 0.0),
-          target: get_numeric_value(api_data, "objetive", 0.0),
-          type: :system_wide
-        }
-      )
-
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
-
-  defp check_system_wide_metrics(celebrations, api_data) do
-    # Verifica métricas gerais do sistema
-    # Exemplo: Se o NFS do dia ultrapassou um marco
-    nfs_today = get_numeric_value(api_data, "nfsToday", 0)
-
-    if nfs_today > 0 and rem(nfs_today, 100) == 0 do
-      celebration = %{
-        type: :nfs_milestone,
-        percentage: 100.0,
-        data: %{
-          nfs_count: nfs_today,
-          message: "Marco de #{nfs_today} vendas hoje!"
-        },
-        timestamp: DateTime.utc_now(),
-        celebration_id: System.unique_integer([:positive]),
-        level: :minor
-      }
-
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
-
-  defp check_individual_sale_celebration(sale_data, celebrations) do
-    sale_value = Map.get(sale_data, :sale_value, 0.0)
-    objetivo = Map.get(sale_data, :objetivo, 0.0)
-
-    # Celebra vendas individuais excepcionais
-    if objetivo > 0 and sale_value >= objetivo * 2.0 do
-      # Garante que o cálculo seja em float
-      safe_percentage = (ensure_float(sale_value) / ensure_float(objetivo) * 100.0)
-
-      celebration = %{
-        type: :exceptional_individual_sale,
-        percentage: Float.round(safe_percentage, 1),
-        data: %{
-          seller_name: Map.get(sale_data, :seller_name, "Vendedor"),
-          store: Map.get(sale_data, :store, "Loja"),
-          achieved: sale_value,
-          target: objetivo,
-          message: "Venda Excepcional!"
-        },
-        timestamp: DateTime.utc_now(),
-        celebration_id: System.unique_integer([:positive]),
-        level: :epic
-      }
-
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
-
-  defp check_milestone_celebrations(current_totals, celebrations) do
-    # Verifica marcos importantes nos totais
-    total_sales = Map.get(current_totals, :sale_num, 0.0)
-
-    # Celebra marcos de valor (múltiplos de 10.000)
-    if total_sales > 0 and rem(trunc(total_sales), 10_000) == 0 do
-      celebration = %{
-        type: :sales_milestone,
-        percentage: 100.0,
-        data: %{
-          total_sales: total_sales,
-          message: "Marco de R$ #{trunc(total_sales)} em vendas!"
-        },
-        timestamp: DateTime.utc_now(),
-        celebration_id: System.unique_integer([:positive]),
-        level: :major
-      }
-
-      [celebration | celebrations]
-    else
-      celebrations
-    end
-  end
-
-  defp create_celebration(type, data, percentage, extra_data) do
+  defp create_celebration(type, _data, percentage, extra_data) do
     celebration_config = Map.get(@celebration_types, type)
 
     # Garante que percentage seja um float antes de fazer round
@@ -497,10 +362,7 @@ defmodule App.CelebrationManager do
     }
   end
 
-  defp get_performance_level(percentage) when percentage >= 200.0, do: :legendary
-  defp get_performance_level(percentage) when percentage >= 150.0, do: :epic
-  defp get_performance_level(percentage) when percentage >= 120.0, do: :excellent
-  defp get_performance_level(_), do: :good
+
 
   defp broadcast_celebration(celebration) do
     case celebration.type do

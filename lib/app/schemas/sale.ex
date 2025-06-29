@@ -43,9 +43,6 @@ defmodule App.Schemas.Sale do
     timestamps()
   end
 
-  @doc """
-  Changeset para criação de vendas.
-  """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(sale, attrs) do
     sale

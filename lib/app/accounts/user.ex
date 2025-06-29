@@ -45,9 +45,6 @@ defmodule App.Accounts.User do
     timestamps()
   end
 
-  @doc """
-  Cria um conjunto de alterações para criar um usuário.
-  """
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:username, :name, :role, :store_id, :password, :website, :avatar_url])

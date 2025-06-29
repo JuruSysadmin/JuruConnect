@@ -36,6 +36,38 @@ import ChatHook from './hooks/chat_hook.js'
  */
 let Hooks = {}
 
+/**
+ * Hook para auto-dismiss das mensagens de flash
+ * @namespace Hooks.AutoDismissFlash
+ */
+Hooks.AutoDismissFlash = {
+  /**
+   * Inicializa o auto-dismiss quando a mensagem é montada
+   * @memberof Hooks.AutoDismissFlash
+   */
+  mounted() {
+    const kind = this.el.dataset.kind;
+    
+    // Auto-dismiss apenas para mensagens de sucesso (info), não para erro
+    if (kind === 'info') {
+      this.timeout = setTimeout(() => {
+        // Simula o clique para fechar a mensagem
+        this.el.click();
+      }, 4000); // 4 segundos
+    }
+  },
+  
+  /**
+   * Limpa o timeout quando o elemento é destruído
+   * @memberof Hooks.AutoDismissFlash
+   */
+  destroyed() {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+  }
+};
+
 Hooks.ChatHook = ChatHook
 
 /**

@@ -50,9 +50,6 @@ defmodule JuruConnect.Schemas.SupervisorData do
     timestamps()
   end
 
-  @doc """
-  Changeset para criação de dados de supervisor.
-  """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(supervisor_data, attrs) do
     supervisor_data

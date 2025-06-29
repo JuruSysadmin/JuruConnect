@@ -73,7 +73,6 @@ defmodule AppWeb do
 
   defp html_helpers do
     quote do
-      # Translation
       use Gettext, backend: AppWeb.Gettext
 
       import Phoenix.HTML
@@ -97,9 +96,6 @@ defmodule AppWeb do
     end
   end
 
-  @doc """
-  When used, dispatch to the appropriate controller/live_view/etc.
-  """
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end

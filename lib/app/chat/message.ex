@@ -26,11 +26,10 @@ defmodule App.Chat.Message do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @doc false
   def changeset(message, attrs) do
     message
     |> cast(attrs, [:text, :sender_id, :sender_name, :order_id, :tipo, :image_url])
     |> validate_required([:text, :sender_id, :sender_name, :order_id])
-    |> put_change(:image_url, attrs[:image_url] || nil)
+    |> put_change(:inserted_at, DateTime.utc_now())
   end
 end
