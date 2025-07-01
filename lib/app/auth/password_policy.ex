@@ -42,7 +42,7 @@ defmodule App.Auth.PasswordPolicy do
     ~r/qwe|wer|ert|rty|tyu|yui|uio|iop|asd|sdf|dfg|fgh|ghj|hjk|jkl|zxc|xcv|cvb|vbn|bnm/i  # Padrões de teclado
   ]
 
-  def validate_password(password, user \\ nil, opts \\ []) do
+  def validate_password(password, user \\ nil, _opts \\ []) do
     results = [
       validate_length(password),
       validate_complexity(password),
@@ -199,7 +199,7 @@ defmodule App.Auth.PasswordPolicy do
     end
   end
 
-  defp validate_user_specific(password, nil), do: :ok
+  defp validate_user_specific(_password, nil), do: :ok
   defp validate_user_specific(password, user) do
     password_lower = String.downcase(password)
     errors = []
@@ -232,8 +232,8 @@ defmodule App.Auth.PasswordPolicy do
     end
   end
 
-  defp validate_password_history(password, nil), do: :ok
-  defp validate_password_history(password, user) do
+  defp validate_password_history(_password, nil), do: :ok
+  defp validate_password_history(_password, user) do
     # Aqui verificaríamos contra um histórico de senhas
     # Por enquanto, simularemos com uma verificação simples
 

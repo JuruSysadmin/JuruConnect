@@ -14,11 +14,6 @@ defmodule AppWeb.DashboardComponents do
     ~H"""
     <div class={@class <> " bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-3 sm:p-4 md:p-5 w-full min-w-[140px] sm:min-w-[180px] md:min-w-[200px] transition-all duration-300 hover:shadow-xl hover:scale-105"}>
       <div class="flex items-center mb-2 sm:mb-3">
-        <%= if assigns[:icon] do %>
-          <div class={@icon_bg <> " w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mr-2 sm:mr-3"}>
-            {render_slot(@icon)}
-          </div>
-        <% end %>
         <span class="text-xs sm:text-sm md:text-base font-medium text-gray-700 text-center leading-tight">{@title}</span>
       </div>
       <div class="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 w-full text-center">

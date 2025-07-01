@@ -106,8 +106,6 @@ defmodule JuruConnect.Api.SupervisorClient do
     cond do
       Code.ensure_loaded?(Jason) ->
         Jason.decode(body)
-      Code.ensure_loaded?(Poison) ->
-        Poison.decode(body)
       true ->
         {:error, :no_json_library}
     end

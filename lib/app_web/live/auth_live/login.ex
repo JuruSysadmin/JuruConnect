@@ -12,7 +12,6 @@ defmodule AppWeb.AuthLive.Login do
   use AppWeb, :live_view
 
   alias App.Auth.{Manager, PasswordReset, PasswordPolicy}
-  alias App.Accounts
 
   def mount(_params, _session, socket) do
     # Store IP address during mount as connect_info is only available here
@@ -135,7 +134,7 @@ defmodule AppWeb.AuthLive.Login do
            |> assign(loading: false)
            |> put_flash(:error, "Usuário ou senha inválidos.")}
 
-        {:error, reason} ->
+        {:error, _reason} ->
           {:noreply,
            socket
            |> assign(loading: false)
@@ -263,7 +262,7 @@ defmodule AppWeb.AuthLive.Login do
                     tabindex="-1"
                   >
                     <span class="text-gray-400 hover:text-gray-600 text-sm">
-                      <%= if @show_password, do: "🙈", else: "👁️" %>
+                      <%= if @show_password, do: "Ocultar", else: "Mostrar" %>
                     </span>
                   </button>
                 </div>
@@ -289,7 +288,7 @@ defmodule AppWeb.AuthLive.Login do
                   class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <%= if @loading do %>
-                    <span class="animate-spin mr-3">⏳</span>
+                    <span class="animate-spin mr-3">•</span>
                     Entrando...
                   <% else %>
                     Entrar
@@ -324,7 +323,7 @@ defmodule AppWeb.AuthLive.Login do
                   class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <%= if @loading do %>
-                    <span class="animate-spin mr-3">⏳</span>
+                    <span class="animate-spin mr-3">•</span>
                     Enviando...
                   <% else %>
                     Enviar Link de Recuperação
@@ -366,7 +365,7 @@ defmodule AppWeb.AuthLive.Login do
                     tabindex="-1"
                   >
                     <span class="text-gray-400 hover:text-gray-600 text-sm">
-                      <%= if @show_password, do: "🙈", else: "👁️" %>
+                      <%= if @show_password, do: "Ocultar", else: "Mostrar" %>
                     </span>
                   </button>
                 </div>
@@ -407,7 +406,7 @@ defmodule AppWeb.AuthLive.Login do
                     <ul class="mt-2 text-sm text-gray-600">
                       <%= for feedback <- @password_strength.feedback do %>
                         <li class="flex items-center">
-                          <span class="text-yellow-500 mr-1">⚠️</span>
+                          <span class="text-yellow-500 mr-1 font-bold">AVISO:</span>
                           <%= feedback %>
                         </li>
                       <% end %>
@@ -422,7 +421,7 @@ defmodule AppWeb.AuthLive.Login do
                 class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 <%= if @loading do %>
-                  <span class="animate-spin mr-3">⏳</span>
+                  <span class="animate-spin mr-3">•</span>
                   Alterando Senha...
                 <% else %>
                   Alterar Senha

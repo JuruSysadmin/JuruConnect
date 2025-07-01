@@ -12,6 +12,8 @@ defmodule App.ChatConfig do
 
   def default_username, do: "Usuário"
 
+  def max_message_length, do: 1000
+
   def room_inactivity_timeout, do: 30
 
   def link_preview_circuit_breaker do
@@ -40,12 +42,13 @@ defmodule App.ChatConfig do
     %{
       # Tamanho do cache de mensagens em memória
       message_cache_size: 1000,
-      # Intervalo de atualização de presença (ms)
-      presence_update_interval: 30_000,
+      presence_update_interval: 1_000,
       # Timeout para indicador de digitação (ms)
-      typing_timeout: 5000
+      typing_timeout: 3000
     }
   end
+
+  def typing_timeout, do: performance_config()[:typing_timeout]
 
   def security_config do
     %{
@@ -84,14 +87,10 @@ defmodule App.ChatConfig do
 
   def debug_config do
     %{
-      # Habilitar logs de debug
-      enable_debug_logs: false,
-      # Logar eventos de mensagens
+      enable_debug_logs: true,
       log_message_events: false,
-      # Logar eventos de presença
-      log_presence_events: false,
-      # Logar métricas de performance
-      log_performance_metrics: false
+      log_presence_events: true,
+      log_performance_metrics: true
     }
   end
 

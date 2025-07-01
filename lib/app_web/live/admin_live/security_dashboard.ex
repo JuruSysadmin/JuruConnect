@@ -12,7 +12,7 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   use AppWeb, :live_view
 
-  alias App.Auth.{RateLimiter, SecurityLogger, PasswordReset, PasswordPolicy}
+  alias App.Auth.{RateLimiter, PasswordReset, PasswordPolicy}
   alias App.Accounts
 
   def mount(_params, session, socket) do
@@ -274,7 +274,7 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <div class="h-8 w-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-              <span class="text-white text-sm font-bold">🔒</span>
+              <span class="text-white text-sm font-bold">SEC</span>
             </div>
           </div>
           <div class="ml-5 w-0 flex-1">
@@ -290,7 +290,7 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <div class="h-8 w-8 bg-red-500 rounded-lg flex items-center justify-center">
-              <span class="text-white text-sm font-bold">👤</span>
+              <span class="text-white text-sm font-bold"></span>
             </div>
           </div>
           <div class="ml-5 w-0 flex-1">
@@ -370,10 +370,10 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
                           _ -> "bg-gray-500"
                         end
                       ]}>
-                        <%= case event.type do %>
-                          <% :login_success -> %>✓
-                          <% :login_failed -> %>✗
-                          <% :brute_force_detected -> %>⚠
+                                                  <%= case event.type do %>
+                            <% :login_success -> %>OK
+                            <% :login_failed -> %>ERRO
+                            <% :brute_force_detected -> %>ALERTA
                           <% _ -> %>?
                         <% end %>
                       </span>
@@ -544,7 +544,9 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   defp render_default_tab(assigns) do
     ~H"""
     <div class="text-center py-12">
-      <div class="mx-auto h-12 w-12 text-gray-400 text-4xl">📋</div>
+                      <div class="mx-auto h-12 w-12 text-gray-400 text-4xl text-center">
+                  <span class="text-base font-bold">LISTA</span>
+                </div>
       <h3 class="mt-2 text-sm font-medium text-gray-900">Em desenvolvimento</h3>
       <p class="mt-1 text-sm text-gray-500">Esta seção estará disponível em breve.</p>
     </div>

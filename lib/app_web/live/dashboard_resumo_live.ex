@@ -726,22 +726,21 @@ defmodule AppWeb.DashboardResumoLive do
         <div class="flex-1 space-y-4 sm:space-y-5 md:space-y-6 w-full xl:w-4/12">
           <!-- Cards de métricas DIÁRIAS - Grid responsivo balanceado -->
           <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
-            <.card title="Meta Diária" value={@objetivo} subtitle="" icon_bg="bg-yellow-50"></.card>
+            <.card title="Meta Diária" value={@objetivo} subtitle=""></.card>
 
-            <.card title="Vendas Diárias" value={@sale} subtitle="" icon_bg="bg-green-50"></.card>
+            <.card title="Vendas Diárias" value={@sale} subtitle=""></.card>
 
-            <.card title="Devoluções Diárias" value={@devolution} subtitle="" icon_bg="bg-red-50">
+            <.card title="Devoluções Diárias" value={@devolution} subtitle="">
             </.card>
 
-            <.card title="Margem Diária" value={@profit} subtitle="" icon_bg="bg-green-100"></.card>
+            <.card title="Margem Diária" value={@profit} subtitle=""></.card>
 
-            <.card title="NFs Diárias" value={@nfs} subtitle="" icon_bg="bg-purple-50"></.card>
+            <.card title="NFs Diárias" value={@nfs} subtitle=""></.card>
 
             <.card
               title="% Realizado Hoje"
               value={@realizado_hoje_formatted}
               subtitle=""
-              icon_bg="bg-blue-50"
             >
             </.card>
           </div>

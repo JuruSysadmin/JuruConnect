@@ -30,6 +30,15 @@ config :app, AppWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:app, ~w(--watch)]}
   ]
 
+# Configurações otimizadas para Phoenix Presence (notificações rápidas)
+config :phoenix, :json_library, Jason
+
+# Configurações específicas para reduzir latência em development
+config :app, AppWeb.Endpoint,
+  live_view: [
+    signing_salt: "ePeRom9A"
+  ]
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

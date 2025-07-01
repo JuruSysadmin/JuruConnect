@@ -18,7 +18,7 @@ defmodule App.Auth.PasswordReset do
   @max_reset_attempts_per_day 3
   @cleanup_interval_ms 3_600_000
 
-  def start_link(opts \\ []) do
+  def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 

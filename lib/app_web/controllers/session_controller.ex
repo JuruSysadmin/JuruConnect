@@ -2,7 +2,6 @@ defmodule AppWeb.SessionController do
   use AppWeb, :controller
 
   alias App.Accounts
-  alias AppWeb.Auth.Guardian
 
   def new(conn, _params) do
     changeset = Accounts.User.changeset(%Accounts.User{}, %{})
@@ -47,7 +46,7 @@ defmodule AppWeb.SessionController do
     end
   end
 
-  def callback(conn, %{"token" => token, "user_id" => user_id}) do
+  def callback(conn, %{"token" => token, "user_id" => _user_id}) do
     # Estabelecer sessão Guardian a partir do token do Auth.Manager
     require Logger
     Logger.info("SessionController.callback - Token recebido: #{String.slice(token, 0, 20)}...")

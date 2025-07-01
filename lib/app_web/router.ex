@@ -43,10 +43,13 @@ defmodule AppWeb.Router do
     # Página inicial pública
     get "/", PageController, :home
 
-    # Rotas de autenticação
-    live "/login", UserSessionLive.Index, :new
-    live "/auth/login", AuthLive.Login, :new
-    live "/reset-password", AuthLive.Login, :reset_password
+    live_session :default,
+      on_mount: [{AppWeb.LiveUserAuth, :default}] do
+      # Rotas de autenticação
+      live "/login", UserSessionLive.Index, :new
+      live "/auth/login", AuthLive.Login, :new
+      live "/reset-password", AuthLive.Login, :reset_password
+    end
 
     # Rotas de sessão (login/logout)
     resources "/sessions", SessionController, only: [:new, :create, :delete]
@@ -58,20 +61,27 @@ defmodule AppWeb.Router do
   scope "/", AppWeb do
     pipe_through [:browser, :auth]
 
-    # Dashboards principais
-    live "/hello", DashboardLive
-    live "/dashboard", DashboardResumoLive
+    live_session :require_authenticated_user,
+      on_mount: [{AppWeb.LiveUserAuth, :require_authenticated_user}] do
+      # Dashboards principais
+      live "/hello", DashboardLive
+      live "/dashboard", DashboardResumoLive
 
-    # Funcionalidades do sistema
-    live "/chat/:order_id", ChatLive
-    live "/buscar-pedido", OrderSearchLive
+      # Funcionalidades do sistema
+      live "/chat/:order_id", ChatLive
+      live "/buscar-pedido", OrderSearchLive
+    end
   end
 
   # === ROTAS ADMINISTRATIVAS (apenas admin/manager) ===
   scope "/admin", AppWeb do
     pipe_through [:browser, :auth, :manager_or_admin]
 
-    live "/security", AdminLive.SecurityDashboard, :index
+    live_session :admin,
+      on_mount: [{AppWeb.LiveUserAuth, :require_authenticated_user}] do
+      live "/security", AdminLive.SecurityDashboard, :index
+      live "/health", HealthLive.Dashboard, :index
+    end
   end
 
   # === ROTAS SUPER ADMIN (apenas admin) ===
@@ -83,10 +93,16 @@ defmodule AppWeb.Router do
     # live "/user-management", AdminLive.UserManagement, :index
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", AppWeb do
-  #   pipe_through :api
-  # end
+  # === ROTAS DE API ===
+  scope "/api", AppWeb do
+    pipe_through :api
+
+    # Health Check endpoints
+    get "/health", HealthController, :index
+    get "/health/detailed", HealthController, :detailed
+    get "/health/api-status", HealthController, :api_status
+    post "/health/check", HealthController, :trigger_check
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:app, :dev_routes) do

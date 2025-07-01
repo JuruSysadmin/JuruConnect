@@ -1,8 +1,8 @@
-defmodule ChatApp.Presence do
+defmodule AppWeb.Presence do
   @moduledoc """
   Provides presence tracking across channels and processes.
   """
   use Phoenix.Presence,
-    otp_app: :chat_app,
-    pubsub_server: ChatApp.PubSub
+    otp_app: :app,
+    pubsub_server: App.PubSub
 end

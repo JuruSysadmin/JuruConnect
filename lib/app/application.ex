@@ -14,6 +14,10 @@ defmodule App.Application do
       {Phoenix.PubSub, name: App.PubSub},
       {Registry, keys: :unique, name: App.ChatRegistry},
       {AppWeb.Presence, []},
+      # Chat system supervisors
+      {App.Chat.RateLimiter, []},
+      {App.Chat.MessageStatus, []},
+      {App.Chat.Notifications, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
       # Oban for background jobs
@@ -28,6 +32,8 @@ defmodule App.Application do
       App.Auth.RateLimiterCleanup,
       # Password Reset system para recuperação segura
       App.Auth.PasswordReset,
+      # Health Check system para monitoramento da API externa
+      App.HealthCheck,
       # Start a worker by calling: App.Worker.start_link(arg)
       # {App.Worker, arg},
       # Start to serve requests, typically the last entry

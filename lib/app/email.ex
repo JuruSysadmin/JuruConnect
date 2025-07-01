@@ -15,7 +15,7 @@ defmodule App.Email do
     new()
     |> to({user.name || user.username, to_email})
     |> from({@from_name, @from_email})
-    |> subject("🔐 Redefinição de Senha - JuruConnect")
+    |> subject(" Redefinição de Senha - JuruConnect")
     |> html_body(password_reset_html_template(user, reset_url, token))
     |> text_body(password_reset_text_template(user, reset_url, token))
   end
@@ -24,7 +24,7 @@ defmodule App.Email do
     new()
     |> to({user.name || user.username, to_email})
     |> from({@from_name, @from_email})
-    |> subject("✅ Senha Alterada com Sucesso - JuruConnect")
+    |> subject("SENHA ALTERADA COM SUCESSO - JuruConnect")
     |> html_body(password_changed_html_template(user))
     |> text_body(password_changed_text_template(user))
   end
@@ -33,7 +33,7 @@ defmodule App.Email do
     new()
     |> to({user.name || user.username, to_email})
     |> from({@from_name, @from_email})
-    |> subject("⚠️ Alerta de Segurança - JuruConnect")
+    |> subject("ALERTA DE SEGURANÇA - JuruConnect")
     |> html_body(security_alert_html_template(user, event_type, details))
     |> text_body(security_alert_text_template(user, event_type, details))
   end
@@ -42,7 +42,7 @@ defmodule App.Email do
     new()
     |> to({user.name || user.username, to_email})
     |> from({@from_name, @from_email})
-    |> subject("🎉 Bem-vindo ao JuruConnect!")
+    |> subject("BEM-VINDO AO JuruConnect!")
     |> html_body(welcome_html_template(user, temporary_password))
     |> text_body(welcome_text_template(user, temporary_password))
   end
@@ -71,7 +71,7 @@ defmodule App.Email do
     <body>
         <div class="container">
             <div class="header">
-                <h1>🔐 Redefinição de Senha</h1>
+                <h1> Redefinição de Senha</h1>
                 <p>JuruConnect - Jurunense Home Center</p>
             </div>
             <div class="content">
@@ -86,7 +86,7 @@ defmodule App.Email do
                 </p>
 
                 <div class="warning">
-                    <strong>⚠️ Importante:</strong>
+                    <strong>IMPORTANTE:</strong>
                     <ul>
                         <li>Este link é válido por apenas <strong>2 horas</strong></li>
                         <li>Use apenas se você solicitou a redefinição</li>
@@ -135,14 +135,14 @@ defmodule App.Email do
     <body>
         <div class="container">
             <div class="header">
-                <h1>✅ Senha Alterada com Sucesso</h1>
+                <h1>SENHA ALTERADA COM SUCESSO</h1>
                 <p>JuruConnect - Jurunense Home Center</p>
             </div>
             <div class="content">
                 <h2>Olá, #{user.name || user.username}!</h2>
 
                 <div class="success">
-                    <strong>✅ Sua senha foi alterada com sucesso!</strong>
+                    <strong>Sua senha foi alterada com sucesso!</strong>
                 </div>
 
                 <p>Sua senha do JuruConnect foi redefinida em: <strong>#{DateTime.utc_now() |> DateTime.to_date()}</strong></p>
@@ -188,14 +188,14 @@ defmodule App.Email do
     <body>
         <div class="container">
             <div class="header">
-                <h1>⚠️ Alerta de Segurança</h1>
+                <h1>ALERTA DE SEGURANÇA</h1>
                 <p>JuruConnect - Jurunense Home Center</p>
             </div>
             <div class="content">
                 <h2>Olá, #{user.name || user.username}!</h2>
 
                 <div class="alert">
-                    <strong>⚠️ Atividade Suspeita Detectada</strong>
+                    <strong>ATIVIDADE SUSPEITA DETECTADA</strong>
                 </div>
 
                 <p>#{event_description}</p>
@@ -255,7 +255,7 @@ defmodule App.Email do
     <body>
         <div class="container">
             <div class="header">
-                <h1>🎉 Bem-vindo ao JuruConnect!</h1>
+                <h1>BEM-VINDO AO JuruConnect!</h1>
                 <p>Jurunense Home Center</p>
             </div>
             <div class="content">
@@ -273,10 +273,10 @@ defmodule App.Email do
 
                 <p><strong>O que você pode fazer no JuruConnect:</strong></p>
                 <ul>
-                    <li>📊 Acompanhar dashboard de vendas em tempo real</li>
-                    <li>💬 Participar do chat integrado por pedidos</li>
-                    <li>🎯 Ver metas e celebrações da equipe</li>
-                    <li>📈 Visualizar relatórios de performance</li>
+                    <li>Acompanhar dashboard de vendas em tempo real</li>
+                    <li>Participar do chat integrado por pedidos</li>
+                    <li>Ver metas e celebrações da equipe</li>
+                    <li>Visualizar relatórios de performance</li>
                 </ul>
             </div>
             <div class="footer">
@@ -293,7 +293,7 @@ defmodule App.Email do
 
   defp password_reset_text_template(user, reset_url, token) do
     """
-    🔐 REDEFINIÇÃO DE SENHA - JURUCONNECT
+     REDEFINIÇÃO DE SENHA - JURUCONNECT
 
     Olá, #{user.name || user.username}!
 
@@ -304,7 +304,7 @@ defmodule App.Email do
 
     Token de Segurança: #{String.slice(token, 0, 8)}...
 
-    ⚠️ IMPORTANTE:
+    IMPORTANTE:
     - Este link é válido por apenas 2 horas
     - Use apenas se você solicitou a redefinição
     - Nunca compartilhe este link com outras pessoas
@@ -319,7 +319,7 @@ defmodule App.Email do
 
   defp password_changed_text_template(user) do
     """
-    ✅ SENHA ALTERADA COM SUCESSO - JURUCONNECT
+    SENHA ALTERADA COM SUCESSO - JURUCONNECT
 
     Olá, #{user.name || user.username}!
 
@@ -342,7 +342,7 @@ defmodule App.Email do
     event_description = format_security_event(event_type, details)
 
     """
-    ⚠️ ALERTA DE SEGURANÇA - JURUCONNECT
+    ALERTA DE SEGURANÇA - JURUCONNECT
 
     Olá, #{user.name || user.username}!
 
@@ -372,7 +372,7 @@ defmodule App.Email do
     end
 
     """
-    🎉 BEM-VINDO AO JURUCONNECT!
+    BEM-VINDO AO JURUCONNECT!
 
     Olá, #{user.name || user.username}!
 
@@ -383,10 +383,10 @@ defmodule App.Email do
     - E-mail: #{user.email || "#{user.username}@jurunense.com"}
 
     O QUE VOCÊ PODE FAZER:
-    📊 Acompanhar dashboard de vendas em tempo real
-    💬 Participar do chat integrado por pedidos
-    🎯 Ver metas e celebrações da equipe
-    📈 Visualizar relatórios de performance
+    - Acompanhar dashboard de vendas em tempo real
+- Participar do chat integrado por pedidos
+- Ver metas e celebrações da equipe
+- Visualizar relatórios de performance
 
     ---
     © #{Date.utc_today().year} Jurunense Home Center - JuruConnect

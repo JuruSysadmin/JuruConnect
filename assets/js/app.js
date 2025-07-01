@@ -905,6 +905,80 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(100))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Event listener para limpar o input de mensagem
+window.addEventListener("phx:clear-message-input", () => {
+  const messageInput = document.getElementById("message-input");
+  if (messageInput) {
+    messageInput.value = "";
+    messageInput.focus();
+  }
+})
+
+// Event listener para marcar mensagens como lidas quando ficam visíveis
+window.addEventListener("phx:mark-messages-as-read", (e) => {
+  const { order_id } = e.detail;
+  if (order_id) {
+    // Disparar evento no LiveView para marcar mensagens como lidas
+    window.dispatchEvent(new CustomEvent("phx:mark_messages_read", {
+      detail: { order_id }
+    }));
+  }
+})
+
+// Event listener para notificações de som
+window.addEventListener("phx:play_read_sound", (e) => {
+  const { sound_type, count } = e.detail;
+  
+  // Só reproduzir som se o usuário permitiu notificações
+  if (localStorage.getItem('sound_enabled') !== 'false') {
+    let audioFile = '/audio/message_read.mp3';
+    
+    switch(sound_type) {
+      case 'bulk_read':
+        audioFile = '/audio/bulk_read.mp3';
+        break;
+      case 'bulk_read_many':
+        audioFile = '/audio/bulk_read_many.mp3';
+        break;
+      default:
+        audioFile = '/audio/message_read.mp3';
+    }
+    
+    try {
+      const audio = new Audio(audioFile);
+      audio.volume = 0.3; // Volume baixo para não incomodar
+      audio.play().catch(console.warn); // Falha silenciosa se não conseguir reproduzir
+      
+      // Log para debug (remover em produção)
+      console.log(`Som reproduzido: ${sound_type}${count ? ` (${count} mensagens)` : ''}`);
+    } catch (error) {
+      console.warn('Erro ao reproduzir som de notificação:', error);
+    }
+  }
+})
+
+// Event listener para bulk read success
+window.addEventListener("phx:bulk-read-success", (e) => {
+  const { count } = e.detail;
+  
+  // Mostrar feedback visual
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
+  notification.textContent = `${count} mensagens marcadas como lidas`;
+  document.body.appendChild(notification);
+  
+  // Remover após 3 segundos
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+  
+  // Scroll para o fim da conversa
+  const messagesContainer = document.getElementById('messages');
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

@@ -132,14 +132,6 @@ defmodule App.Auth.SecurityLogger do
     "Account locked for user #{username} due to suspicious activity from #{ip}"
   end
 
-  defp format_log_message(:suspicious_activity, %{username: username, ip_address: ip, reason: reason}) do
-    "Suspicious activity detected for user #{username} from #{ip}: #{reason}"
-  end
-
-  defp format_log_message(:brute_force_detected, %{ip_address: ip, attempts: attempts}) do
-    "Brute force attack detected from #{ip} with #{attempts} attempts"
-  end
-
   defp format_log_message(event_type, %{username: username, ip_address: ip}) do
     "Security event #{event_type} for user #{username} from #{ip}"
   end
@@ -236,7 +228,7 @@ defmodule App.Auth.SecurityLogger do
     end
   end
 
-  defp check_brute_force_pattern(%{ip_address: ip_address} = log_data) when not is_nil(ip_address) do
+  defp check_brute_force_pattern(%{ip_address: ip_address} = _log_data) when not is_nil(ip_address) do
     # Check for multiple failed attempts from same IP
     recent_failures = count_recent_failures_from_ip(ip_address)
 
@@ -251,7 +243,7 @@ defmodule App.Auth.SecurityLogger do
 
   defp check_brute_force_pattern(_), do: :ok
 
-  defp check_unusual_login_pattern(%{user_id: user_id, ip_address: ip_address} = log_data)
+  defp check_unusual_login_pattern(%{user_id: user_id, ip_address: ip_address} = _log_data)
     when not is_nil(user_id) and not is_nil(ip_address) do
 
     # Check if user is logging in from a new IP

@@ -7,7 +7,6 @@ defmodule AppWeb.Auth.GuardianErrorHandler do
   """
 
   import Plug.Conn
-  import Phoenix.Controller
   require Logger
 
   @behaviour Guardian.Plug.ErrorHandler

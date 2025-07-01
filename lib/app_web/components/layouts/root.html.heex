@@ -6,10 +6,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <link rel="shortcut icon" href="/favicon.ico" />
-
-    <.live_title default="JuruConnect" suffix=" · Dashboard">
-      {assigns[:page_title]}
+    <.live_title suffix=" · Phoenix Framework">
+      <%= assigns[:page_title] || "App" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
@@ -30,8 +28,10 @@
             </div>
             <div class="flex items-center space-x-4">
               <div class="text-sm text-gray-700">
-                Olá, <span class="font-medium"><%= @current_user.name || @current_user.username %></span>
-                <span class="text-gray-500">(<%= @current_user.role %>)</span>
+                Olá, <span class="font-medium"><%= get_user_display_name(@current_user) %></span>
+                <%= if get_user_role(@current_user) do %>
+                  <span class="text-gray-500">(<%= get_user_role(@current_user) %>)</span>
+                <% end %>
               </div>
               <a 
                 href="/logout" 
@@ -44,36 +44,9 @@
         </div>
       </header>
     <% end %>
-
-    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_user do %>
-        <li class="text-[0.8125rem] leading-6 text-zinc-900">
-          <%= @current_user.username %>
-        </li>
-        <li>
-          <.link
-            href="/logout"
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Sair
-          </.link>
-        </li>
-      <% else %>
-        <li>
-          <.link
-            href="/auth/login"
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Entrar
-          </.link>
-        </li>
-      <% end %>
-    </ul>
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto">
-        <.flash_group flash={@flash} />
-        <%= @inner_content %>
-      </div>
+    <main class="w-full h-full min-h-screen">
+      <.flash_group flash={@flash} />
+      <%= @inner_content %>
     </main>
   </body>
 </html>

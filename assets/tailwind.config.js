@@ -1,6 +1,6 @@
 /**
  * @fileoverview Configuração personalizada do Tailwind CSS para o projeto JuruConnect
- * Inclui plugins para LiveView, formulários e ícones Heroicons
+ * Inclui plugins para LiveView e formulários
  * @author JuruConnect Team
  * @version 1.0.0
  * @see {@link https://tailwindcss.com/docs/configuration}
@@ -9,9 +9,8 @@
 // See the Tailwind configuration guide for advanced usage
 // https://tailwindcss.com/docs/configuration
 
-const plugin = require("tailwindcss/plugin")
-const fs = require("fs")
-const path = require("path")
+const colors = require('tailwindcss/colors');
+const plugin = require('tailwindcss/plugin');
 
 /**
  * Configuração principal do Tailwind CSS
@@ -23,9 +22,17 @@ module.exports = {
    * @type {string[]}
    */
   content: [
-    "./js/**/*.js",
-    "../lib/app_web.ex",
-    "../lib/app_web/**/*.{ex,heex}"
+    './js/**/*.js',
+    '../lib/*_web.ex',
+    '../lib/*_web/**/*.*ex',
+    '../deps/phoenix_live_view/**/*.*ex',
+    '../lib/*_web/components/*.ex',
+    '../lib/*_web/components/**/*.ex',
+    '../lib/*_web/live/**/*.ex',
+    '../lib/*_web/controllers/**/*.ex',
+    '../lib/*_web/templates/**/*.*eex',
+    '../lib/*_web/components/layouts/**/*.*eex',
+    '../lib/*_web/components/**/*.*eex'
   ],
   
   /**
@@ -73,65 +80,6 @@ module.exports = {
      * Plugin para variantes de loading do Phoenix LiveView
      * Adiciona suporte para estados de loading em mudanças de formulário
      */
-    plugin(({addVariant}) => addVariant("phx-change-loading", [".phx-change-loading&", ".phx-change-loading &"])),
-
-    // Embeds Heroicons (https://heroicons.com) into your app.css bundle
-    // See your `CoreComponents.icon/1` for more information.
-    //
-    
-    /**
-     * Plugin para incorporar ícones Heroicons como classes CSS
-     * Gera automaticamente classes para todos os ícones disponíveis
-     * @param {Object} helpers - Helpers do Tailwind CSS
-     * @param {Function} helpers.matchComponents - Função para criar componentes
-     * @param {Function} helpers.theme - Função para acessar valores do tema
-     */
-    plugin(function({matchComponents, theme}) {
-      let iconsDir = path.join(__dirname, "../deps/heroicons/optimized")
-      let values = {}
-      let icons = [
-        ["", "/24/outline"],
-        ["-solid", "/24/solid"],
-        ["-mini", "/20/solid"],
-        ["-micro", "/16/solid"]
-      ]
-      
-      icons.forEach(([suffix, dir]) => {
-        fs.readdirSync(path.join(iconsDir, dir)).forEach(file => {
-          let name = path.basename(file, ".svg") + suffix
-          values[name] = {name, fullPath: path.join(iconsDir, dir, file)}
-        })
-      })
-      
-      matchComponents({
-        /**
-         * Componente para ícones Heroicons
-         * @param {Object} params - Parâmetros do ícone
-         * @param {string} params.name - Nome do ícone
-         * @param {string} params.fullPath - Caminho completo para o arquivo SVG
-         * @returns {Object} Estilos CSS para o ícone
-         */
-        "hero": ({name, fullPath}) => {
-          let content = fs.readFileSync(fullPath).toString().replace(/\r?\n|\r/g, "")
-          let size = theme("spacing.6")
-          if (name.endsWith("-mini")) {
-            size = theme("spacing.5")
-          } else if (name.endsWith("-micro")) {
-            size = theme("spacing.4")
-          }
-          return {
-            [`--hero-${name}`]: `url('data:image/svg+xml;utf8,${content}')`,
-            "-webkit-mask": `var(--hero-${name})`,
-            "mask": `var(--hero-${name})`,
-            "mask-repeat": "no-repeat",
-            "background-color": "currentColor",
-            "vertical-align": "middle",
-            "display": "inline-block",
-            "width": size,
-            "height": size
-          }
-        }
-      }, {values})
-    })
+    plugin(({addVariant}) => addVariant("phx-change-loading", [".phx-change-loading&", ".phx-change-loading &"]))
   ]
 }

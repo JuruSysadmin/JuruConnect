@@ -47,6 +47,8 @@ defmodule AppWeb.Auth.GuardianSessionPlug do
     end
   end
 
+  defp valid_jwt_format?(_), do: false
+
   defp valid_base64_parts?([header, payload, _signature]) do
     # Verificar se header e payload são base64 válidos (não verificamos assinatura aqui)
     valid_base64_url?(header) and valid_base64_url?(payload)
@@ -80,6 +82,4 @@ defmodule AppWeb.Auth.GuardianSessionPlug do
       _ -> false
     end
   end
-
-  defp valid_jwt_format?(_), do: false
 end

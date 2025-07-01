@@ -11,8 +11,6 @@ defmodule AppWeb.CoreComponents do
   The default components use Tailwind CSS, a utility-first CSS framework.
   See the [Tailwind CSS documentation](https://tailwindcss.com) to learn
   how to customize them or feel free to swap in another framework altogether.
-
-  Icons are provided by [heroicons](https://heroicons.com). See `icon/1` for usage.
   """
   use Phoenix.Component
   alias Phoenix.HTML.Form
@@ -59,7 +57,7 @@ defmodule AppWeb.CoreComponents do
                   class="-m-3 flex-none p-3 opacity-20 hover:opacity-40"
                   aria-label={gettext("close")}
                 >
-                  <.icon name="hero-x-mark-solid" class="h-5 w-5" />
+                  ×
                 </button>
               </div>
               <div id={"#{@id}-content"}>
@@ -133,7 +131,7 @@ defmodule AppWeb.CoreComponents do
         hidden
       >
         {gettext("Attempting to reconnect")}
-        <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
+        <span class="ml-1 text-sm animate-spin">⟳</span>
       </.flash>
 
       <.flash
@@ -145,7 +143,7 @@ defmodule AppWeb.CoreComponents do
         hidden
       >
         {gettext("Hang in there while we get back on track")}
-        <.icon name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
+        <span class="ml-1 text-sm animate-spin">⟳</span>
       </.flash>
     </div>
     """
@@ -332,7 +330,7 @@ defmodule AppWeb.CoreComponents do
   def error(assigns) do
     ~H"""
     <p class="mt-3 flex gap-3 text-sm leading-6 text-rose-600">
-      <.icon name="hero-exclamation-circle-mini" class="mt-0.5 h-5 w-5 flex-none" />
+      <span class="text-rose-500 mt-0.5 text-lg">!</span>
       {render_slot(@inner_block)}
     </p>
     """
@@ -455,21 +453,13 @@ defmodule AppWeb.CoreComponents do
         navigate={@navigate}
         class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
       >
-        <.icon name="hero-arrow-left-solid" class="h-3 w-3" />
-        {render_slot(@inner_block)}
+        ← {render_slot(@inner_block)}
       </.link>
     </div>
     """
   end
 
-  attr :name, :string, required: true
-  attr :class, :string, default: nil
 
-  def icon(%{name: "hero-" <> _} = assigns) do
-    ~H"""
-    <span class={[@name, @class]} />
-    """
-  end
 
   ## JS Commands
 

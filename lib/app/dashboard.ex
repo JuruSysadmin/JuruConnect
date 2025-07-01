@@ -13,7 +13,7 @@ defmodule App.Dashboard do
   onde cada módulo tem uma responsabilidade específica.
   """
 
-  alias App.Dashboard.{Orchestrator, DataStore, CacheManager, EventBroadcaster}
+  alias App.Dashboard.{Orchestrator, CacheManager, EventBroadcaster}
   alias App.DashboardDataServer
 
   # === INTERFACE PÚBLICA ===
@@ -174,26 +174,26 @@ defmodule App.Dashboard do
   defp format_for_display(processed_data) do
     formatted = %{
       sales: %{
-        total: get_numeric_value(processed_data.sales, :total, 0.0),
-        formatted: format_money(get_numeric_value(processed_data.sales, :total, 0.0))
+        total: get_numeric_value(processed_data.sales, :total),
+        formatted: format_money(get_numeric_value(processed_data.sales, :total))
       },
       costs: %{
-        total: get_numeric_value(processed_data.costs, :total, 0.0),
-        formatted: format_money(get_numeric_value(processed_data.costs, :total, 0.0)),
-        devolutions: get_numeric_value(processed_data.costs, :devolutions, 0.0)
+        total: get_numeric_value(processed_data.costs, :total),
+        formatted: format_money(get_numeric_value(processed_data.costs, :total)),
+        devolutions: get_numeric_value(processed_data.costs, :devolutions)
       },
       goal: %{
-        total: get_numeric_value(processed_data.goals, :total, 0.0),
-        formatted: format_money(get_numeric_value(processed_data.goals, :total, 0.0)),
-        percentage: get_numeric_value(processed_data.percentages, :goal, 0.0),
-        formatted_percentage: "#{Float.round(get_numeric_value(processed_data.percentages, :goal, 0.0), 2)}%"
+        total: get_numeric_value(processed_data.goals, :total),
+        formatted: format_money(get_numeric_value(processed_data.goals, :total)),
+        percentage: get_numeric_value(processed_data.percentages, :goal),
+        formatted_percentage: "#{Float.round(get_numeric_value(processed_data.percentages, :goal), 2)}%"
       },
       profit: %{
-        percentage: get_numeric_value(processed_data.percentages, :profit, 0.0),
-        formatted: "#{Float.round(get_numeric_value(processed_data.percentages, :profit, 0.0), 2)}%"
+        percentage: get_numeric_value(processed_data.percentages, :profit),
+        formatted: "#{Float.round(get_numeric_value(processed_data.percentages, :profit), 2)}%"
       },
       stores: format_stores_data(processed_data.stores),
-      nfs_count: get_numeric_value(processed_data, :nfs_count, 0),
+      nfs_count: get_numeric_value(processed_data, :nfs_count),
       last_update: DateTime.utc_now(),
       api_status: :ok
     }
@@ -208,7 +208,7 @@ defmodule App.Dashboard do
 
     total_sales =
       companies
-      |> Enum.map(& get_numeric_value(&1, "sale", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "sale"))
       |> Enum.sum()
 
     %{total: total_sales}
@@ -219,12 +219,12 @@ defmodule App.Dashboard do
 
     total_costs =
       companies
-      |> Enum.map(& get_numeric_value(&1, "discount", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "discount"))
       |> Enum.sum()
 
     total_devolutions =
       companies
-      |> Enum.map(& get_numeric_value(&1, "devolution", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "devolution"))
       |> Enum.sum()
 
     %{total: total_costs, devolutions: total_devolutions}
@@ -235,7 +235,7 @@ defmodule App.Dashboard do
 
     total_goals =
       companies
-      |> Enum.map(& get_numeric_value(&1, "objective", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "objective"))
       |> Enum.sum()
 
     %{total: total_goals}
@@ -250,17 +250,17 @@ defmodule App.Dashboard do
 
     total_sales =
       companies
-      |> Enum.map(& get_numeric_value(&1, "sale", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "sale"))
       |> Enum.sum()
 
     total_goals =
       companies
-      |> Enum.map(& get_numeric_value(&1, "objective", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "objective"))
       |> Enum.sum()
 
     total_costs =
       companies
-      |> Enum.map(& get_numeric_value(&1, "discount", 0.0))
+      |> Enum.map(& get_numeric_value(&1, "discount"))
       |> Enum.sum()
 
     goal_percentage = if total_goals > 0, do: (total_sales / total_goals * 100), else: 0.0
@@ -274,8 +274,8 @@ defmodule App.Dashboard do
 
   defp format_stores_data(stores) when is_list(stores) do
     Enum.map(stores, fn store ->
-      daily_sales = get_numeric_value(store, "sale", 0.0)
-      daily_goal = get_numeric_value(store, "objective", 0.0)
+      daily_sales = get_numeric_value(store, "sale")
+      daily_goal = get_numeric_value(store, "objective")
       daily_percentage = if daily_goal > 0, do: (daily_sales / daily_goal * 100), else: 0.0
 
       %{
@@ -408,27 +408,27 @@ defmodule App.Dashboard do
     %{
       id: System.unique_integer([:positive]),
       seller_name: Map.get(sale_data, "seller_name", "Desconhecido"),
-      sale_value: get_numeric_value(sale_data, "sale_value", 0.0),
+      sale_value: get_numeric_value(sale_data, "sale_value"),
       timestamp: DateTime.utc_now()
     }
   end
 
-  defp get_numeric_value(data, key, default \\ 0.0)
+  defp get_numeric_value(data, key)
 
-  defp get_numeric_value(data, key, default) when is_map(data) do
+  defp get_numeric_value(data, key) when is_map(data) do
     case Map.get(data, key) do
-      nil -> default
+      nil -> 0.0
       value when is_number(value) -> Float.round(value * 1.0, 2)
       value when is_binary(value) ->
         case Float.parse(value) do
           {num, _} -> Float.round(num, 2)
-          :error -> default
+          :error -> 0.0
         end
-      _ -> default
+      _ -> 0.0
     end
   end
 
-  defp get_numeric_value(_, _, default), do: default
+  defp get_numeric_value(_, _), do: 0.0
 
   def format_money(value) when is_number(value) do
     # Formato brasileiro: R$ 1.234,56

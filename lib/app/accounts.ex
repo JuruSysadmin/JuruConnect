@@ -110,6 +110,27 @@ defmodule App.Accounts do
     |> Repo.all()
   end
 
+  @doc """
+  Busca usuários por uma lista de usernames.
+
+  Usado pelo sistema de menções para encontrar usuários mencionados
+  em mensagens do chat.
+
+  ## Parâmetros
+  - usernames: Lista de strings contendo os usernames a buscar
+
+  ## Retorna
+  Lista de usuários encontrados (pode ser menor que a lista original
+  se alguns usernames não existirem).
+  """
+  def get_users_by_usernames(usernames) when is_list(usernames) do
+    User
+    |> where([u], u.username in ^usernames)
+    |> Repo.all()
+  end
+
+  def get_users_by_usernames(_), do: []
+
   # Funções auxiliares privadas
 
   defp maybe_limit(query, nil), do: query

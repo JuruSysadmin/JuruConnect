@@ -65,18 +65,9 @@ defmodule AppWeb.ObanMonitorLive do
 
   @impl true
   def handle_event("create_test_job", _params, socket) do
-    job_args = %{
-      "api_url" => "http://10.1.1.108:8065/api/v1/dashboard/sale/12",
-      "test" => true,
-      "created_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    case JuruConnect.Workers.SupervisorDataWorker.new(job_args, queue: :api_sync) |> Oban.insert() do
-      {:ok, _job} ->
-        {:noreply, put_flash(socket, :info, "Job de teste criado com sucesso!")}
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Erro ao criar job: #{inspect(reason)}")}
-    end
+    # Note: JuruConnect.Workers.SupervisorDataWorker is not defined
+    # This functionality needs to be implemented
+    {:noreply, put_flash(socket, :error, "Worker não implementado")}
   end
 
     @impl true

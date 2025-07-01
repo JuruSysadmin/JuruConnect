@@ -9,7 +9,15 @@ defmodule App.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+
+      # Documentação
+      name: "JuruConnect",
+      description: "Sistema de gestão comercial para Jurunense Home Center",
+      source_url: "https://github.com/jurunense/juruconnect",
+      homepage_url: "https://juruconnect.com.br",
+      docs: docs(),
+      package: package()
     ]
   end
 
@@ -43,13 +51,6 @@ defmodule App.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.1.1",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
       {:sweet_xml, "~> 0.6"},
       {:comeonin, "~> 5.3"},
       {:argon2_elixir, "~> 3.0"},
@@ -75,7 +76,11 @@ defmodule App.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.2"},
+      {:bcrypt_elixir, "~> 3.0"},
+
+      # Documentação
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 
@@ -100,4 +105,131 @@ defmodule App.MixProject do
       ]
     ]
   end
+
+  # Configuração da documentação
+  defp docs do
+    [
+      # Página principal
+      main: "readme",
+
+      # Arquivos extras para incluir
+      extras: [
+        "README.md",
+        "CHANGELOG.md": [title: "Changelog"],
+        "docs/getting-started.md": [title: "Começando"],
+        "docs/api-guide.md": [title: "Guia da API"],
+        "docs/authentication.md": [title: "Autenticação"],
+        "docs/deployment.md": [title: "Deploy"]
+      ],
+
+      # Grupos de módulos
+      groups_for_modules: [
+        "Core": [
+          App.Application,
+          App.Repo
+        ],
+        "Contexts": [
+          App.Accounts,
+          App.Auth,
+          App.Chat,
+          App.Dashboard,
+          App.Sales
+        ],
+        "Authentication": [
+          App.Auth.Manager,
+          App.Auth.RateLimiter,
+          App.Auth.SecurityLogger,
+          App.Auth.PasswordPolicy,
+          App.Auth.PasswordReset
+        ],
+        "Web Layer": [
+          AppWeb,
+          AppWeb.Endpoint,
+          AppWeb.Router
+        ],
+        "Live Views": [
+          AppWeb.DashboardResumoLive,
+          AppWeb.AuthLive.Login,
+          AppWeb.AdminLive.SecurityDashboard,
+          AppWeb.ObanMonitorLive
+        ],
+        "Components": [
+          AppWeb.CoreComponents,
+          AppWeb.DashboardComponents
+        ],
+        "Controllers": [
+          AppWeb.SessionController,
+          AppWeb.ErrorController
+        ],
+        "Auth Plugs": [
+          AppWeb.Auth.Guardian,
+          AppWeb.Auth.GuardianPlug,
+          AppWeb.Auth.GuardianSessionPlug,
+          AppWeb.Auth.GuardianErrorHandler
+        ],
+        "Background Jobs": [
+          JuruConnect.Workers,
+          JuruConnect.Api
+        ],
+        "Schemas": [
+          App.Accounts.User,
+          App.Chat.Message,
+          App.Schemas
+        ]
+      ],
+
+      # Filtros
+      filter_modules: fn module, _metadata ->
+        # Incluir apenas módulos do projeto
+        module
+        |> Atom.to_string()
+        |> String.starts_with?(["App", "AppWeb", "JuruConnect"])
+      end,
+
+      # Formatação
+      source_ref: "main",
+      formatters: ["html"]
+    ]
+  end
+
+  # Informações do pacote
+  defp package do
+    [
+      description: "Sistema de gestão comercial para Jurunense Home Center",
+      files: ~w(lib priv .formatter.exs mix.exs README* CHANGELOG*),
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/jurunense/juruconnect",
+        "Docs" => "https://docs.juruconnect.com.br"
+      }
+    ]
+  end
+
+  # HTML customizado para o head
+  defp before_closing_head_tag(:html) do
+    """
+    <style>
+      .content-inner { max-width: none; }
+      .sidebar { background-color: #1f2937; }
+      .sidebar a { color: #e5e7eb; }
+      .sidebar a:hover { color: #ffffff; background-color: #374151; }
+      .content { background-color: #f9fafb; }
+      .livebook-badge { display: none; }
+    </style>
+    """
+  end
+
+  defp before_closing_head_tag(_), do: ""
+
+  # HTML customizado para o body
+  defp before_closing_body_tag(:html) do
+    """
+    <script>
+      // Analytics ou outras configurações
+      console.log('JuruConnect Documentation loaded');
+    </script>
+    """
+  end
+
+  defp before_closing_body_tag(_), do: ""
 end

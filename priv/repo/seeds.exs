@@ -69,7 +69,7 @@ Logger.info("👥 Criando usuários de teste...")
 Enum.each(test_users, fn user_data ->
   case Accounts.get_user_by_username(user_data.username) do
     nil ->
-      Logger.info("✨ Criando usuário: #{user_data.username} (#{user_data.role})")
+      Logger.info(" Criando usuário: #{user_data.username} (#{user_data.role})")
 
       # Criar usuário com validação de senha
       case Accounts.create_user(%{
@@ -83,21 +83,21 @@ Enum.each(test_users, fn user_data ->
         password_changed_at: Date.to_string(Date.utc_today())
       }) do
         {:ok, user} ->
-          Logger.info("✅ Usuário #{user.username} criado com sucesso!")
+          Logger.info(" Usuário #{user.username} criado com sucesso!")
           Logger.info("   - Nome: #{user.name}")
           Logger.info("   - E-mail: #{user.email}")
           Logger.info("   - Role: #{user.role}")
           Logger.info("   - Loja: #{default_store.name}")
 
         {:error, changeset} ->
-          Logger.error("❌ Erro ao criar usuário #{user_data.username}:")
+          Logger.error(" Erro ao criar usuário #{user_data.username}:")
           Enum.each(changeset.errors, fn {field, {message, _}} ->
             Logger.error("   - #{field}: #{message}")
           end)
       end
 
     existing_user ->
-      Logger.info("⚠️  Usuário #{user_data.username} já existe (ID: #{existing_user.id})")
+      Logger.info("AVISO: Usuário #{user_data.username} já existe (ID: #{existing_user.id})")
   end
 end)
 
@@ -114,25 +114,25 @@ Logger.info("""
 📋 CREDENCIAIS PARA TESTES:
 
 1️⃣  ADMINISTRADOR
-   👤 Usuário: admin_teste
-   🔐 Senha: Admin123!@#
+    Usuário: admin_teste
+    Senha: Admin123!@#
    📧 E-mail: admin@jurunense.com
-   🛡️  Role: admin
-   ✨ Acesso: Dashboard de Segurança + Todas as funcionalidades
+     Role: admin
+    Acesso: Dashboard de Segurança + Todas as funcionalidades
 
 2️⃣  GERENTE
-   👤 Usuário: manager_teste
-   🔐 Senha: Manager456$%^
+    Usuário: manager_teste
+    Senha: Manager456$%^
    📧 E-mail: manager@jurunense.com
-   🛡️  Role: manager
-   ✨ Acesso: Dashboard de Segurança + Moderação
+     Role: manager
+    Acesso: Dashboard de Segurança + Moderação
 
 3️⃣  VENDEDOR
-   👤 Usuário: vendedor_teste
-   🔐 Senha: Vendas789&*()
+    Usuário: vendedor_teste
+    Senha: Vendas789&*()
    📧 E-mail: vendedor@jurunense.com
-   🛡️  Role: clerk
-   ✨ Acesso: Dashboard básico
+     Role: clerk
+    Acesso: Dashboard básico
 
 🔗 ROTAS PARA TESTE:
    • /auth/login - Interface moderna de login
@@ -141,11 +141,11 @@ Logger.info("""
    • /dashboard - Dashboard principal
 
 🧪 FUNCIONALIDADES PARA TESTAR:
-   ✅ Login com rate limiting
-   ✅ Recuperação de senha segura
-   ✅ Validação de políticas de senha
-   ✅ Interface administrativa
-   ✅ Logs de segurança
-   ✅ Bloqueio/desbloqueio de contas
+    Login com rate limiting
+    Recuperação de senha segura
+    Validação de políticas de senha
+    Interface administrativa
+    Logs de segurança
+    Bloqueio/desbloqueio de contas
 
 """)
