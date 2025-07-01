@@ -17,7 +17,8 @@ defmodule App.Chat.Message do
   @derive {Jason.Encoder, only: [
     :id, :text, :sender_id, :sender_name, :order_id, :tipo, :image_url,
     :status, :delivered_at, :read_at, :delivered_to, :read_by,
-    :mentions, :has_mentions, :reply_to, :is_reply, :inserted_at, :updated_at
+    :mentions, :has_mentions, :reply_to, :is_reply, :inserted_at, :updated_at,
+    :audio_url, :audio_duration, :audio_mime_type
   ]}
 
   schema "messages" do
@@ -27,6 +28,11 @@ defmodule App.Chat.Message do
     field :order_id, :string
     field :tipo, :string
     field :image_url, :string
+
+    # Campos de áudio
+    field :audio_url, :string
+    field :audio_duration, :integer
+    field :audio_mime_type, :string
 
     # Campos de status
     field :status, :string, default: "sent"
@@ -60,15 +66,31 @@ defmodule App.Chat.Message do
     |> cast(attrs, [
       :text, :sender_id, :sender_name, :order_id, :tipo, :image_url,
       :status, :delivered_at, :read_at, :delivered_to, :read_by,
-      :mentions, :has_mentions, :reply_to, :is_reply
+      :mentions, :has_mentions, :reply_to, :is_reply,
+      :audio_url, :audio_duration, :audio_mime_type
     ])
     |> validate_required([:text, :sender_id, :sender_name, :order_id])
     |> validate_length(:text, min: 1, max: 5000)
     |> validate_inclusion(:status, ["sent", "delivered", "read"])
-    |> validate_inclusion(:tipo, ["mensagem", "imagem", "sistema"])
+    |> validate_inclusion(:tipo, ["mensagem", "imagem", "sistema", "audio"])
+    |> validate_audio_fields()
     |> extract_mentions()
     |> set_reply_flags()
     |> validate_reply_to()
+  end
+
+  # Valida campos específicos para mensagens de áudio
+  defp validate_audio_fields(changeset) do
+    case get_change(changeset, :tipo) do
+      "audio" ->
+        changeset
+        |> validate_required([:audio_url])
+        |> validate_format(:audio_url, ~r/^https?:\/\//)
+        |> validate_number(:audio_duration, greater_than: 0, less_than: 300)
+
+      _ ->
+        changeset
+    end
   end
 
   # Extrai menções (@usuario) do texto da mensagem e atualiza os campos relacionados

@@ -26,9 +26,9 @@ defmodule App.Auth.RateLimiter do
   require Logger
   import Ecto.Query
 
-  alias App.Repo
-  alias App.Schemas.{LoginAttempt, ActiveBlock}
   alias App.Auth.SecurityLogger
+  alias App.Repo
+  alias App.Schemas.{ActiveBlock, LoginAttempt}
 
   @max_attempts_per_ip 10
   @max_attempts_per_user 5
@@ -42,11 +42,11 @@ defmodule App.Auth.RateLimiter do
     now = DateTime.utc_now()
 
     cond do
-      is_blocked?("ip", ip_address, now) ->
+      blocked?("ip", ip_address, now) ->
         remaining = get_block_remaining("ip", ip_address, now)
         {:rate_limited, remaining}
 
-      is_blocked?("username", username, now) ->
+      blocked?("username", username, now) ->
         remaining = get_block_remaining("username", username, now)
         {:rate_limited, remaining}
 
@@ -181,7 +181,7 @@ defmodule App.Auth.RateLimiter do
     {deleted_attempts, deleted_blocks}
   end
 
-  defp is_blocked?(identifier_type, identifier, now) do
+  defp blocked?(identifier_type, identifier, now) do
     from(b in ActiveBlock,
       where: b.identifier_type == ^identifier_type and
              b.identifier == ^identifier and

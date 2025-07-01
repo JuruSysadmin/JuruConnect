@@ -12,8 +12,8 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   use AppWeb, :live_view
 
-  alias App.Auth.{RateLimiter, PasswordReset, PasswordPolicy}
   alias App.Accounts
+  alias App.Auth.{PasswordPolicy, PasswordReset, RateLimiter}
 
   def mount(_params, session, socket) do
     # Verificar se o usuário é admin
@@ -559,16 +559,16 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
         cond do
           diff < 60 -> "em #{diff}s"
           diff < 3600 -> "em #{div(diff, 60)}min"
-          diff < 86400 -> "em #{div(diff, 3600)}h"
-          true -> "em #{div(diff, 86400)}d"
+          diff < 86_400 -> "em #{div(diff, 3600)}h"
+          true -> "em #{div(diff, 86_400)}d"
         end
       diff ->
         diff = abs(diff)
         cond do
           diff < 60 -> "#{diff}s atrás"
           diff < 3600 -> "#{div(diff, 60)}min atrás"
-          diff < 86400 -> "#{div(diff, 3600)}h atrás"
-          true -> "#{div(diff, 86400)}d atrás"
+          diff < 86_400 -> "#{div(diff, 3600)}h atrás"
+          true -> "#{div(diff, 86_400)}d atrás"
         end
     end
   end

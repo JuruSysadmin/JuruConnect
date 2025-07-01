@@ -50,7 +50,7 @@ defmodule AppWeb.Auth.GuardianSessionPlugTest do
     end
 
     test "clears non-string tokens from session", %{conn: conn} do
-      non_string_token = 12345
+      non_string_token = 12_345
 
       conn =
         conn

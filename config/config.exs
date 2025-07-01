@@ -7,6 +7,17 @@
 # General application configuration
 import Config
 
+config :mime, :types, %{
+  "audio/mp4" => ["m4a"],
+  "audio/wav" => ["wav"],
+  "audio/mpeg" => ["mp3"],
+  "audio/ogg" => ["ogg"]
+}
+
+config :mime, :extensions, %{
+  "webm" => "audio/webm"
+}
+
 config :app,
   ecto_repos: [App.Repo],
   generators: [timestamp_type: :utc_datetime]
@@ -20,7 +31,7 @@ config :app, AppWeb.Endpoint,
     layout: false
   ],
   pubsub_server: App.PubSub,
-  live_view: [signing_salt: "rdThFUm0"]
+  live_view: [signing_salt: "ePeRom9A"]
 
 # Configures the mailer
 #
@@ -56,7 +67,7 @@ config :guardian, Guardian.DB,
 
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "3.4.3",
+  version: "3.4.0",
   app: [
     args: ~w(
       --config=tailwind.config.js

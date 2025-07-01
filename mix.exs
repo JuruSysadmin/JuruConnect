@@ -97,12 +97,8 @@ defmodule App.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind app", "esbuild app"],
-      "assets.deploy": [
-        "tailwind app --minify",
-        "esbuild app --minify",
-        "phx.digest"
-      ]
+      "assets.build": ["tailwind default", "esbuild default"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 
@@ -204,32 +200,4 @@ defmodule App.MixProject do
       }
     ]
   end
-
-  # HTML customizado para o head
-  defp before_closing_head_tag(:html) do
-    """
-    <style>
-      .content-inner { max-width: none; }
-      .sidebar { background-color: #1f2937; }
-      .sidebar a { color: #e5e7eb; }
-      .sidebar a:hover { color: #ffffff; background-color: #374151; }
-      .content { background-color: #f9fafb; }
-      .livebook-badge { display: none; }
-    </style>
-    """
-  end
-
-  defp before_closing_head_tag(_), do: ""
-
-  # HTML customizado para o body
-  defp before_closing_body_tag(:html) do
-    """
-    <script>
-      // Analytics ou outras configurações
-      console.log('JuruConnect Documentation loaded');
-    </script>
-    """
-  end
-
-  defp before_closing_body_tag(_), do: ""
 end

@@ -146,28 +146,13 @@ defmodule App.Chat.Notifications do
     settings = get_or_create_user_settings(user_id)
 
     # Verificar se usuário está online
-    user_online = is_user_online?(user_id, order_id)
+    user_online = user_online?(user_id, order_id)
 
     if should_notify?(settings, user_online) do
       state = process_notification(user_id, message, order_id, settings, state)
       {:noreply, state}
     else
       {:noreply, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:update_settings, user_id, settings}, _from, state) do
-    case validate_user_settings(settings) do
-      {:ok, valid_settings} ->
-        # Mesclar com configurações existentes ou usar padrão
-        existing = get_user_settings_from_ets(user_id, state.default_settings)
-        merged_settings = Map.merge(existing, valid_settings)
-        :ets.insert(@user_settings_table, {user_id, merged_settings})
-        {:reply, {:ok, merged_settings}, state}
-
-      {:error, changeset} ->
-        {:reply, {:error, changeset}, state}
     end
   end
 
@@ -234,6 +219,21 @@ defmodule App.Chat.Notifications do
     # Remove notificações pendentes
     new_pending = Map.delete(state.pending_notifications, {user_id, order_id})
     {:noreply, %{state | pending_notifications: new_pending}}
+  end
+
+  @impl true
+  def handle_call({:update_settings, user_id, settings}, _from, state) do
+    case validate_user_settings(settings) do
+      {:ok, valid_settings} ->
+        # Mesclar com configurações existentes ou usar padrão
+        existing = get_user_settings_from_ets(user_id, state.default_settings)
+        merged_settings = Map.merge(existing, valid_settings)
+        :ets.insert(@user_settings_table, {user_id, merged_settings})
+        {:reply, {:ok, merged_settings}, state}
+
+      {:error, changeset} ->
+        {:reply, {:error, changeset}, state}
+    end
   end
 
   @impl true
@@ -348,7 +348,7 @@ defmodule App.Chat.Notifications do
   end
 
   defp maybe_queue_email_notification(user_id, notification_data, settings, state) do
-    if settings.email_enabled and not is_user_online?(user_id, notification_data.order_id) do
+    if settings.email_enabled and not user_online?(user_id, notification_data.order_id) do
       email_data = %{
         user_id: user_id,
         subject: "Nova mensagem no pedido ##{notification_data.order_id}",
@@ -399,7 +399,7 @@ defmodule App.Chat.Notifications do
       message: notification_data.message_text
     })
 
-    # TODO: Integrar com serviço de push notifications
+    # FUTURO: Integrar com serviço de push notifications quando disponível
     # PushService.send_notification(user_id, notification_data)
   end
 
@@ -425,7 +425,7 @@ defmodule App.Chat.Notifications do
       email_count: length(emails)
     })
 
-    # TODO: Integrar with email service
+    # FUTURO: Integrar com serviço de email quando disponível
     # EmailService.send_chat_digest(user, emails)
   end
 
@@ -454,7 +454,7 @@ defmodule App.Chat.Notifications do
     not user_online or settings.desktop_enabled or settings.push_enabled
   end
 
-  defp is_user_online?(user_id, order_id) do
+  defp user_online?(user_id, order_id) do
     # Verificar se usuário está online no chat específico
     case App.Chat.MessageStatus.get_user_presence(user_id, order_id) do
       {:ok, timestamp} ->

@@ -1,0 +1,104 @@
+nohup: ignoring input
+=CRASH REPORT==== 1-Jul-2025::09:30:19.357278 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 152
+  neighbours:
+
+=CRASH REPORT==== 1-Jul-2025::09:30:19.357278 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 152
+  neighbours:
+
+[warning] Outdated tailwind version. Expected 3.4.0, got 3.4.3. Please run `mix tailwind.install` or update the version in your config files.
+[error] Running LiveDebuggerWeb.Endpoint with Bandit 1.7.0 at http failed, port 4007 already in use
+[notice] Application live_debugger exited: LiveDebugger.start(:normal, []) returned an error: shutdown: failed to start child: LiveDebuggerWeb.Endpoint
+    ** (EXIT) shutdown: failed to start child: {LiveDebuggerWeb.Endpoint, :http}
+        ** (EXIT) shutdown: failed to start child: :listener
+            ** (EXIT) :eaddrinuse
+[notice] Application igniter exited: :stopped
+[notice] Application owl exited: :stopped
+[notice] Application inflex exited: :stopped
+[notice] Application req exited: :stopped
+[notice] Application finch exited: :stopped
+[notice] Application nimble_options exited: :stopped
+[notice] Application nimble_pool exited: :stopped
+[notice] Application mint exited: :stopped
+[notice] Application spitfire exited: :stopped
+[notice] Application rewrite exited: :stopped
+[notice] Application text_diff exited: :stopped
+[notice] Application sourceror exited: :stopped
+[notice] Application glob_ex exited: :stopped
+[notice] Application pbkdf2_elixir exited: :stopped
+[notice] Application argon2_elixir exited: :stopped
+[notice] Application comeonin exited: :stopped
+[notice] Application sweet_xml exited: :stopped
+[notice] Application xmerl exited: :stopped
+[notice] Application tailwind exited: :stopped
+[notice] Application esbuild exited: :stopped
+[notice] Application phoenix_live_dashboard exited: :stopped
+[notice] Application telemetry_metrics exited: :stopped
+[notice] Application phoenix_live_view exited: :stopped
+[notice] Application phoenix_live_reload exited: :stopped
+[notice] Application file_system exited: :stopped
+[notice] Application ecto_sql exited: :stopped
+[notice] Application phoenix_ecto exited: :stopped
+[notice] Application postgrex exited: :stopped
+[notice] Application db_connection exited: :stopped
+[notice] Application ecto exited: :stopped
+[notice] Application phoenix exited: :stopped
+[notice] Application jason exited: :stopped
+[notice] Application decimal exited: :stopped
+[notice] Application castore exited: :stopped
+[notice] Application websock_adapter exited: :stopped
+[notice] Application plug_cowboy exited: :stopped
+[notice] Application cowboy_telemetry exited: :stopped
+[notice] Application cowboy exited: :stopped
+[notice] Application ranch exited: :stopped
+[notice] Application cowlib exited: :stopped
+[notice] Application bandit exited: :stopped
+[notice] Application hpax exited: :stopped
+[notice] Application thousand_island exited: :stopped
+[notice] Application websock exited: :stopped
+[notice] Application phoenix_template exited: :stopped
+[notice] Application phoenix_html exited: :stopped
+[notice] Application phoenix_pubsub exited: :stopped
+[notice] Application plug exited: :stopped
+[notice] Application telemetry exited: :stopped
+[notice] Application plug_crypto exited: :stopped
+[notice] Application mime exited: :stopped
+[notice] Application eex exited: :stopped
+[notice] Application os_mon exited: :stopped
+[notice] Application sasl exited: :stopped
+[notice] Application runtime_tools exited: :stopped
+** (Mix) Could not start application live_debugger: LiveDebugger.start(:normal, []) returned an error: shutdown: failed to start child: LiveDebuggerWeb.Endpoint
+    ** (EXIT) shutdown: failed to start child: {LiveDebuggerWeb.Endpoint, :http}
+        ** (EXIT) shutdown: failed to start child: :listener
+            ** (EXIT) :eaddrinuse

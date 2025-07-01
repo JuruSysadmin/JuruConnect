@@ -202,7 +202,7 @@ defmodule App.Chat.RateLimiter do
         timestamp > minute_ago
       end)
 
-      if length(filtered_messages) == 0 do
+      if Enum.empty?(filtered_messages) do
         :ets.delete(@table_name, user_id)
       else
         :ets.insert(@table_name, {user_id, filtered_messages})

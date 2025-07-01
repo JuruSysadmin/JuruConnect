@@ -28,7 +28,6 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
-import ChatHook from './hooks/chat_hook.js'
 
 /**
  * Coleção de hooks do Phoenix LiveView
@@ -338,18 +337,9 @@ Hooks.GoalCelebration = {
    * @memberof Hooks.GoalCelebration
    */
   mounted() {
-    this.handleEvent("goal-achieved", (data) => {
-      this.celebrate(data);
-    });
-
-    this.handleEvent("goal-achieved-multiple", (data) => {
-      this.celebrateMultiple(data);
-    });
-
-    // Novo handler para celebrações reais baseadas em dados da API
-    this.handleEvent("goal-achieved-real", (data) => {
-      this.celebrateReal(data);
-    });
+    this.handleEvent("goal-achieved", (data) => this.celebrate(data))
+    this.handleEvent("goal-achieved-multiple", (data) => this.celebrateMultiple(data))
+    this.handleEvent("goal-achieved-real", (data) => this.celebrateReal(data))
   },
   
   /**
@@ -360,14 +350,9 @@ Hooks.GoalCelebration = {
    * @param {string} data.achieved - Valor atingido formatado
    */
   celebrate(data) {
-    // Efeito sonoro (opcional - só funciona com interação do usuário)
-    this.playSound();
-    
-    // Mostra toast notification
-    this.showToast(data.store_name, data.achieved);
-    
-    // Efeito de confetti
-    this.createConfetti();
+    this.playSound()
+    this.showToast(data.store_name, data.achieved)
+    this.createConfetti()
   },
   
   /**
@@ -376,24 +361,23 @@ Hooks.GoalCelebration = {
    */
   playSound() {
     try {
-      // Cria um som de sucesso usando Web Audio API
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
       
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1)
       
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
     } catch (e) {
-      // Audio not available
+      console.log("Audio not available")
     }
   },
   
@@ -404,34 +388,27 @@ Hooks.GoalCelebration = {
    * @param {string} achieved - Valor atingido formatado
    */
   showToast(storeName, achieved) {
-    // Cria uma notificação temporária no canto da tela
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+    const toast = document.createElement('div')
+    toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300'
     toast.innerHTML = `
       <div class="flex items-center space-x-2">
-        <span class="text-2xl"></span>
+        <span class="text-2xl">🎉</span>
         <div>
           <div class="font-bold">Meta Atingida!</div>
           <div class="text-sm">${storeName}</div>
           <div class="text-xs">${achieved}</div>
         </div>
       </div>
-    `;
+    `
     
-    document.body.appendChild(toast);
+    document.body.appendChild(toast)
     
-    // Anima para dentro
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100)
+    
     setTimeout(() => {
-      toast.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Remove após 4 segundos
-    setTimeout(() => {
-      toast.classList.add('translate-x-full');
-      setTimeout(() => {
-        document.body.removeChild(toast);
-      }, 300);
-    }, 4000);
+      toast.classList.add('translate-x-full')
+      setTimeout(() => document.body.removeChild(toast), 300)
+    }, 4000)
   },
   
   /**
@@ -439,11 +416,8 @@ Hooks.GoalCelebration = {
    * @memberof Hooks.GoalCelebration
    */
   createConfetti() {
-    // Cria partículas de confetti
     for (let i = 0; i < 50; i++) {
-      setTimeout(() => {
-        this.createConfettiPiece();
-      }, i * 50);
+      setTimeout(() => this.createConfettiPiece(), i * 50)
     }
   },
   
@@ -452,27 +426,25 @@ Hooks.GoalCelebration = {
    * @memberof Hooks.GoalCelebration
    */
   createConfettiPiece() {
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-    const confetti = document.createElement('div');
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+    const confetti = document.createElement('div')
     
-    confetti.style.position = 'fixed';
-    confetti.style.top = '-10px';
-    confetti.style.left = Math.random() * window.innerWidth + 'px';
-    confetti.style.width = '10px';
-    confetti.style.height = '10px';
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    confetti.style.borderRadius = '50%';
-    confetti.style.pointerEvents = 'none';
-    confetti.style.zIndex = '9999';
-    confetti.style.animation = `confettifall 3s linear forwards`;
+    confetti.style.position = 'fixed'
+    confetti.style.top = '-10px'
+    confetti.style.left = Math.random() * window.innerWidth + 'px'
+    confetti.style.width = '10px'
+    confetti.style.height = '10px'
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+    confetti.style.borderRadius = '50%'
+    confetti.style.pointerEvents = 'none'
+    confetti.style.zIndex = '9999'
+    confetti.style.animation = 'confettifall 3s linear forwards'
     
-    document.body.appendChild(confetti);
+    document.body.appendChild(confetti)
     
     setTimeout(() => {
-      if (confetti.parentNode) {
-        confetti.parentNode.removeChild(confetti);
-      }
-    }, 3000);
+      if (confetti.parentNode) confetti.parentNode.removeChild(confetti)
+    }, 3000)
   },
 
   /**
@@ -481,14 +453,7 @@ Hooks.GoalCelebration = {
    * @param {Object} data - Dados da celebração múltipla
    */
   celebrateMultiple(data) {
-    // Som mais elaborado
-    this.playAdvancedSound();
-    
-    // Toast com informações extra
-    this.showEnhancedToast(data.store_name, data.achieved, data.celebration_id);
-    
-    // Confetti mais intenso
-    this.createIntenseConfetti();
+    this.celebrate(data)
   },
 
   /**
@@ -497,391 +462,7 @@ Hooks.GoalCelebration = {
    * @param {Object} data - Dados da celebração real
    */
   celebrateReal(data) {
-    // Som baseado no nível
-    this.playLevelSound(data.level);
-    
-    // Toast personalizado baseado no tipo
-    this.showRealToast(data);
-    
-    // Confetti baseado no nível
-    this.createLevelConfetti(data.level);
-    
-    // Efeito especial para níveis épicos
-    if (data.level === 'legendary' || data.level === 'epic') {
-      this.createFireworks();
-    }
-  },
-
-  /**
-   * Som mais elaborado para celebrações múltiplas
-   * @memberof Hooks.GoalCelebration
-   */
-  playAdvancedSound() {
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // Sequência de notas
-      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
-      
-      notes.forEach((freq, index) => {
-        setTimeout(() => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.3);
-        }, index * 200);
-      });
-    } catch (e) {
-      // Som não disponível
-    }
-  },
-
-  /**
-   * Som baseado no nível da celebração
-   * @memberof Hooks.GoalCelebration
-   * @param {string} level - Nível da celebração
-   */
-  playLevelSound(level) {
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      let frequency, duration, gain;
-      
-      switch (level) {
-        case 'legendary':
-          frequency = [440, 554.37, 659.25, 880]; // A4-C#5-E5-A5
-          duration = 0.6;
-          gain = 0.4;
-          break;
-        case 'epic':
-          frequency = [523.25, 659.25, 783.99]; // C5-E5-G5
-          duration = 0.5;
-          gain = 0.3;
-          break;
-        case 'major':
-          frequency = [440, 554.37]; // A4-C#5
-          duration = 0.4;
-          gain = 0.25;
-          break;
-        case 'standard':
-          frequency = [523.25]; // C5
-          duration = 0.3;
-          gain = 0.2;
-          break;
-        default:
-          frequency = [440]; // A4
-          duration = 0.2;
-          gain = 0.15;
-      }
-      
-      frequency.forEach((freq, index) => {
-        setTimeout(() => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-          gainNode.gain.setValueAtTime(gain, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + duration);
-        }, index * 150);
-      });
-    } catch (e) {
-      // Som não disponível
-    }
-  },
-
-  /**
-   * Toast aprimorado para celebrações múltiplas
-   * @memberof Hooks.GoalCelebration
-   */
-  showEnhancedToast(storeName, achieved, celebrationId) {
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-lg shadow-2xl z-50 transform translate-x-full transition-all duration-500 border-2 border-yellow-300';
-    toast.innerHTML = `
-      <div class="flex items-center space-x-3">
-        <div>
-          <div class="font-bold text-lg">META ATINGIDA!</div>
-          <div class="text-sm font-medium">${storeName}</div>
-          <div class="text-lg font-mono font-bold text-yellow-200">${achieved}</div>
-          <div class="text-xs opacity-75">#${celebrationId}</div>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() =>toast.classList.remove('translate-x-full'), 100);
-    setTimeout(() => {
-      toast.classList.add('translate-x-full');
-      setTimeout(() => document.body.removeChild(toast), 500);
-    }, 6000);
-  },
-
-  /**
-   * Toast personalizado para celebrações reais
-   * @memberof Hooks.GoalCelebration
-   */
-  showRealToast(data) {
-    const levelColors = {
-      legendary: 'from-purple-600 to-pink-600 border-yellow-400',
-      epic: 'from-orange-500 to-red-600 border-orange-300',
-      major: 'from-blue-500 to-indigo-600 border-blue-300',
-      standard: 'from-green-500 to-emerald-600 border-green-300',
-      minor: 'from-gray-500 to-gray-600 border-gray-300'
-    };
-
-    const colorClass = levelColors[data.level] || levelColors.standard;
-
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 bg-gradient-to-r ${colorClass} text-white p-4 rounded-xl shadow-2xl z-50 transform translate-x-full transition-all duration-500 border-2 max-w-sm`;
-    
-    let storeInfo = data.store_name !== 'Sistema' ? `<div class="text-sm font-medium">${data.store_name}</div>` : '';
-    
-    toast.innerHTML = `
-      <div class="flex items-start space-x-3">
-        <div class="flex-1">
-          <div class="font-bold text-base">${data.message}</div>
-          ${storeInfo}
-          <div class="text-lg font-mono font-bold text-yellow-100">${data.achieved}</div>
-          <div class="text-xs opacity-75 mt-1">
-            ${data.type} • ${data.percentage}% • Nível ${data.level}
-          </div>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
-    
-    // Duração baseada no nível
-    const duration = this.getToastDuration(data.level);
-    setTimeout(() => {
-      toast.classList.add('translate-x-full');
-      setTimeout(() => document.body.removeChild(toast), 500);
-    }, duration);
-  },
-
-  /**
-   * Confetti mais intenso para celebrações múltiplas
-   * @memberof Hooks.GoalCelebration
-   */
-  createIntenseConfetti() {
-    // Mais partículas e mais coloridas
-    for (let i = 0; i < 100; i++) {
-      setTimeout(() => {
-        this.createEnhancedConfettiPiece();
-      }, i * 30);
-    }
-  },
-
-  /**
-   * Confetti baseado no nível da celebração
-   * @memberof Hooks.GoalCelebration
-   */
-  createLevelConfetti(level) {
-    const particleCount = {
-      legendary: 150,
-      epic: 100,
-      major: 75,
-      standard: 50,
-      minor: 25
-    };
-
-    const count = particleCount[level] || 50;
-    
-    for (let i = 0; i < count; i++) {
-      setTimeout(() => {
-        this.createLevelConfettiPiece(level);
-      }, i * 40);
-    }
-  },
-
-  /**
-   * Partícula de confetti aprimorada
-   * @memberof Hooks.GoalCelebration
-   */
-  createEnhancedConfettiPiece() {
-    const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#FF69B4'];
-    const shapes = ['circle', 'square', 'triangle'];
-    
-    const confetti = document.createElement('div');
-    const shape = shapes[Math.floor(Math.random() * shapes.length)];
-    const size = Math.random() * 8 + 4; // 4-12px
-    
-    confetti.style.position = 'fixed';
-    confetti.style.top = '-20px';
-    confetti.style.left = Math.random() * window.innerWidth + 'px';
-    confetti.style.width = size + 'px';
-    confetti.style.height = size + 'px';
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    confetti.style.pointerEvents = 'none';
-    confetti.style.zIndex = '9999';
-    confetti.style.animation = `confettifall 4s linear forwards`;
-    
-    if (shape === 'circle') {
-      confetti.style.borderRadius = '50%';
-    } else if (shape === 'triangle') {
-      confetti.style.transform = 'rotate(45deg)';
-    }
-    
-    document.body.appendChild(confetti);
-    
-    setTimeout(() => {
-      if (confetti.parentNode) {
-        confetti.parentNode.removeChild(confetti);
-      }
-    }, 4000);
-  },
-
-  /**
-   * Partícula de confetti por nível
-   * @memberof Hooks.GoalCelebration
-   */
-  createLevelConfettiPiece(level) {
-    const levelColors = {
-      legendary: ['#FFD700', '#FFA500', '#FF69B4', '#9932CC'],
-      epic: ['#FF6347', '#FF4500', '#FF1493', '#FF8C00'],
-      major: ['#4169E1', '#00BFFF', '#1E90FF', '#6495ED'],
-      standard: ['#32CD32', '#00FF7F', '#98FB98', '#90EE90'],
-      minor: ['#C0C0C0', '#A9A9A9', '#D3D3D3', '#DCDCDC']
-    };
-
-    const colors = levelColors[level] || levelColors.standard;
-    const confetti = document.createElement('div');
-    const size = level === 'legendary' ? Math.random() * 12 + 6 : Math.random() * 8 + 4;
-    
-    confetti.style.position = 'fixed';
-    confetti.style.top = '-20px';
-    confetti.style.left = Math.random() * window.innerWidth + 'px';
-    confetti.style.width = size + 'px';
-    confetti.style.height = size + 'px';
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    confetti.style.borderRadius = '50%';
-    confetti.style.pointerEvents = 'none';
-    confetti.style.zIndex = '9999';
-    confetti.style.animation = `confettifall ${3 + Math.random() * 2}s linear forwards`;
-    confetti.style.boxShadow = level === 'legendary' ? '0 0 20px rgba(255, 215, 0, 0.8)' : 'none';
-    
-    document.body.appendChild(confetti);
-    
-    setTimeout(() => {
-      if (confetti.parentNode) {
-        confetti.parentNode.removeChild(confetti);
-      }
-    }, 5000);
-  },
-
-  /**
-   * Efeito de fogos de artifício para celebrações épicas
-   * @memberof Hooks.GoalCelebration
-   */
-  createFireworks() {
-    // Simula fogos de artifício com explosões radiais
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        this.createFireworkExplosion();
-      }, i * 800);
-    }
-  },
-
-  /**
-   * Cria uma explosão de fogos de artifício
-   * @memberof Hooks.GoalCelebration
-   */
-  createFireworkExplosion() {
-    const centerX = Math.random() * window.innerWidth;
-    const centerY = Math.random() * (window.innerHeight / 2) + 50;
-    
-    // Cria partículas em todas as direções
-    for (let i = 0; i < 20; i++) {
-      const angle = (i / 20) * Math.PI * 2;
-      const velocity = 100 + Math.random() * 100;
-      
-      this.createFireworkParticle(centerX, centerY, angle, velocity);
-    }
-  },
-
-  /**
-   * Cria uma partícula de fogo de artifício
-   * @memberof Hooks.GoalCelebration
-   */
-  createFireworkParticle(startX, startY, angle, velocity) {
-    const particle = document.createElement('div');
-    const colors = ['#FFD700', '#FF6B35', '#F7931E', '#FFE15D', '#FF69B4'];
-    
-    particle.style.position = 'fixed';
-    particle.style.left = startX + 'px';
-    particle.style.top = startY + 'px';
-    particle.style.width = '4px';
-    particle.style.height = '4px';
-    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    particle.style.borderRadius = '50%';
-    particle.style.pointerEvents = 'none';
-    particle.style.zIndex = '9999';
-    particle.style.boxShadow = '0 0 10px currentColor';
-    
-    document.body.appendChild(particle);
-    
-    // Anima a partícula
-    let currentX = startX;
-    let currentY = startY;
-    let currentVelocity = velocity;
-    const gravity = 200; // pixels/s²
-    const startTime = performance.now();
-    
-    const animate = (currentTime) => {
-      const elapsed = (currentTime - startTime) / 1000; // em segundos
-      
-      currentX = startX + Math.cos(angle) * velocity * elapsed;
-      currentY = startY + Math.sin(angle) * velocity * elapsed + 0.5 * gravity * elapsed * elapsed;
-      currentVelocity -= gravity * elapsed;
-      
-      particle.style.left = currentX + 'px';
-      particle.style.top = currentY + 'px';
-      
-      // Fade out
-      const opacity = Math.max(0, 1 - elapsed / 2);
-      particle.style.opacity = opacity;
-      
-      if (elapsed < 2 && currentY < window.innerHeight) {
-        requestAnimationFrame(animate);
-      } else {
-        if (particle.parentNode) {
-          particle.parentNode.removeChild(particle);
-        }
-      }
-    };
-    
-    requestAnimationFrame(animate);
-  },
-
-  /**
-   * Retorna a duração do toast baseada no nível
-   * @memberof Hooks.GoalCelebration
-   */
-  getToastDuration(level) {
-    const durations = {
-      legendary: 10000, // 10 segundos
-      epic: 8000,       // 8 segundos
-      major: 6000,      // 6 segundos
-      standard: 4000,   // 4 segundos
-      minor: 3000       // 3 segundos
-    };
-    
-    return durations[level] || 4000;
+    this.celebrate(data)
   }
 }
 
@@ -986,5 +567,451 @@ liveSocket.connect()
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
+window.liveSocket = liveSocket
+
+const AudioRecorderHook = {
+  mounted() {
+    this.initializeAudioRecorder()
+    this.setupAudioEventHandlers()
+  },
+
+  initializeAudioRecorder() {
+    this.isRecording = false
+    this.mediaRecorder = null
+    this.audioChunks = []
+    this.audioStream = null
+  },
+
+  setupAudioEventHandlers() {
+    this.handleEvent("start_audio_recording", () => this.startAudioRecording())
+    this.handleEvent("stop_audio_recording", () => this.stopAudioRecording())
+    this.handleEvent("play_audio_message", (data) => this.playAudioMessage(data))
+  },
+
+  async startAudioRecording() {
+    try {
+      this.audioStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      })
+
+      this.mediaRecorder = new MediaRecorder(this.audioStream, {
+        mimeType: this.getSupportedMimeType()
+      })
+
+      this.audioChunks = []
+      this.setupMediaRecorderHandlers()
+
+      this.mediaRecorder.start(1000)
+      this.isRecording = true
+      
+      this.pushEvent("audio_recording_started", {})
+      this.updateRecordingUI(true)
+
+    } catch (error) {
+      console.error("Error starting audio recording:", error)
+      this.pushEvent("audio_recording_error", { error: error.message })
+    }
+  },
+
+  setupMediaRecorderHandlers() {
+    this.mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        this.audioChunks.push(event.data)
+      }
+    }
+
+    this.mediaRecorder.onstop = () => {
+      this.processRecordedAudio()
+    }
+  },
+
+  stopAudioRecording() {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.stop()
+      this.audioStream.getTracks().forEach(track => track.stop())
+      this.isRecording = false
+      this.updateRecordingUI(false)
+    }
+  },
+
+  async processRecordedAudio() {
+    const audioBlob = new Blob(this.audioChunks, { 
+      type: this.getSupportedMimeType() 
+    })
+    
+    const audioDuration = await this.calculateAudioDuration(audioBlob)
+    const audioBase64 = await this.convertBlobToBase64(audioBlob)
+
+    this.pushEvent("audio_recorded", {
+      audio_data: audioBase64,
+      duration: audioDuration,
+      mime_type: this.getSupportedMimeType()
+    })
+  },
+
+  getSupportedMimeType() {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/wav'
+    ]
+    
+    return types.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm'
+  },
+
+  async calculateAudioDuration(blob) {
+    return new Promise((resolve) => {
+      const audio = new Audio()
+      audio.onloadedmetadata = () => {
+        resolve(Math.round(audio.duration))
+      }
+      audio.src = URL.createObjectURL(blob)
+    })
+  },
+
+  async convertBlobToBase64(blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result.split(',')[1])
+      reader.readAsDataURL(blob)
+    })
+  },
+
+  playAudioMessage(data) {
+    const audio = new Audio(data.audio_url)
+    audio.play().catch(error => {
+      console.error("Error playing audio:", error)
+    })
+  },
+
+  updateRecordingUI(isRecording) {
+    const recordButton = document.getElementById('audio-record-button')
+    const recordIcon = document.getElementById('audio-record-icon')
+    
+    if (recordButton && recordIcon) {
+      if (isRecording) {
+        recordButton.classList.add('bg-red-500', 'animate-pulse')
+        recordButton.classList.remove('bg-gray-400')
+        recordIcon.textContent = '⏹️'
+      } else {
+        recordButton.classList.remove('bg-red-500', 'animate-pulse')
+        recordButton.classList.add('bg-gray-400')
+        recordIcon.textContent = '🎙️'
+      }
+    }
+  }
+}
+
+const ChatHook = {
+  mounted() {
+    this.setupChatEventHandlers()
+    this.scrollToBottom()
+  },
+
+  updated() {
+    this.scrollToBottom()
+  },
+
+  setupChatEventHandlers() {
+    this.handleEvent("scroll-to-bottom", () => this.scrollToBottom())
+    this.handleEvent("mention-notification", (data) => this.showMentionNotification(data))
+    this.handleEvent("desktop-notification", (data) => this.showDesktopNotification(data))
+    this.handleEvent("clear-message-input", () => this.clearMessageInput())
+  },
+
+  scrollToBottom() {
+    const container = document.getElementById("messages")
+    if (container) {
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight
+      }, 50)
+    }
+  },
+
+  showMentionNotification(data) {
+    if (Notification.permission === "granted") {
+      new Notification(`Menção de ${data.sender_name}`, {
+        body: data.text,
+        icon: "/images/chat-icon.png"
+      })
+    }
+  },
+
+  showDesktopNotification(data) {
+    if (Notification.permission === "granted") {
+      new Notification(data.title, {
+        body: data.body,
+        icon: data.icon || "/images/notification-icon.png"
+      })
+    }
+  },
+
+  clearMessageInput() {
+    const input = document.getElementById("message-input")
+    if (input) {
+      input.value = ""
+    }
+  }
+}
+
+const GoalCelebrationHook = {
+  mounted() {
+    this.handleEvent("goal-achieved", (data) => this.celebrate(data))
+    this.handleEvent("goal-achieved-multiple", (data) => this.celebrateMultiple(data))
+    this.handleEvent("goal-achieved-real", (data) => this.celebrateReal(data))
+  },
+  
+  celebrate(data) {
+    this.playSound()
+    this.showToast(data.store_name, data.achieved)
+    this.createConfetti()
+  },
+  
+  playSound() {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1)
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
+    } catch (e) {
+      console.log("Audio not available")
+    }
+  },
+  
+  showToast(storeName, achieved) {
+    const toast = document.createElement('div')
+    toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300'
+    toast.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🎉</span>
+        <div>
+          <div class="font-bold">Meta Atingida!</div>
+          <div class="text-sm">${storeName}</div>
+          <div class="text-xs">${achieved}</div>
+        </div>
+      </div>
+    `
+    
+    document.body.appendChild(toast)
+    setTimeout(() => toast.classList.remove('translate-x-full'), 100)
+    setTimeout(() => {
+      toast.classList.add('translate-x-full')
+      setTimeout(() => document.body.removeChild(toast), 300)
+    }, 4000)
+  },
+  
+  createConfetti() {
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => this.createConfettiPiece(), i * 50)
+    }
+  },
+  
+  createConfettiPiece() {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+    const confetti = document.createElement('div')
+    
+    confetti.style.position = 'fixed'
+    confetti.style.top = '-10px'
+    confetti.style.left = Math.random() * window.innerWidth + 'px'
+    confetti.style.width = '10px'
+    confetti.style.height = '10px'
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+    confetti.style.borderRadius = '50%'
+    confetti.style.pointerEvents = 'none'
+    confetti.style.zIndex = '9999'
+    confetti.style.animation = 'confettifall 3s linear forwards'
+    
+    document.body.appendChild(confetti)
+    setTimeout(() => {
+      if (confetti.parentNode) confetti.parentNode.removeChild(confetti)
+    }, 3000)
+  },
+
+  celebrateMultiple(data) {
+    this.celebrate(data)
+  },
+
+  celebrateReal(data) {
+    this.celebrate(data)
+  }
+}
+
+const AutoDismissFlashHook = {
+  mounted() {
+    const kind = this.el.dataset.kind
+    
+    if (kind === 'info') {
+      this.timeout = setTimeout(() => {
+        this.el.click()
+      }, 4000)
+    }
+  },
+  
+  destroyed() {
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
+  }
+}
+
+const ChartHook = {
+  mounted() {
+    const ctx = this.el.getContext('2d')
+    const data = JSON.parse(this.el.dataset.chartData)
+    
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    })
+  }
+}
+
+const GaugeChartHook = {
+  mounted() {
+    this.initChart()
+    this.handleEvent("update-gauge", (data) => {
+      this.updateChart(data.value)
+    })
+  },
+  
+  initChart() {
+    const ctx = this.el.getContext('2d')
+    const value = parseFloat(this.el.dataset.value) || 0
+    
+    this.chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [value, 100 - value],
+          backgroundColor: [
+            this.getColor(value),
+            '#F3F4F6'
+          ],
+          borderWidth: 0,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
+          }
+        },
+        animation: {
+          animateRotate: true,
+          duration: 1000
+        }
+      }
+    })
+  },
+  
+  updateChart(value) {
+    if (this.chart) {
+      this.chart.data.datasets[0].data = [value, 100 - value]
+      this.chart.data.datasets[0].backgroundColor[0] = this.getColor(value)
+      this.chart.update('active')
+    }
+  },
+  
+  getColor(value) {
+    if (value >= 100) return '#059669'
+    if (value >= 80) return '#10B981'
+    if (value >= 60) return '#F59E0B'
+    if (value >= 40) return '#F97316'
+    return '#EF4444'
+  },
+  
+  updated() {
+    const value = parseFloat(this.el.dataset.value) || 0
+    this.updateChart(value)
+  }
+}
+
+let Hooks = {
+  ChatHook: ChatHook,
+  AudioRecorderHook: AudioRecorderHook,
+  GoalCelebration: GoalCelebrationHook,
+  AutoDismissFlash: AutoDismissFlashHook,
+  Chart: ChartHook,
+  GaugeChart: GaugeChartHook
+}
+
+let liveSocket = new LiveSocket("/live", Socket, {
+  longPollFallbackMs: 2500,
+  params: {_csrf_token: csrfToken},
+  hooks: Hooks
+})
+
+topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
+window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
+window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+
+window.addEventListener("phx:clear-message-input", () => {
+  const messageInput = document.getElementById("message-input")
+  if (messageInput) {
+    messageInput.value = ""
+    messageInput.focus()
+  }
+})
+
+window.addEventListener("phx:mark-messages-as-read", (e) => {
+  const { order_id } = e.detail
+  if (order_id) {
+    window.dispatchEvent(new CustomEvent("phx:mark_messages_read", {
+      detail: { order_id }
+    }))
+  }
+})
+
+window.addEventListener("phx:bulk-read-success", (e) => {
+  const { count } = e.detail
+  
+  const notification = document.createElement('div')
+  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse'
+  notification.textContent = `${count} mensagens marcadas como lidas`
+  document.body.appendChild(notification)
+  
+  setTimeout(() => {
+    notification.remove()
+  }, 3000)
+  
+  const messagesContainer = document.getElementById('messages')
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+  }
+})
+
+liveSocket.connect()
 window.liveSocket = liveSocket
 

@@ -42,7 +42,9 @@ defmodule AppWeb.ChatLive do
   """
   use AppWeb, :live_view
   alias App.ChatConfig
+  alias App.Chat.{MessageStatus, Notifications, RateLimiter}
   alias AppWeb.Presence
+  alias Phoenix.PubSub
 
     @doc """
   Inicializa o LiveView do chat com o ID do pedido especificado.
@@ -52,7 +54,6 @@ defmodule AppWeb.ChatLive do
   """
   @impl true
   def mount(%{"order_id" => order_id}, _session, socket) do
-    # DIAGNÓSTICO: Log detalhado dos assigns para debug de identificação
     require Logger
     Logger.info("ChatLive - Mount started for order_id: #{order_id}")
     Logger.info("ChatLive - Socket assigns: #{inspect(socket.assigns, limit: :infinity)}")
@@ -73,44 +74,7 @@ defmodule AppWeb.ChatLive do
     trimmed_text = String.trim(text)
     user_id = socket.assigns.current_user_id
 
-    # Evento send_message recebido
-
-    cond do
-      trimmed_text == "" and Enum.empty?(socket.assigns.uploads.image.entries) ->
-        {:noreply, put_flash(socket, :error, "Mensagem não pode estar vazia")}
-
-      String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
-        {:noreply, put_flash(socket, :error, "Mensagem muito longa")}
-
-      true ->
-        # Verificar rate limiting
-        case App.Chat.RateLimiter.check_message_rate(user_id, trimmed_text) do
-          {:ok, :allowed} ->
-            image_url = process_image_upload(socket)
-            result = send_chat_message(socket, trimmed_text, image_url)
-
-            # Registrar mensagem no rate limiter se bem-sucedida
-            case result do
-              {:noreply, socket} ->
-                if is_nil(socket.assigns[:message_error]) do
-                  App.Chat.RateLimiter.record_message(user_id, trimmed_text)
-                end
-                result
-              _ ->
-                result
-            end
-
-          {:error, reason, wait_time} ->
-            error_message = case reason do
-              :rate_limited -> "Muitas mensagens. Aguarde #{wait_time} segundos."
-              :duplicate_spam -> "Não repita a mesma mensagem. Aguarde #{wait_time} segundos."
-              :long_message_spam -> "Muitas mensagens longas. Aguarde #{wait_time} segundos."
-              _ -> "Rate limit atingido. Aguarde #{wait_time} segundos."
-            end
-
-            {:noreply, put_flash(socket, :error, error_message)}
-        end
-    end
+    validate_and_send_message(trimmed_text, socket, user_id)
   end
 
   @impl true
@@ -132,7 +96,6 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("update_message", %{"message" => message}, socket) do
-        # Se o campo ficar vazio, enviar typing_stop
     if String.trim(message) == "" and socket.assigns[:is_typing] do
       user_name = socket.assigns.current_user_name
       topic = socket.assigns.topic
@@ -147,6 +110,33 @@ defmodule AppWeb.ChatLive do
   @impl true
   def handle_event("cancel_upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
+    def handle_event("validate_image", _params, socket) do
+    require Logger
+    Logger.debug("Validando imagem - entries: #{length(socket.assigns.uploads.image.entries)}")
+
+    case socket.assigns.uploads.image.entries do
+      [] ->
+        Logger.debug("Nenhuma imagem selecionada")
+        {:noreply, socket}
+
+      [entry | _] ->
+        Logger.debug("Imagem detectada: #{entry.client_name} (#{entry.client_size} bytes)")
+
+        if entry.valid? do
+          Logger.debug("✅ Imagem válida: #{entry.client_name}")
+          {:noreply,
+           socket
+           |> assign(:message_error, nil)
+           |> put_flash(:info, "Imagem selecionada: #{entry.client_name}")
+          }
+        else
+          error_message = format_upload_error(entry.errors)
+          Logger.warning("❌ Imagem inválida: #{entry.client_name} - #{inspect(entry.errors)}")
+          {:noreply, put_flash(socket, :error, error_message)}
+        end
+    end
   end
 
   @impl true
@@ -164,7 +154,7 @@ defmodule AppWeb.ChatLive do
     user_name = socket.assigns.current_user_name
     topic = socket.assigns.topic
 
-    Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_start, user_name})
+    PubSub.broadcast(App.PubSub, topic, {:typing_start, user_name})
 
     Process.send_after(self(), :typing_timeout, ChatConfig.typing_timeout())
 
@@ -207,25 +197,26 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("search_messages", %{"query" => query}, socket) do
-    # Implementar busca de mensagens
     trimmed_query = String.trim(query)
 
     if String.length(trimmed_query) >= 2 do
-      # Filtrar mensagens localmente por enquanto
-      filtered_messages = Enum.filter(socket.assigns.messages, fn msg ->
+      all_messages = get_all_messages_with_notifications(socket.assigns.messages, socket.assigns.system_notifications)
+
+      filtered_messages = Enum.filter(all_messages, fn msg ->
         String.contains?(String.downcase(msg.text), String.downcase(trimmed_query))
       end)
 
       {:noreply, assign(socket, :filtered_messages, filtered_messages)}
     else
-      {:noreply, assign(socket, :filtered_messages, socket.assigns.messages)}
+      all_messages = get_all_messages_with_notifications(socket.assigns.messages, socket.assigns.system_notifications)
+      {:noreply, assign(socket, :filtered_messages, all_messages)}
     end
   end
 
   @impl true
   def handle_event("mark_message_read", %{"message_id" => message_id}, socket) do
     user_id = socket.assigns.current_user
-    App.Chat.MessageStatus.mark_read(message_id, user_id)
+    MessageStatus.mark_read(message_id, user_id)
     {:noreply, socket}
   end
 
@@ -237,8 +228,8 @@ defmodule AppWeb.ChatLive do
     case List.last(socket.assigns.messages) do
       nil -> {:noreply, socket}
       last_message ->
-        App.Chat.MessageStatus.mark_all_read_until(last_message.id, user_id, order_id)
-        App.Chat.Notifications.mark_notifications_read(user_id, order_id)
+        MessageStatus.mark_all_read_until(last_message.id, user_id, order_id)
+        Notifications.mark_notifications_read(user_id, order_id)
         {:noreply, socket}
     end
   end
@@ -248,13 +239,13 @@ defmodule AppWeb.ChatLive do
     user_id = socket.assigns.current_user_id
 
     parsed_settings = %{
-      desktop_enabled: Map.get(settings, "desktop_enabled", true),
-      email_enabled: Map.get(settings, "email_enabled", true),
-      push_enabled: Map.get(settings, "push_enabled", true),
-      sound_enabled: Map.get(settings, "sound_enabled", true)
+      desktop_enabled: settings["desktop_enabled"] || true,
+      email_enabled: settings["email_enabled"] || true,
+      push_enabled: settings["push_enabled"] || true,
+      sound_enabled: settings["sound_enabled"] || true
     }
 
-    App.Chat.Notifications.update_user_settings(user_id, parsed_settings)
+    Notifications.update_user_settings(user_id, parsed_settings)
     {:noreply, put_flash(socket, :info, "Configurações de notificação atualizadas")}
   end
 
@@ -263,7 +254,6 @@ defmodule AppWeb.ChatLive do
     user_id = socket.assigns.current_user_id
     order_id = socket.assigns.order_id
 
-    # Marcar todas as mensagens visíveis como lidas
     App.Chat.mark_all_messages_read(order_id, user_id)
 
     {:noreply, socket}
@@ -276,11 +266,10 @@ defmodule AppWeb.ChatLive do
 
     case App.Chat.bulk_mark_messages_read(order_id, user_id) do
       {:ok, count} when count > 0 ->
-        # Broadcast bulk read notification
-        Phoenix.PubSub.broadcast(App.PubSub, "order:#{order_id}",
+        PubSub.broadcast(App.PubSub, "order:#{order_id}",
           {:bulk_read_update, user_id, count})
 
-        Phoenix.PubSub.broadcast(App.PubSub, "order:#{order_id}",
+        PubSub.broadcast(App.PubSub, "order:#{order_id}",
           {:bulk_read_notification, %{
             count: count,
             reader_id: user_id,
@@ -320,7 +309,6 @@ defmodule AppWeb.ChatLive do
   def handle_event("show_thread", %{"message_id" => message_id}, socket) do
     thread_messages = App.Chat.get_thread_messages(message_id)
 
-    # Identificar mensagem raiz e respostas
     {root_message, replies} = case thread_messages do
       [] -> {nil, []}
       [root | rest] -> {root, rest}
@@ -352,6 +340,50 @@ defmodule AppWeb.ChatLive do
   end
 
   @impl true
+  def handle_event("audio_recording_started", _params, socket) do
+    {:noreply, assign(socket, :is_recording_audio, true)}
+  end
+
+  @impl true
+  def handle_event("audio_recording_error", %{"error" => error_message}, socket) do
+    {:noreply,
+     socket
+     |> assign(:is_recording_audio, false)
+     |> put_flash(:error, "Erro ao gravar áudio: #{error_message}")}
+  end
+
+  @impl true
+  def handle_event("audio_recorded", audio_params, socket) do
+    case process_recorded_audio(socket, audio_params) do
+      {:ok, updated_socket} ->
+        {:noreply, updated_socket}
+      {:error, error_message} ->
+        {:noreply, put_flash(socket, :error, "Erro ao processar áudio: #{error_message}")}
+    end
+  end
+
+  @impl true
+  def handle_event("start_audio_recording", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:is_recording_audio, true)
+     |> push_event("start_audio_recording", %{})}
+  end
+
+  @impl true
+  def handle_event("stop_audio_recording", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:is_recording_audio, false)
+     |> push_event("stop_audio_recording", %{})}
+  end
+
+  @impl true
+  def handle_event("play_audio_message", %{"audio_url" => audio_url}, socket) do
+    {:noreply, push_event(socket, "play_audio_message", %{audio_url: audio_url})}
+  end
+
+  @impl true
   def handle_event("send_thread_reply", %{"reply" => text}, socket) do
     trimmed_text = String.trim(text)
 
@@ -378,7 +410,7 @@ defmodule AppWeb.ChatLive do
             {:ok, message} ->
               # Publicar a mensagem via PubSub
               topic = "order:#{socket.assigns.order_id}"
-              Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
+              PubSub.broadcast(App.PubSub, topic, {:new_message, message})
 
               # Atualizar thread local
               updated_thread = socket.assigns.thread_messages ++ [message]
@@ -429,16 +461,19 @@ defmodule AppWeb.ChatLive do
       # Marcar mensagem como entregue (se não for do próprio usuário)
       if msg.sender_id != user_id do
         App.Chat.mark_message_delivered(msg.id, user_id)
-        App.Chat.Notifications.notify_new_message(user_id, msg, msg.order_id)
+        Notifications.notify_new_message(user_id, msg, msg.order_id)
       end
 
       # Atualizar presença do usuário
-      App.Chat.MessageStatus.update_user_presence(user_id, msg.order_id)
+      MessageStatus.update_user_presence(user_id, msg.order_id)
+
+      # ATUALIZAÇÃO: Usar função helper para mesclar mensagens + notificações
+      all_messages = get_all_messages_with_notifications(new_messages, socket.assigns.system_notifications)
 
       {:noreply,
        socket
        |> assign(:messages, new_messages)
-       |> assign(:filtered_messages, new_messages)
+       |> assign(:filtered_messages, all_messages)
        |> push_event("scroll-to-bottom", %{})
        |> push_event("play-notification-sound", %{})
        |> push_event("mark-messages-as-read", %{order_id: msg.order_id})}
@@ -451,10 +486,13 @@ defmodule AppWeb.ChatLive do
   def handle_info({:older_messages_loaded, older_messages, has_more}, socket) do
     new_messages = older_messages ++ socket.assigns.messages
 
+    # ATUALIZAÇÃO: Usar função helper para mesclar mensagens + notificações
+    all_messages = get_all_messages_with_notifications(new_messages, socket.assigns.system_notifications)
+
     {:noreply,
      socket
      |> assign(:messages, new_messages)
-     |> assign(:filtered_messages, new_messages)
+     |> assign(:filtered_messages, all_messages)
      |> assign(:has_more_messages, has_more)
      |> assign(:loading_messages, false)}
   end
@@ -469,7 +507,7 @@ defmodule AppWeb.ChatLive do
       end)
 
       presences = Presence.list(socket.assigns.topic)
-      users_online = extract_users_from_presences(presences)
+      users_online = extract_unique_users_from_presences(presences)
 
       diff_end = System.monotonic_time(:microsecond)
       duration_ms = (diff_end - diff_start) / 1000
@@ -492,10 +530,23 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:system_notification, notification}, socket) do
-    # Adicionar notificação do sistema à lista de mensagens
-    messages = socket.assigns.messages ++ [notification]
+    require Logger
+    Logger.debug("Recebida notificação do sistema: #{notification.text}")
 
-    {:noreply, assign(socket, :messages, messages)}
+    # CORREÇÃO: Adicionar notificação APENAS ao assign temporário
+    # Não misturar com mensagens persistentes
+    system_notifications = socket.assigns.system_notifications ++ [notification]
+
+    # Limpar notificações antigas (mais de 5 minutos)
+    cutoff_time = DateTime.add(DateTime.utc_now(), -300, :second)
+    fresh_notifications = Enum.filter(system_notifications, fn notif ->
+      DateTime.compare(notif.inserted_at, cutoff_time) == :gt
+    end)
+
+    {:noreply,
+     socket
+     |> assign(:system_notifications, fresh_notifications)
+     |> push_event("scroll-to-bottom", %{})}
   end
 
   @impl true
@@ -579,7 +630,7 @@ defmodule AppWeb.ChatLive do
   def handle_info({:message_read_notification, %{message_id: message_id, reader_id: reader_id}}, socket) do
     # Notificar que uma mensagem foi lida por outro usuário
     if socket.assigns.current_user_id != reader_id do
-      App.Chat.Notifications.notify_message_read(socket.assigns.current_user_id, message_id, reader_id)
+      Notifications.notify_message_read(socket.assigns.current_user_id, message_id, reader_id)
     end
 
     {:noreply, socket}
@@ -622,6 +673,7 @@ defmodule AppWeb.ChatLive do
       phx-hook="ChatHook"
       role="main"
     >
+      <div id="audio-recorder" phx-hook="AudioRecorderHook" style="display: none;"></div>
       <!-- Mobile/Tablet Header -->
       <div class="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between shadow-sm">
         <button
@@ -961,11 +1013,10 @@ defmodule AppWeb.ChatLive do
             </div>
           <% else %>
             <%= for msg <- @filtered_messages do %>
-              <!-- Notificação do sistema (entrada/saída) -->
-              <%= if Map.get(msg, :is_system, false) do %>
+              <%= if is_system_message?(msg) do %>
                 <div class="flex justify-center my-3">
                   <div class="bg-gray-100 text-gray-600 text-sm px-4 py-2 rounded-full shadow-sm border">
-                    <%= if Map.get(msg, :notification_type) == "join" do %>
+                    <%= if is_join_notification?(msg) do %>
                       <span class="text-green-600">🟢</span> <%= msg.text %>
                     <% else %>
                       <span class="text-gray-500">⚪</span> <%= msg.text %>
@@ -976,7 +1027,6 @@ defmodule AppWeb.ChatLive do
                   </div>
                 </div>
               <% else %>
-              <!-- Mensagem normal -->
               <div
                 class={"flex mb-2 " <> if(msg.sender_id == @current_user_id, do: "justify-end", else: "justify-start")}
                 role="article"
@@ -990,16 +1040,15 @@ defmodule AppWeb.ChatLive do
                     <div class={"text-xs font-semibold mb-1 " <> get_username_color(msg.sender_id, msg.sender_name)}>{msg.sender_name}</div>
                   <% end %>
 
-                  <!-- Indicador de resposta MELHORADO -->
-                  <%= if Map.get(msg, :is_reply, false) && Map.get(msg, :reply_to) do %>
-                    <% original_preview = get_original_message_preview(msg.reply_to, @messages) %>
+                  <%= if is_reply_message?(msg) do %>
+                    <% original_preview = build_original_message_preview(msg.reply_to, @messages) %>
                     <%= if original_preview do %>
                       <div class="bg-blue-50 border-l-4 border-blue-400 pl-3 pr-2 py-2 mb-3 rounded-r-lg">
                         <div class="flex items-start justify-between">
-                                                     <div class="flex-1 min-w-0">
-                             <div class="text-xs font-medium text-blue-700 mb-1">
-                               Respondendo à <span class={"font-medium " <> get_username_color(msg.reply_to, original_preview.sender_name)}>{original_preview.sender_name}</span>:
-                             </div>
+                          <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium text-blue-700 mb-1">
+                              Respondendo à <span class={"font-medium " <> get_username_color(msg.reply_to, original_preview.sender_name)}>{original_preview.sender_name}</span>:
+                            </div>
                             <div class="text-sm text-blue-600 italic truncate">
                               "{original_preview.text}"
                             </div>
@@ -1021,15 +1070,43 @@ defmodule AppWeb.ChatLive do
                     <% end %>
                   <% end %>
 
-                  <!-- Texto da mensagem com destaque para menções -->
-                  <div class="text-base lg:text-lg break-words leading-relaxed">
-                    <%= if Map.get(msg, :has_mentions, false) do %>
-                      {render_message_with_mentions(msg.text)}
-                    <% else %>
-                      {msg.text}
-                    <% end %>
-                  </div>
-                  <%= if Map.get(msg, :image_url) do %>
+                  <%= if is_audio_message?(msg) do %>
+                    <div class="bg-blue-50 rounded-lg p-3 mt-2">
+                      <div class="flex items-center space-x-3">
+                        <button
+                          phx-click="play_audio_message"
+                          phx-value-audio_url={msg.audio_url}
+                          class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                          title="Reproduzir áudio"
+                        >
+                          ▶️
+                        </button>
+                        <div class="flex-1">
+                          <div class="text-sm font-medium text-blue-800">
+                            {msg.text}
+                          </div>
+                          <%= if has_audio_duration?(msg) do %>
+                            <div class="text-xs text-blue-600">
+                              Duração: {format_audio_duration(msg.audio_duration)}s
+                            </div>
+                          <% end %>
+                        </div>
+                        <div class="text-blue-500">
+                          🎵
+                        </div>
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="text-base lg:text-lg break-words leading-relaxed">
+                      <%= if has_mentions?(msg) do %>
+                        {render_message_with_mention_highlights(msg.text)}
+                      <% else %>
+                        {msg.text}
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if has_image?(msg) do %>
                     <img
                       src={msg.image_url}
                       class="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition mt-2"
@@ -1051,7 +1128,7 @@ defmodule AppWeb.ChatLive do
                         <span>Responder</span>
                       </button>
 
-                      <% replies_count = has_replies?(msg.id, @messages) %>
+                      <% replies_count = count_message_replies(msg.id, @messages) %>
                       <%= if replies_count do %>
                         <button
                           class="flex items-center space-x-1 text-xs text-gray-400 hover:text-purple-500 transition-colors px-2 py-1 rounded hover:bg-purple-50"
@@ -1060,13 +1137,12 @@ defmodule AppWeb.ChatLive do
                           title="Ver conversa completa"
                         >
                           <span>🧵</span>
-                          <span>{format_thread_indicator(replies_count)}</span>
+                          <span>{format_thread_reply_counter(replies_count)}</span>
                         </button>
                       <% end %>
 
-                      <%= if Map.get(msg, :is_reply, true) == false && Map.get(msg, :reply_to) == nil do %>
-                        <!-- Só mostra o botão de criar thread se não for uma resposta -->
-                        <%= unless has_replies?(msg.id, @messages) do %>
+                      <%= if is_original_message?(msg) do %>
+                        <%= unless count_message_replies(msg.id, @messages) do %>
                           <button
                             class="flex items-center space-x-1 text-xs text-gray-300 hover:text-gray-500 transition-colors px-2 py-1 rounded hover:bg-gray-50"
                             phx-click="reply_to_message"
@@ -1084,7 +1160,7 @@ defmodule AppWeb.ChatLive do
                       <span class="text-xs text-gray-300">{format_time(msg.inserted_at)}</span>
                       <%= if msg.sender_id == @current_user_id do %>
                         <div class="flex items-center space-x-1">
-                          <%= case Map.get(msg, :status, "sent") do %>
+                          <%= case get_message_status(msg) do %>
                             <% "sent" -> %>
                               <span class="text-xs text-gray-300" title="Enviada">Enviada</span>
                             <% "delivered" -> %>
@@ -1138,43 +1214,61 @@ defmodule AppWeb.ChatLive do
           >
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
-              <!-- Preview da imagem -->
-              <%= if @uploads[:image] && @uploads.image.entries != [] do %>
-                <div class="mb-2 flex items-center space-x-2">
-                  <%= for entry <- @uploads.image.entries do %>
-                    <div class="relative inline-block mr-2 mb-2">
-                      <!-- Preview da imagem -->
-                      <.live_img_preview
-                        entry={entry}
-                        class="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow"
-                      />
 
-    <!-- Barra de progresso animada -->
-                      <div class="absolute bottom-0 left-0 w-full h-2 bg-gray-200 rounded-b-lg overflow-hidden">
-                        <div
-                          class="h-full bg-blue-500 transition-all duration-300"
-                          style={"width: #{entry.progress}%"}
+              <!-- Preview da imagem MELHORADO -->
+              <%= if @uploads[:image] && @uploads.image.entries != [] do %>
+                <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Imagem selecionada:</span>
+                    <span class="text-xs text-gray-500">Clique em enviar para compartilhar</span>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <%= for entry <- @uploads.image.entries do %>
+                      <div class="relative inline-block">
+                        <!-- Preview da imagem -->
+                        <.live_img_preview
+                          entry={entry}
+                          class="w-16 h-16 object-cover rounded-lg border-2 border-blue-200 shadow-sm"
+                        />
+
+                        <!-- Status da imagem -->
+                        <%= if entry.valid? do %>
+                          <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs">✓</span>
+                          </div>
+                        <% else %>
+                          <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs">✗</span>
+                          </div>
+                        <% end %>
+
+                        <!-- Botão para remover -->
+                        <button
+                          type="button"
+                          phx-click="cancel_upload"
+                          phx-value-ref={entry.ref}
+                          class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors flex items-center justify-center"
+                          title="Remover imagem"
                         >
-                        </div>
+                          <span class="text-xs">×</span>
+                        </button>
                       </div>
 
-    <!-- Ícone de carregando enquanto não terminou -->
-                      <%= if entry.progress < 100 do %>
-                        <div class="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg">
-                        </div>
-                      <% end %>
-
-    <!-- Botão para remover o upload -->
-                      <button
-                        type="button"
-                        phx-click="cancel_upload"
-                        phx-value-ref={entry.ref}
-                        class="absolute top-0 right-0 bg-white/80 rounded-full p-1 text-red-500 hover:text-red-700"
-                        title="Remover imagem"
-                      >
-                      </button>
-                    </div>
-                  <% end %>
+                      <!-- Info da imagem -->
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{entry.client_name}</p>
+                        <p class="text-xs text-gray-500">
+                          {format_file_size(entry.client_size)} • {entry.client_type}
+                        </p>
+                        <%= if entry.valid? do %>
+                          <p class="text-xs text-green-600">✓ Pronto para envio</p>
+                        <% else %>
+                          <p class="text-xs text-red-600">✗ {format_upload_error(entry.errors)}</p>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
                 </div>
               <% end %>
               <input
@@ -1193,22 +1287,29 @@ defmodule AppWeb.ChatLive do
                 phx-blur="typing_stop"
                 phx-debounce="300"
               />
-              <label
-                for="image-upload"
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 cursor-pointer"
-                aria-label="Anexar arquivo"
-                title="Anexar arquivo"
-              >
-                <input
-                  id="image-upload"
-                  type="file"
-                  name="image"
-                  accept="image/*"
-                  class="hidden"
-                  phx-drop-target={@uploads.image.ref}
-                  multiple={false}
-                />
-              </label>
+              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                <button
+                  id="audio-record-button"
+                  type="button"
+                  phx-click={if @is_recording_audio, do: "stop_audio_recording", else: "start_audio_recording"}
+                  class={"p-1.5 transition-all duration-200 rounded-lg hover:shadow-sm " <>
+                         if(@is_recording_audio, do: "bg-red-500 text-white animate-pulse", else: "text-gray-400 hover:text-gray-600 hover:bg-gray-100")}
+                  aria-label={if @is_recording_audio, do: "Parar gravação", else: "Gravar áudio"}
+                  title={if @is_recording_audio, do: "Parar gravação", else: "Gravar áudio"}
+                >
+                  <span id="audio-record-icon">{if @is_recording_audio, do: "⏹️", else: "🎙️"}</span>
+                </button>
+
+                <label
+                  for={@uploads.image.ref}
+                  class="p-1.5 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 cursor-pointer"
+                  aria-label="Anexar imagem"
+                  title="Anexar imagem"
+                >
+                  <span>📎</span>
+                  <.live_file_input upload={@uploads.image} class="hidden" />
+                </label>
+              </div>
             </div>
 
             <button
@@ -1269,8 +1370,8 @@ defmodule AppWeb.ChatLive do
                   <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">Mensagem Original</span>
                 </div>
                 <div class="text-gray-800 leading-relaxed">
-                  <%= if Map.get(@thread_root_message, :has_mentions, false) do %>
-                    {render_message_with_mentions(@thread_root_message.text)}
+                  <%= if has_mentions?(@thread_root_message) do %>
+                    {render_message_with_mention_highlights(@thread_root_message.text)}
                   <% else %>
                     {@thread_root_message.text}
                   <% end %>
@@ -1303,8 +1404,8 @@ defmodule AppWeb.ChatLive do
                       "p-3 rounded-xl " <>
                       get_thread_reply_color(reply.sender_id, @current_user_id, reply.sender_name)
                     }>
-                      <%= if Map.get(reply, :has_mentions, false) do %>
-                        {render_message_with_mentions(reply.text)}
+                      <%= if has_mentions?(reply) do %>
+                        {render_message_with_mention_highlights(reply.text)}
                       <% else %>
                         {reply.text}
                       <% end %>
@@ -1390,17 +1491,185 @@ defmodule AppWeb.ChatLive do
   end
 
   # Funções auxiliares privadas
-  defp process_image_upload(socket) do
-    consume_uploaded_entries(socket, :image, fn %{path: path, client_name: name}, _entry ->
-      filename = "#{UUID.uuid4()}_#{name}"
 
-      case App.Minio.upload_file(path, filename) do
-        {:ok, url} -> url
-        _ -> nil
-      end
-    end)
-    |> List.first()
+  # Funções para verificação assertiva de tipos de mensagem
+  defp is_system_message?(%{is_system: true}), do: true
+  defp is_system_message?(_), do: false
+
+  defp is_join_notification?(%{notification_type: "join"}), do: true
+  defp is_join_notification?(_), do: false
+
+  defp is_reply_message?(%{is_reply: true, reply_to: reply_to}) when not is_nil(reply_to), do: true
+  defp is_reply_message?(%{reply_to: reply_to}) when not is_nil(reply_to), do: true
+  defp is_reply_message?(_), do: false
+
+  defp is_audio_message?(%{tipo: "audio", audio_url: url}) when not is_nil(url), do: true
+  defp is_audio_message?(_), do: false
+
+  defp has_audio_duration?(%{audio_duration: duration}) when not is_nil(duration), do: true
+  defp has_audio_duration?(_), do: false
+
+  defp has_mentions?(%{has_mentions: true}), do: true
+  defp has_mentions?(_), do: false
+
+  defp has_image?(%{image_url: url}) when not is_nil(url), do: true
+  defp has_image?(_), do: false
+
+  defp is_original_message?(%{is_reply: false, reply_to: nil}), do: true
+  defp is_original_message?(%{reply_to: nil}), do: true
+  defp is_original_message?(_), do: false
+
+  defp get_message_status(%{status: status}) when not is_nil(status), do: status
+  defp get_message_status(_), do: "sent"
+
+  defp generate_unique_filename(original_name) do
+    timestamp = System.system_time(:millisecond)
+    uuid = UUID.uuid4() |> String.slice(0, 8)
+    extension = Path.extname(original_name)
+    base_name = Path.basename(original_name, extension) |> String.slice(0, 20)
+
+    "#{timestamp}_#{uuid}_#{base_name}#{extension}"
   end
+
+  defp process_image_upload(socket) do
+    require Logger
+
+    case socket.assigns.uploads.image.entries do
+      [] ->
+        Logger.debug("Nenhuma imagem para upload")
+        nil
+
+      _ ->
+        Logger.debug("Processando upload de imagem...")
+
+        consume_uploaded_entries(socket, :image, fn %{path: path, client_name: name}, _entry ->
+          filename = generate_unique_filename(name)
+          Logger.debug("Upload de imagem: #{name} -> #{filename}")
+
+          case App.Minio.upload_file(path, filename) do
+            {:ok, url} ->
+              Logger.info("Imagem enviada: #{url}")
+              url
+            {:error, reason} ->
+              Logger.error("Falha no upload da imagem: #{inspect(reason)}")
+              nil
+          end
+        end)
+        |> List.first()
+    end
+  end
+
+  defp process_recorded_audio(socket, audio_params) do
+    try do
+      audio_url = upload_audio_from_base64(audio_params)
+
+      params = %{
+        text: format_audio_message_text(audio_params),
+        sender_id: socket.assigns.current_user_id,
+        sender_name: socket.assigns.current_user_name,
+        order_id: socket.assigns.order_id,
+        tipo: "audio",
+        audio_url: audio_url,
+        audio_duration: audio_params["duration"] || 0,
+        audio_mime_type: audio_params["mime_type"] || "audio/webm",
+        status: "sent"
+      }
+
+      case App.Chat.create_message(params) do
+        {:ok, message} ->
+          topic = "order:#{socket.assigns.order_id}"
+          Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
+
+          updated_socket = socket
+          |> assign(:is_recording_audio, false)
+          |> put_flash(:info, "Áudio enviado com sucesso!")
+
+          {:ok, updated_socket}
+
+        {:error, _changeset} ->
+          {:error, "Falha ao salvar mensagem de áudio"}
+      end
+    rescue
+      error ->
+        require Logger
+        Logger.error("Error processing recorded audio: #{inspect(error)}")
+        {:error, "Erro interno ao processar áudio"}
+    end
+  end
+
+  defp upload_audio_from_base64(audio_params) do
+    require Logger
+
+    audio_data = audio_params["audio_data"]
+    mime_type = audio_params["mime_type"] || "audio/webm"
+
+    Logger.debug("Processando upload de áudio: #{mime_type}")
+
+    file_extension = extract_audio_file_extension(mime_type)
+    filename = generate_audio_filename(file_extension)
+
+    try do
+      binary_data = Base.decode64!(audio_data)
+      temp_path = create_temp_audio_file(filename, binary_data)
+
+      case App.Minio.upload_file(temp_path, filename) do
+        {:ok, url} ->
+          File.rm(temp_path)
+          Logger.info("Áudio enviado: #{url}")
+          url
+        {:error, reason} ->
+          File.rm(temp_path)
+          Logger.error("Falha no upload do áudio: #{inspect(reason)}")
+          raise "Falha no upload de áudio: #{inspect(reason)}"
+      end
+    rescue
+      error ->
+        Logger.error("Erro no processamento de áudio: #{inspect(error)}")
+        reraise error, __STACKTRACE__
+    end
+  end
+
+  defp generate_audio_filename(extension) do
+    timestamp = System.system_time(:millisecond)
+    uuid = UUID.uuid4() |> String.slice(0, 8)
+    "audio_#{timestamp}_#{uuid}.#{extension}"
+  end
+
+  defp create_temp_audio_file(filename, binary_data) do
+    temp_path = System.tmp_dir!() |> Path.join(filename)
+
+    case File.write(temp_path, binary_data) do
+      :ok -> temp_path
+      {:error, reason} ->
+        raise "Falha ao criar arquivo temporário: #{reason}"
+    end
+  end
+
+  defp extract_audio_file_extension(mime_type) do
+    case mime_type do
+      "audio/webm" <> _ -> "webm"
+      "audio/mp4" -> "mp4"
+      "audio/wav" -> "wav"
+      "audio/mp3" -> "mp3"
+      _ -> "webm"
+    end
+  end
+
+  defp format_audio_message_text(%{"duration" => duration}) when is_integer(duration) do
+    minutes = div(duration, 60)
+    seconds = rem(duration, 60)
+    "🎙️ Áudio #{String.pad_leading("#{minutes}", 2, "0")}:#{String.pad_leading("#{seconds}", 2, "0")}"
+  end
+
+  defp format_audio_message_text(_), do: "🎙️ Mensagem de áudio"
+
+  defp format_audio_duration(duration) when is_integer(duration) do
+    minutes = div(duration, 60)
+    seconds = rem(duration, 60)
+    "#{String.pad_leading("#{minutes}", 2, "0")}:#{String.pad_leading("#{seconds}", 2, "0")}"
+  end
+
+  defp format_audio_duration(_), do: "--:--"
 
     # Envia uma mensagem no chat e atualiza o estado do socket.
   # Para indicadores de digitação e limpa o campo de mensagem quando bem-sucedida.
@@ -1463,14 +1732,11 @@ defmodule AppWeb.ChatLive do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, topic)
 
-      # Obter o nome e ID do usuário logado via Guardian
-      current_user_name = get_current_user_name(socket)
-      current_user_id = get_current_user_id(socket)
+      current_user_name = resolve_current_user_name(socket)
+      current_user_id = resolve_unique_user_id(socket)
 
-      # CORRIGIDO: Usar ID único como chave de presença ao invés de socket.id
       presence_key = current_user_id
 
-      # Subscrever aos tópicos de notificação
       Phoenix.PubSub.subscribe(App.PubSub, "notifications:#{current_user_id}")
       Phoenix.PubSub.subscribe(App.PubSub, "sound_notifications:#{current_user_id}")
       Phoenix.PubSub.subscribe(App.PubSub, "mentions:#{current_user_id}")
@@ -1480,11 +1746,10 @@ defmodule AppWeb.ChatLive do
         name: current_user_name,
         joined_at: DateTime.utc_now() |> DateTime.to_iso8601(),
         user_agent: get_connect_info(socket, :user_agent) || "Unknown",
-        socket_id: socket.id,  # Manter socket.id para debug
-        pid: inspect(self())   # Adicionar PID para debug
+        socket_id: socket.id,
+        pid: inspect(self())
       }
 
-      # Log de debug para rastrear presença
       require Logger
       Logger.debug("ChatLive - Tracking presence for user: #{current_user_name} (#{current_user_id}) on topic: #{topic}")
 
@@ -1493,7 +1758,6 @@ defmodule AppWeb.ChatLive do
           Logger.debug("ChatLive - Presence tracking successful for user: #{current_user_id}")
           :ok
         {:error, reason} ->
-          # Log o erro mas não falha o mount
           Logger.warning("ChatLive - Failed to track presence for user #{current_user_id}: #{inspect(reason)}")
       end
     end
@@ -1524,7 +1788,7 @@ defmodule AppWeb.ChatLive do
     presences = Presence.list(topic)
     users_online =
       try do
-        extract_users_from_presences(presences)
+        extract_unique_users_from_presences(presences)
       rescue
         error ->
           require Logger
@@ -1533,8 +1797,12 @@ defmodule AppWeb.ChatLive do
           []
       end
 
-    current_user_name = get_current_user_name(socket)
-    current_user_id = get_current_user_id(socket)
+    current_user_name = resolve_current_user_name(socket)
+    current_user_id = resolve_unique_user_id(socket)
+
+    # INICIALIZAÇÃO: Notificações começam vazias, então filtered_messages = messages
+    system_notifications = []
+    all_messages = get_all_messages_with_notifications(messages, system_notifications)
 
     socket
     |> assign(:order_id, order_id)
@@ -1557,7 +1825,8 @@ defmodule AppWeb.ChatLive do
     |> assign(:sidebar_open, false)
     |> assign(:search_open, false)
     |> assign(:settings_open, false)
-    |> assign(:filtered_messages, messages)
+    |> assign(:filtered_messages, all_messages)  # ATUALIZAÇÃO: Usar função helper
+    |> assign(:system_notifications, system_notifications)
     |> assign(:replying_to, nil)
     |> assign(:thread_messages, [])
     |> assign(:thread_root_message, nil)
@@ -1566,45 +1835,53 @@ defmodule AppWeb.ChatLive do
     |> assign(:show_thread, false)
     |> assign(:mentions, [])
     |> assign(:show_mentions, false)
+    |> assign(:is_recording_audio, false)
     |> allow_upload(:image,
       accept: ~w(.jpg .jpeg .png .gif),
       max_entries: 1,
       max_file_size: 5_000_000
     )
+    |> allow_upload(:audio,
+      accept: ~w(.webm .mp3 .wav .m4a),
+      max_entries: 1,
+      max_file_size: 10_000_000
+    )
   end
 
-  defp extract_users_from_presences(presences) do
-
-    users = presences
+  defp extract_unique_users_from_presences(presences) do
+    unique_users = presences
     |> Map.values()
-    |> Enum.flat_map(fn %{metas: metas} ->
-      Enum.map(metas, fn meta ->
-
-        case meta do
-          %{name: name, user_id: user_id} when is_binary(name) and is_binary(user_id) ->
-            {user_id, name}
-          %{"name" => name, "user_id" => user_id} when is_binary(name) and is_binary(user_id) ->
-            {user_id, name}
-          %{name: name} when is_binary(name) ->
-            {name, name}
-          %{"name" => name} when is_binary(name) ->
-            {name, name}
-          name when is_binary(name) ->
-            {name, name}
-          _ ->
-            {ChatConfig.default_username(), ChatConfig.default_username()}
-        end
-      end)
+    |> Enum.flat_map(fn %{metas: user_metas} ->
+      Enum.map(user_metas, &extract_user_info_from_meta/1)
     end)
     |> Enum.uniq_by(fn {user_id, _name} -> user_id end)
-    |> Enum.map(fn {_user_id, name} -> name end)
+    |> Enum.map(fn {_user_id, display_name} -> display_name end)
     |> Enum.sort()
 
+    log_user_extraction_result(unique_users)
+    unique_users
+  end
 
+  defp extract_user_info_from_meta(%{name: name, user_id: user_id})
+    when is_binary(name) and is_binary(user_id), do: {user_id, name}
+
+  defp extract_user_info_from_meta(%{"name" => name, "user_id" => user_id})
+    when is_binary(name) and is_binary(user_id), do: {user_id, name}
+
+  defp extract_user_info_from_meta(%{name: name}) when is_binary(name), do: {name, name}
+
+  defp extract_user_info_from_meta(%{"name" => name}) when is_binary(name), do: {name, name}
+
+  defp extract_user_info_from_meta(name) when is_binary(name), do: {name, name}
+
+  defp extract_user_info_from_meta(_) do
+    default_user = ChatConfig.default_username()
+    {default_user, default_user}
+  end
+
+  defp log_user_extraction_result(users) do
     require Logger
     Logger.debug("ChatLive - Extracted #{length(users)} unique users from presences: #{inspect(users)}")
-
-    users
   end
 
   defp load_older_messages_async(socket) do
@@ -1702,45 +1979,9 @@ defmodule AppWeb.ChatLive do
   end
 
 
-  defp get_current_user_name(socket) do
-    case socket.assigns[:current_user] do
-      %{name: name} when is_binary(name) and name != "" -> name
-      %{username: username} when is_binary(username) and username != "" -> username
-      %{"name" => name} when is_binary(name) and name != "" -> name
-      %{"username" => username} when is_binary(username) and username != "" -> username
-      username when is_binary(username) and username != "" -> username
-      _ -> ChatConfig.default_username()
-    end
-  end
 
 
-  defp get_current_user_id(socket) do
-    user_id = case socket.assigns[:current_user] do
-
-      %{id: id} when is_binary(id) and id != "" -> id
-      %{"id" => id} when is_binary(id) and id != "" -> id
-
-
-      %{username: username} when is_binary(username) and username != "" -> "user_#{username}"
-      %{"username" => username} when is_binary(username) and username != "" -> "user_#{username}"
-
-
-      username when is_binary(username) and username != "" -> "legacy_#{username}"
-
-
-      _ -> "anonymous_#{System.unique_integer([:positive])}_#{System.system_time(:millisecond)}"
-    end
-
-
-    require Logger
-    Logger.debug("ChatLive - User ID resolved: #{user_id} from assigns: #{inspect(socket.assigns[:current_user])}")
-
-    user_id
-  end
-
-
-  defp render_message_with_mentions(text) do
-
+  defp render_message_with_mention_highlights(text) do
     Regex.replace(~r/@(\w+)/, text, fn _match, username ->
       ~s(<span class="bg-blue-100 text-blue-800 px-1 rounded font-medium">@#{username}</span>)
     end)
@@ -1748,45 +1989,54 @@ defmodule AppWeb.ChatLive do
   end
 
 
-  defp has_replies?(message_id, messages) do
-    replies_count = Enum.count(messages, fn msg ->
-
+  defp count_message_replies(message_id, messages) do
+    reply_count = Enum.count(messages, fn msg ->
       case msg do
         %{is_system: true} -> false
         %{reply_to: reply_to} -> reply_to == message_id
-        _ -> Map.get(msg, :reply_to) == message_id
+        _ -> false
       end
     end)
 
-    if replies_count > 0, do: replies_count, else: false
+    if reply_count > 0, do: reply_count, else: false
   end
 
-
-  defp get_original_message_preview(reply_to_id, messages) do
+  defp build_original_message_preview(reply_to_id, messages) do
     case Enum.find(messages, fn msg -> msg.id == reply_to_id end) do
       nil -> nil
-      original_msg ->
-        preview_text = String.slice(original_msg.text, 0, 80)
-        preview_text = if String.length(original_msg.text) > 80, do: preview_text <> "...", else: preview_text
+      original_message ->
+        preview_text = truncate_message_text(original_message.text, 80)
         %{
-          id: original_msg.id,
+          id: original_message.id,
           text: preview_text,
-          sender_name: original_msg.sender_name,
-          full_text: original_msg.text
+          sender_name: original_message.sender_name,
+          full_text: original_message.text
         }
     end
   end
 
 
-  defp format_thread_indicator(replies_count) when is_integer(replies_count) do
-    case replies_count do
+
+
+
+  defp truncate_message_text(text, max_length) do
+    if String.length(text) > max_length do
+      String.slice(text, 0, max_length) <> "..."
+    else
+      text
+    end
+  end
+
+
+  defp format_thread_reply_counter(reply_count) when is_integer(reply_count) do
+    case reply_count do
       1 -> "1 resposta"
-      n when n > 1 -> "#{n} respostas"
+      count when count > 1 -> "#{count} respostas"
       _ -> "Thread"
     end
   end
 
-  defp format_thread_indicator(_), do: "Thread"
+  defp format_thread_reply_counter(_), do: "Thread"
 
 
   defp get_user_color(user_id, user_name) do
@@ -1897,53 +2147,103 @@ defmodule AppWeb.ChatLive do
 
 
   defp process_presence_notifications(diff, topic, current_user_id) do
-    start_time = System.monotonic_time(:microsecond)
+    notification_start_time = System.monotonic_time(:microsecond)
+    require Logger
 
-    joins = Map.get(diff, :joins, %{})
-    leaves = Map.get(diff, :leaves, %{})
+    user_joins = Map.get(diff, :joins, %{})
+    user_leaves = Map.get(diff, :leaves, %{})
 
+    Logger.debug("Processando presence diff - Joins: #{map_size(user_joins)}, Leaves: #{map_size(user_leaves)}")
 
-    if map_size(joins) > 0 do
-      Task.start(fn ->
-        Enum.each(joins, fn {user_id, %{metas: [meta | _]}} ->
-          user_name = Map.get(meta, :name, "Usuário desconhecido")
-
-
-          unless user_id == current_user_id do
-            create_system_notification_fast(topic, "#{user_name} entrou na conversa", "join", user_id)
-          end
-        end)
-      end)
+    # Processar joins diretamente (sem Task aninhada)
+    if map_size(user_joins) > 0 do
+      broadcast_user_join_notifications(user_joins, topic, current_user_id)
     end
 
-
-    if map_size(leaves) > 0 do
-      Task.start(fn ->
-        Enum.each(leaves, fn {user_id, %{metas: [meta | _]}} ->
-          user_name = Map.get(meta, :name, "Usuário desconhecido")
-
-
-          unless user_id == current_user_id do
-            create_system_notification_fast(topic, "#{user_name} saiu da conversa", "leave", user_id)
-          end
-        end)
-      end)
+    # Processar leaves diretamente (sem Task aninhada)
+    if map_size(user_leaves) > 0 do
+      broadcast_user_leave_notifications(user_leaves, topic, current_user_id)
     end
 
+    log_presence_processing_time(notification_start_time, user_joins, user_leaves)
+  end
 
+  defp broadcast_user_join_notifications(user_joins, topic, current_user_id) do
+    require Logger
+
+    Enum.each(user_joins, fn {user_id, %{metas: [user_meta | _]}} ->
+      user_name = user_meta[:name] || user_meta["name"] || "Usuário desconhecido"
+
+      Logger.debug("User join detected: #{user_name} (#{user_id}) em #{topic}")
+
+      unless user_id == current_user_id do
+        if should_create_join_notification?(user_id, user_name) do
+          Logger.debug("Criando notificação de entrada para: #{user_name}")
+          create_fast_system_notification(topic, "#{user_name} entrou na conversa", "join", user_id)
+        else
+          Logger.debug("Usuário #{user_name} já estava online - ignorando notificação duplicada")
+        end
+      else
+        Logger.debug("Ignorando entrada do próprio usuário: #{user_name}")
+      end
+    end)
+  end
+
+  defp broadcast_user_leave_notifications(user_leaves, topic, current_user_id) do
+    require Logger
+
+    Enum.each(user_leaves, fn {user_id, %{metas: [user_meta | _]}} ->
+      user_name = user_meta[:name] || user_meta["name"] || "Usuário desconhecido"
+
+      Logger.debug("User leave detected: #{user_name} (#{user_id}) em #{topic}")
+
+      unless user_id == current_user_id do
+        Logger.debug("Criando notificação de saída para: #{user_name}")
+
+        Process.put({:last_leave, user_id}, System.system_time(:second))
+
+        create_fast_system_notification(topic, "#{user_name} saiu da conversa", "leave", user_id)
+      else
+        Logger.debug("Ignorando saída do próprio usuário: #{user_name}")
+      end
+    end)
+  end
+
+  defp log_presence_processing_time(start_time, user_joins, user_leaves) do
     end_time = System.monotonic_time(:microsecond)
     duration_ms = (end_time - start_time) / 1000
 
     require Logger
-    Logger.debug("Presence notifications processed in #{Float.round(duration_ms, 2)}ms - Joins: #{map_size(joins)}, Leaves: #{map_size(leaves)}")
+    Logger.debug("Presence notifications processed in #{Float.round(duration_ms, 2)}ms - Joins: #{map_size(user_joins)}, Leaves: #{map_size(user_leaves)}")
   end
 
+  defp create_fast_system_notification(topic, message_text, notification_type, user_id) do
+    timing_start = System.monotonic_time(:microsecond)
+    require Logger
 
-  defp create_system_notification(topic, message_text, notification_type, user_id) do
-    order_id = String.replace(topic, "order:", "")
+    order_id = extract_order_id_fast(topic)
+    system_message = build_system_message(message_text, notification_type, user_id, order_id)
 
+    Logger.debug("Broadcasting system notification: #{message_text} para topic: #{topic}")
 
-    system_message = %{
+    try do
+      Phoenix.PubSub.broadcast!(App.PubSub, topic, {:system_notification, system_message})
+      Logger.debug(" Broadcast realizado com sucesso para: #{topic}")
+    rescue
+      error ->
+        Logger.error("❌ Erro no broadcast: #{inspect(error)}")
+        reraise error, __STACKTRACE__
+    end
+
+    log_notification_timing(timing_start, notification_type, message_text)
+  end
+
+  defp extract_order_id_fast(topic) do
+    binary_part(topic, 6, byte_size(topic) - 6)
+  end
+
+  defp build_system_message(message_text, notification_type, user_id, order_id) do
+    %{
       id: System.unique_integer([:positive]),
       text: message_text,
       sender_id: "system",
@@ -1954,7 +2254,6 @@ defmodule AppWeb.ChatLive do
       target_user_id: user_id,
       inserted_at: DateTime.utc_now(),
       is_system: true,
-
       reply_to: nil,
       is_reply: false,
       has_mentions: false,
@@ -1962,46 +2261,178 @@ defmodule AppWeb.ChatLive do
       image_url: nil,
       status: "system"
     }
-
-
-    Phoenix.PubSub.broadcast(App.PubSub, topic, {:system_notification, system_message})
   end
 
-
-  defp create_system_notification_fast(topic, message_text, notification_type, user_id) do
-    notification_start = System.monotonic_time(:microsecond)
-
-    order_id = binary_part(topic, 6, byte_size(topic) - 6)
-
-
-    system_message = %{
-      id: System.unique_integer([:positive]),
-      text: message_text,
-      sender_id: "system",
-      sender_name: "Sistema",
-      order_id: order_id,
-      tipo: "system_notification",
-      notification_type: notification_type,
-      target_user_id: user_id,
-      inserted_at: DateTime.utc_now(),
-      is_system: true,
-
-      reply_to: nil,
-      is_reply: false,
-      has_mentions: false,
-      mentions: [],
-      image_url: nil,
-      status: "system"
-    }
-
-
-    Phoenix.PubSub.broadcast!(App.PubSub, topic, {:system_notification, system_message})
-
-
-    notification_end = System.monotonic_time(:microsecond)
-    duration_ms = (notification_end - notification_start) / 1000
+  defp log_notification_timing(start_time, notification_type, message_text) do
+    end_time = System.monotonic_time(:microsecond)
+    duration_ms = (end_time - start_time) / 1000
 
     require Logger
     Logger.debug("FAST notification created and broadcast in #{Float.round(duration_ms, 2)}ms - #{notification_type}: #{message_text}")
+  end
+
+  defp resolve_current_user_name(socket) do
+    current_user = socket.assigns[:current_user]
+    extract_user_name(current_user)
+  end
+
+  defp resolve_unique_user_id(socket) do
+    current_user = socket.assigns[:current_user]
+    user_id = extract_user_id(current_user)
+
+    log_user_id_resolution(user_id, current_user)
+    user_id
+  end
+
+  defp generate_anonymous_user_id do
+    "anonymous_#{System.unique_integer([:positive])}_#{System.system_time(:millisecond)}"
+  end
+
+  defp log_user_id_resolution(user_id, current_user) do
+    require Logger
+    Logger.debug("ChatLive - User ID resolved: #{user_id} from assigns: #{inspect(current_user)}")
+  end
+
+  defp extract_user_name(%{name: name}) when is_binary(name) and name != "", do: name
+
+  defp extract_user_name(%{username: username}) when is_binary(username) and username != "", do: username
+
+  defp extract_user_name(%{"name" => name}) when is_binary(name) and name != "", do: name
+
+  defp extract_user_name(%{"username" => username}) when is_binary(username) and username != "", do: username
+
+  defp extract_user_name(username) when is_binary(username) and username != "", do: username
+
+  defp extract_user_name(_), do: ChatConfig.default_username()
+
+  defp extract_user_id(%{id: id}) when is_binary(id) and id != "", do: id
+
+  defp extract_user_id(%{"id" => id}) when is_binary(id) and id != "", do: id
+
+  defp extract_user_id(%{username: username}) when is_binary(username) and username != "", do: "user_#{username}"
+
+  defp extract_user_id(%{"username" => username}) when is_binary(username) and username != "", do: "user_#{username}"
+
+  defp extract_user_id(username) when is_binary(username) and username != "", do: "legacy_#{username}"
+
+  defp extract_user_id(_), do: generate_anonymous_user_id()
+
+  defp validate_and_send_message(trimmed_text, socket, user_id) do
+    case validate_message_content(trimmed_text, socket) do
+      :valid ->
+        process_message_sending(trimmed_text, socket, user_id)
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
+    end
+  end
+
+  defp validate_message_content(trimmed_text, socket) do
+    cond do
+      trimmed_text == "" and Enum.empty?(socket.assigns.uploads.image.entries) ->
+        {:error, "Mensagem não pode estar vazia"}
+
+      String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
+        {:error, "Mensagem muito longa"}
+
+      true ->
+        :valid
+    end
+  end
+
+  defp process_message_sending(trimmed_text, socket, user_id) do
+    case RateLimiter.check_message_rate(user_id, trimmed_text) do
+      {:ok, :allowed} ->
+        handle_successful_rate_check(trimmed_text, socket, user_id)
+
+      {:error, reason, wait_time} ->
+        error_message = format_rate_limit_error(reason, wait_time)
+        {:noreply, put_flash(socket, :error, error_message)}
+    end
+  end
+
+  defp handle_successful_rate_check(trimmed_text, socket, user_id) do
+    image_url = process_image_upload(socket)
+    result = send_chat_message(socket, trimmed_text, image_url)
+
+    case result do
+      {:noreply, socket} ->
+        if is_nil(socket.assigns[:message_error]) do
+          RateLimiter.record_message(user_id, trimmed_text)
+        end
+        result
+      _ ->
+        result
+    end
+  end
+
+  defp format_rate_limit_error(reason, wait_time) do
+    case reason do
+      :rate_limited -> "Muitas mensagens. Aguarde #{wait_time} segundos."
+      :duplicate_spam -> "Não repita a mesma mensagem. Aguarde #{wait_time} segundos."
+      :long_message_spam -> "Muitas mensagens longas. Aguarde #{wait_time} segundos."
+      _ -> "Rate limit atingido. Aguarde #{wait_time} segundos."
+    end
+  end
+
+    defp format_upload_error(errors) do
+    error_messages = Enum.map(errors, fn
+      :too_large -> "Arquivo muito grande (máximo 5MB)"
+      :not_accepted -> "Tipo de arquivo não aceito (apenas JPG, PNG, GIF)"
+      :too_many_files -> "Apenas uma imagem por vez"
+      :external_client_failure -> "Falha no upload"
+      error -> "Erro: #{inspect(error)}"
+    end)
+
+    case error_messages do
+      [single_error] -> single_error
+      multiple_errors -> "Problemas: " <> Enum.join(multiple_errors, ", ")
+    end
+  end
+
+  defp format_file_size(size) when is_integer(size) do
+    cond do
+      size >= 1_048_576 -> "#{Float.round(size / 1_048_576, 1)}MB"
+      size >= 1_024 -> "#{Float.round(size / 1_024, 1)}KB"
+      true -> "#{size}B"
+    end
+  end
+
+  defp format_file_size(_), do: "Tamanho desconhecido"
+
+  # NOVA FUNÇÃO: Mescla mensagens persistentes com notificações temporárias
+  defp get_all_messages_with_notifications(messages, system_notifications) do
+    # Combinar e ordenar por timestamp
+    all_items = messages ++ system_notifications
+
+    Enum.sort(all_items, fn a, b ->
+      DateTime.compare(a.inserted_at, b.inserted_at) != :gt
+    end)
+  end
+
+  # NOVA FUNÇÃO: Verifica se deve criar notificação de entrada
+  defp should_create_join_notification?(user_id, user_name) do
+    require Logger
+
+    # Verificar se é uma reconexão muito rápida (menos de 30 segundos)
+    case Process.get({:last_leave, user_id}) do
+      nil ->
+        # Primeira entrada conhecida
+        true
+
+      timestamp when is_integer(timestamp) ->
+        current_time = System.system_time(:second)
+        time_diff = current_time - timestamp
+
+        if time_diff < 30 do
+          Logger.debug("Reconexão rápida detectada para #{user_name}: #{time_diff}s - pulando notificação")
+          false
+        else
+          Logger.debug("Entrada legítima para #{user_name} após #{time_diff}s")
+          true
+        end
+
+      _ ->
+        true
+    end
   end
 end

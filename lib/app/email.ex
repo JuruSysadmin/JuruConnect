@@ -384,9 +384,9 @@ defmodule App.Email do
 
     O QUE VOCÊ PODE FAZER:
     - Acompanhar dashboard de vendas em tempo real
-- Participar do chat integrado por pedidos
-- Ver metas e celebrações da equipe
-- Visualizar relatórios de performance
+    - Participar do chat integrado por pedidos
+    - Ver metas e celebrações da equipe
+    - Visualizar relatórios de performance
 
     ---
     © #{Date.utc_today().year} Jurunense Home Center - JuruConnect

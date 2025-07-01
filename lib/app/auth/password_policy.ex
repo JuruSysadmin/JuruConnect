@@ -65,7 +65,7 @@ defmodule App.Auth.PasswordPolicy do
     calculate_password_strength(password)
   end
 
-  def is_password_expired?(user) do
+  def password_expired?(user) do
     case user.password_changed_at do
       nil -> true  # Force change if never set
       changed_at ->
