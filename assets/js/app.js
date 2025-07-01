@@ -35,68 +35,9 @@ import Chart from 'chart.js/auto';
  */
 let Hooks = {}
 
-/**
- * Hook para auto-dismiss das mensagens de flash
- * @namespace Hooks.AutoDismissFlash
- */
-Hooks.AutoDismissFlash = {
-  /**
-   * Inicializa o auto-dismiss quando a mensagem é montada
-   * @memberof Hooks.AutoDismissFlash
-   */
-  mounted() {
-    const kind = this.el.dataset.kind;
-    
-    // Auto-dismiss apenas para mensagens de sucesso (info), não para erro
-    if (kind === 'info') {
-      this.timeout = setTimeout(() => {
-        // Simula o clique para fechar a mensagem
-        this.el.click();
-      }, 4000); // 4 segundos
-    }
-  },
-  
-  /**
-   * Limpa o timeout quando o elemento é destruído
-   * @memberof Hooks.AutoDismissFlash
-   */
-  destroyed() {
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-  }
-};
+// Chart hook já definido como const ChartHook mais abaixo
 
-Hooks.ChatHook = ChatHook
-
-/**
- * Hook para gráficos de rosca básicos usando Chart.js
- * @namespace Hooks.Chart
- */
-Hooks.Chart = {
-  /**
-   * Inicializa o gráfico quando o elemento é montado no DOM
-   * @memberof Hooks.Chart
-   */
-  mounted() {
-    const ctx = this.el.getContext('2d');
-    const data = JSON.parse(this.el.dataset.chartData);
-    
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }
-    });
-  }
-}
+// WhatsAppAudioPlayer hook - sem definição duplicada
 
 /**
  * Hook para gráficos de gauge (medidor) com animações suaves
@@ -472,14 +413,8 @@ Hooks.GoalCelebration = {
  */
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
-/**
- * Instância principal do LiveSocket
- * @type {LiveSocket}
- */
-let liveSocket = new LiveSocket("/live", Socket, {
-  params: {_csrf_token: csrfToken},
-  hooks: Hooks
-})
+// Declarar variável global do LiveSocket
+let liveSocket
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
@@ -560,14 +495,7 @@ window.addEventListener("phx:bulk-read-success", (e) => {
   }
 })
 
-// connect if there are any LiveViews on the page
-liveSocket.connect()
-
-// expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
-// >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
-// >> liveSocket.disableLatencySim()
-window.liveSocket = liveSocket
+// Removi a duplicação - liveSocket.connect() será chamado apenas uma vez no final
 
 const AudioRecorderHook = {
   mounted() {
@@ -711,6 +639,7 @@ const ChatHook = {
   mounted() {
     this.setupChatEventHandlers()
     this.scrollToBottom()
+    this.setupImagePreview()
   },
 
   updated() {
@@ -722,6 +651,57 @@ const ChatHook = {
     this.handleEvent("mention-notification", (data) => this.showMentionNotification(data))
     this.handleEvent("desktop-notification", (data) => this.showDesktopNotification(data))
     this.handleEvent("clear-message-input", () => this.clearMessageInput())
+  },
+
+  setupImagePreview() {
+    // Configurar preview de imagem manual
+    const imageInput = this.el.querySelector('input[type="file"]')
+    if (imageInput) {
+      imageInput.addEventListener('change', (e) => this.handleImagePreview(e))
+    }
+  },
+
+  handleImagePreview(event) {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Verificar se é uma imagem
+    if (!file.type.startsWith('image/')) return
+
+    // Criar URL temporária da imagem
+    const imageUrl = URL.createObjectURL(file)
+    
+    // Procurar por elemento de preview existente ou criar um novo
+    let previewContainer = this.el.querySelector('.js-manual-image-preview')
+    if (!previewContainer) {
+      previewContainer = this.createPreviewContainer()
+    }
+
+    // Atualizar preview
+    const previewImg = previewContainer.querySelector('.js-preview-image')
+    if (previewImg) {
+      previewImg.src = imageUrl
+      previewImg.style.display = 'block'
+    }
+
+    // Limpar URL quando não precisar mais
+    setTimeout(() => URL.revokeObjectURL(imageUrl), 60000)
+  },
+
+  createPreviewContainer() {
+    const container = document.createElement('div')
+    container.className = 'js-manual-image-preview hidden'
+    container.innerHTML = `
+      <img class="js-preview-image w-16 h-16 object-cover rounded-lg border-2 border-blue-200 shadow-sm" style="display: none" alt="Preview da imagem">
+    `
+    
+    // Tentar inserir antes do live_img_preview existente
+    const existingPreview = this.el.querySelector('.live_img_preview, [data-phx-entry-ref]')
+    if (existingPreview && existingPreview.parentNode) {
+      existingPreview.parentNode.insertBefore(container, existingPreview)
+    }
+    
+    return container
   },
 
   scrollToBottom() {
@@ -958,16 +938,16 @@ const GaugeChartHook = {
   }
 }
 
-let Hooks = {
-  ChatHook: ChatHook,
-  AudioRecorderHook: AudioRecorderHook,
-  GoalCelebration: GoalCelebrationHook,
-  AutoDismissFlash: AutoDismissFlashHook,
-  Chart: ChartHook,
-  GaugeChart: GaugeChartHook
-}
+// Adicionar todos os hooks ao objeto Hooks
+Hooks.ChatHook = ChatHook
+Hooks.AudioRecorderHook = AudioRecorderHook
+Hooks.GoalCelebration = GoalCelebrationHook
+Hooks.AutoDismissFlash = AutoDismissFlashHook
+Hooks.Chart = ChartHook
+Hooks.GaugeChart = GaugeChartHook
 
-let liveSocket = new LiveSocket("/live", Socket, {
+// Inicializar o LiveSocket com todas as configurações
+liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   hooks: Hooks
@@ -1012,6 +992,7 @@ window.addEventListener("phx:bulk-read-success", (e) => {
   }
 })
 
+// Conectar apenas uma vez
 liveSocket.connect()
 window.liveSocket = liveSocket
 

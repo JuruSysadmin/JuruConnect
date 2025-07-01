@@ -15,22 +15,25 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   alias App.Accounts
   alias App.Auth.{PasswordPolicy, PasswordReset, RateLimiter}
 
+  @refresh_interval 30_000
+  @admin_roles [:admin, :manager]
+
   def mount(_params, session, socket) do
-    # Verificar se o usuário é admin
-    case get_current_user(session) do
-      %{role: role} when role in ["admin", "manager"] ->
+    user = get_current_user(session)
+
+    case authorize_admin_access(user) do
+      {:ok, authorized_user} ->
         if connected?(socket) do
-          # Atualizar dados a cada 30 segundos
-          :timer.send_interval(30_000, self(), :refresh_data)
+          :timer.send_interval(@refresh_interval, self(), :refresh_data)
         end
 
         {:ok,
          socket
-         |> assign(:current_user, get_current_user(session))
+         |> assign(:current_user, authorized_user)
          |> assign(:tab, "overview")
          |> load_security_data()}
 
-      _ ->
+      {:error, :unauthorized} ->
         {:ok,
          socket
          |> put_flash(:error, "Acesso negado. Apenas administradores.")
@@ -51,8 +54,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   end
 
   def handle_event("unlock_ip", %{"ip" => ip}, socket) do
-    # Implementar desbloqueio de IP
-    # Por enquanto, simulação
     {:noreply,
      socket
      |> put_flash(:info, "IP #{ip} desbloqueado com sucesso.")
@@ -60,7 +61,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   end
 
   def handle_event("unlock_user", %{"username" => username}, socket) do
-    # Implementar desbloqueio de usuário
     {:noreply,
      socket
      |> put_flash(:info, "Usuário #{username} desbloqueado com sucesso.")
@@ -68,29 +68,22 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   end
 
   def handle_event("reset_user_password", %{"user_id" => user_id}, socket) do
-    case Accounts.get_user!(user_id) do
-      nil ->
+    case reset_user_password(user_id) do
+      {:ok, :password_reset} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Senha resetada. Nova senha enviada por e-mail.")
+         |> load_security_data()}
+
+      {:error, :user_not_found} ->
         {:noreply, put_flash(socket, :error, "Usuário não encontrado.")}
 
-      user ->
-        new_password = PasswordPolicy.generate_secure_password(12)
-
-        case Accounts.update_user(user, %{password: new_password}) do
-          {:ok, _updated_user} ->
-            # Enviar senha por email (implementar)
-            {:noreply,
-             socket
-             |> put_flash(:info, "Senha resetada. Nova senha enviada por e-mail.")
-             |> load_security_data()}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Erro ao resetar senha.")}
-        end
+      {:error, :reset_failed} ->
+        {:noreply, put_flash(socket, :error, "Erro ao resetar senha.")}
     end
   end
 
   def handle_event("export_logs", %{"format" => format}, socket) do
-    # Implementar exportação de logs
     {:noreply,
      socket
      |> put_flash(:info, "Logs exportados em formato #{format}.")
@@ -99,6 +92,46 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   def handle_info(:refresh_data, socket) do
     {:noreply, load_security_data(socket)}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gray-50">
+      <%= render_header(assigns) %>
+      <%= render_navigation_tabs(assigns) %>
+      <%= render_content(assigns) %>
+    </div>
+    """
+  end
+
+  defp authorize_admin_access(%{role: role}) when role in @admin_roles do
+    {:ok, %{role: role}}
+  end
+
+  defp authorize_admin_access(_), do: {:error, :unauthorized}
+
+  defp get_current_user(%{"user_id" => user_id}) when is_binary(user_id) do
+    Accounts.get_user!(user_id)
+  end
+
+  defp get_current_user(_), do: nil
+
+  defp reset_user_password(user_id) do
+    case Accounts.get_user!(user_id) do
+      nil ->
+        {:error, :user_not_found}
+
+      user ->
+        new_password = PasswordPolicy.generate_secure_password(12)
+
+        case Accounts.update_user(user, %{password: new_password}) do
+          {:ok, _updated_user} ->
+            {:ok, :password_reset}
+
+          {:error, _changeset} ->
+            {:error, :reset_failed}
+        end
+    end
   end
 
   defp load_security_data(socket) do
@@ -112,16 +145,7 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
     |> assign(:locked_ips, get_locked_ips())
   end
 
-  defp get_current_user(session) do
-    case Map.get(session, "user_id") do
-      nil -> nil
-      user_id -> Accounts.get_user!(user_id)
-    end
-  end
-
   defp get_recent_security_events do
-    # Buscar eventos recentes do SecurityLogger
-    # Por enquanto, dados simulados
     [
       %{
         id: 1,
@@ -158,15 +182,13 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
       total_users: total_users,
       active_users: active_users,
       inactive_users: total_users - active_users,
-      admin_users: Accounts.count_users_by_role("admin"),
-      manager_users: Accounts.count_users_by_role("manager"),
-      clerk_users: Accounts.count_users_by_role("clerk")
+      admin_users: Accounts.count_users_by_role(:admin),
+      manager_users: Accounts.count_users_by_role(:manager),
+      clerk_users: Accounts.count_users_by_role(:clerk)
     }
   end
 
   defp get_locked_accounts do
-    # Buscar contas bloqueadas
-    # Por enquanto, dados simulados
     [
       %{username: "user123", locked_until: DateTime.add(DateTime.utc_now(), 900, :second), reason: "Múltiplas tentativas falhas"},
       %{username: "test_user", locked_until: DateTime.add(DateTime.utc_now(), 600, :second), reason: "Atividade suspeita"}
@@ -174,27 +196,14 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   end
 
   defp get_locked_ips do
-    # Buscar IPs bloqueados
-    # Por enquanto, dados simulados
     [
       %{ip: "192.168.1.200", locked_until: DateTime.add(DateTime.utc_now(), 1200, :second), attempts: 10},
       %{ip: "10.0.0.100", locked_until: DateTime.add(DateTime.utc_now(), 800, :second), attempts: 7}
     ]
   end
 
-  def render(assigns) do
-    ~H"""
-    <div class="min-h-screen bg-gray-50">
-      <%= render_header(assigns) %>
-      <%= render_navigation_tabs(assigns) %>
-      <%= render_content(assigns) %>
-    </div>
-    """
-  end
-
   defp render_header(assigns) do
     ~H"""
-    <!-- Header -->
     <div class="bg-white border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-6">
@@ -226,20 +235,14 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   defp render_navigation_tabs(assigns) do
     ~H"""
-    <!-- Navigation Tabs -->
     <div class="bg-white border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <nav class="flex space-x-8" aria-label="Tabs">
-          <%= for {tab_id, tab_name} <- [{"overview", "Visão Geral"}, {"events", "Eventos"}, {"users", "Usuários"}, {"policies", "Políticas"}] do %>
+          <%= for {tab_id, tab_name} <- navigation_tabs() do %>
             <button
               phx-click="switch_tab"
               phx-value-tab={tab_id}
-              class={[
-                "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors",
-                if(@tab == tab_id,
-                  do: "border-blue-500 text-blue-600",
-                  else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-              ]}
+              class={navigation_tab_classes(@tab, tab_id)}
             >
               <%= tab_name %>
             </button>
@@ -250,26 +253,56 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
     """
   end
 
-  defp render_content(assigns) do
+  defp render_content(%{tab: "overview"} = assigns) do
     ~H"""
-    <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <%= case @tab do %>
-        <% "overview" -> %>
-          <%= render_overview_tab(assigns) %>
-        <% "users" -> %>
-          <%= render_users_tab(assigns) %>
-        <% _ -> %>
-          <%= render_default_tab(assigns) %>
-      <% end %>
+      <%= render_overview_tab(assigns) %>
     </div>
     """
+  end
+
+  defp render_content(%{tab: "users"} = assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <%= render_users_tab(assigns) %>
+    </div>
+    """
+  end
+
+  defp render_content(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <%= render_default_tab(assigns) %>
+    </div>
+    """
+  end
+
+  defp navigation_tabs do
+    [
+      {"overview", "Visão Geral"},
+      {"events", "Eventos"},
+      {"users", "Usuários"},
+      {"policies", "Políticas"}
+    ]
+  end
+
+  defp navigation_tab_classes(current_tab, tab_id) when current_tab == tab_id do
+    [
+      "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+      "border-blue-500 text-blue-600"
+    ]
+  end
+
+  defp navigation_tab_classes(_current_tab, _tab_id) do
+    [
+      "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+      "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+    ]
   end
 
   defp render_overview_tab(assigns) do
     ~H"""
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- Rate Limiter Stats -->
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -335,7 +368,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
       </div>
     </div>
 
-    <!-- Recent Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <%= render_recent_events(assigns) %>
       <%= render_security_policies(assigns) %>
@@ -345,7 +377,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   defp render_recent_events(assigns) do
     ~H"""
-    <!-- Recent Events -->
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">Atividade Recente</h3>
@@ -361,21 +392,8 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
                   <% end %>
                   <div class="relative flex space-x-3">
                     <div>
-                      <span class={[
-                        "h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white text-white text-sm font-bold",
-                        case event.type do
-                          :login_success -> "bg-green-500"
-                          :login_failed -> "bg-red-500"
-                          :brute_force_detected -> "bg-red-700"
-                          _ -> "bg-gray-500"
-                        end
-                      ]}>
-                                                  <%= case event.type do %>
-                            <% :login_success -> %>OK
-                            <% :login_failed -> %>ERRO
-                            <% :brute_force_detected -> %>ALERTA
-                          <% _ -> %>?
-                        <% end %>
+                      <span class={event_status_classes(event.type)}>
+                        <%= event_status_text(event.type) %>
                       </span>
                     </div>
                     <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
@@ -403,9 +421,29 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
     """
   end
 
+  defp event_status_classes(:login_success) do
+    "h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white text-white text-sm font-bold bg-green-500"
+  end
+
+  defp event_status_classes(:login_failed) do
+    "h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white text-white text-sm font-bold bg-red-500"
+  end
+
+  defp event_status_classes(:brute_force_detected) do
+    "h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white text-white text-sm font-bold bg-red-700"
+  end
+
+  defp event_status_classes(_) do
+    "h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white text-white text-sm font-bold bg-gray-500"
+  end
+
+  defp event_status_text(:login_success), do: "OK"
+  defp event_status_text(:login_failed), do: "ERRO"
+  defp event_status_text(:brute_force_detected), do: "ALERTA"
+  defp event_status_text(_), do: "?"
+
   defp render_security_policies(assigns) do
     ~H"""
-    <!-- Security Policies -->
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">Políticas de Segurança</h3>
@@ -449,7 +487,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   defp render_locked_accounts(assigns) do
     ~H"""
-    <!-- Locked Accounts -->
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">Contas Bloqueadas</h3>
@@ -496,7 +533,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   defp render_locked_ips(assigns) do
     ~H"""
-    <!-- Locked IPs -->
     <div class="bg-white rounded-lg shadow">
       <div class="px-6 py-4 border-b border-gray-200">
         <h3 class="text-lg font-medium text-gray-900">IPs Bloqueados</h3>
@@ -544,9 +580,9 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   defp render_default_tab(assigns) do
     ~H"""
     <div class="text-center py-12">
-                      <div class="mx-auto h-12 w-12 text-gray-400 text-4xl text-center">
-                  <span class="text-base font-bold">LISTA</span>
-                </div>
+      <div class="mx-auto h-12 w-12 text-gray-400 text-4xl text-center">
+        <span class="text-base font-bold">LISTA</span>
+      </div>
       <h3 class="mt-2 text-sm font-medium text-gray-900">Em desenvolvimento</h3>
       <p class="mt-1 text-sm text-gray-500">Esta seção estará disponível em breve.</p>
     </div>
@@ -556,20 +592,19 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   defp relative_time(datetime) do
     case DateTime.diff(datetime, DateTime.utc_now(), :second) do
       diff when diff > 0 ->
-        cond do
-          diff < 60 -> "em #{diff}s"
-          diff < 3600 -> "em #{div(diff, 60)}min"
-          diff < 86_400 -> "em #{div(diff, 3600)}h"
-          true -> "em #{div(diff, 86_400)}d"
-        end
+        format_future_time(diff)
       diff ->
-        diff = abs(diff)
-        cond do
-          diff < 60 -> "#{diff}s atrás"
-          diff < 3600 -> "#{div(diff, 60)}min atrás"
-          diff < 86_400 -> "#{div(diff, 3600)}h atrás"
-          true -> "#{div(diff, 86_400)}d atrás"
-        end
+        format_past_time(abs(diff))
     end
   end
+
+  defp format_future_time(diff) when diff < 60, do: "em #{diff}s"
+  defp format_future_time(diff) when diff < 3600, do: "em #{div(diff, 60)}min"
+  defp format_future_time(diff) when diff < 86_400, do: "em #{div(diff, 3600)}h"
+  defp format_future_time(diff), do: "em #{div(diff, 86_400)}d"
+
+  defp format_past_time(diff) when diff < 60, do: "#{diff}s atrás"
+  defp format_past_time(diff) when diff < 3600, do: "#{div(diff, 60)}min atrás"
+  defp format_past_time(diff) when diff < 86_400, do: "#{div(diff, 3600)}h atrás"
+  defp format_past_time(diff), do: "#{div(diff, 86_400)}d atrás"
 end

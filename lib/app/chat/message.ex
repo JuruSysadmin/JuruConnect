@@ -18,7 +18,9 @@ defmodule App.Chat.Message do
     :id, :text, :sender_id, :sender_name, :order_id, :tipo, :image_url,
     :status, :delivered_at, :read_at, :delivered_to, :read_by,
     :mentions, :has_mentions, :reply_to, :is_reply, :inserted_at, :updated_at,
-    :audio_url, :audio_duration, :audio_mime_type
+    :audio_url, :audio_duration, :audio_mime_type, :tags,
+    :document_url, :document_name, :document_size,
+    :link_preview_title, :link_preview_description, :link_preview_image, :link_preview_url
   ]}
 
   schema "messages" do
@@ -28,6 +30,7 @@ defmodule App.Chat.Message do
     field :order_id, :string
     field :tipo, :string
     field :image_url, :string
+    field :tags, {:array, :string}, default: []
 
     # Campos de áudio
     field :audio_url, :string
@@ -49,6 +52,17 @@ defmodule App.Chat.Message do
     field :reply_to, :integer
     field :is_reply, :boolean, default: false
 
+    # Campos para documentos
+    field :document_url, :string
+    field :document_name, :string
+    field :document_size, :integer
+
+    # Campos para preview de links
+    field :link_preview_title, :string
+    field :link_preview_description, :string
+    field :link_preview_image, :string
+    field :link_preview_url, :string
+
     timestamps(type: :utc_datetime_usec)
   end
 
@@ -67,16 +81,19 @@ defmodule App.Chat.Message do
       :text, :sender_id, :sender_name, :order_id, :tipo, :image_url,
       :status, :delivered_at, :read_at, :delivered_to, :read_by,
       :mentions, :has_mentions, :reply_to, :is_reply,
-      :audio_url, :audio_duration, :audio_mime_type
+      :audio_url, :audio_duration, :audio_mime_type, :tags,
+      :document_url, :document_name, :document_size,
+      :link_preview_title, :link_preview_description, :link_preview_image, :link_preview_url
     ])
     |> validate_required([:text, :sender_id, :sender_name, :order_id])
     |> validate_length(:text, min: 1, max: 5000)
     |> validate_inclusion(:status, ["sent", "delivered", "read"])
-    |> validate_inclusion(:tipo, ["mensagem", "imagem", "sistema", "audio"])
+    |> validate_inclusion(:tipo, ["mensagem", "imagem", "sistema", "audio", "documento", "link"])
     |> validate_audio_fields()
     |> extract_mentions()
     |> set_reply_flags()
     |> validate_reply_to()
+    |> extract_and_save_tags()
   end
 
   # Valida campos específicos para mensagens de áudio
@@ -131,6 +148,22 @@ defmodule App.Chat.Message do
       _reply_to ->
         # Validação será feita via constraint no banco
         changeset
+    end
+  end
+
+  # Extrai #tags do texto e as salva
+  defp extract_and_save_tags(changeset) do
+    case get_change(changeset, :text) do
+      nil ->
+        changeset
+      text ->
+        # Regex para encontrar #tags (letras, números e _)
+        tags = Regex.scan(~r/#([a-zA-Z0-9_]+)/, text, capture: :all_but_first)
+               |> List.flatten()
+               |> Enum.map(&String.downcase/1)
+               |> Enum.uniq()
+
+        put_change(changeset, :tags, tags)
     end
   end
 end

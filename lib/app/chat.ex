@@ -53,18 +53,16 @@ defmodule App.Chat do
     end
   end
 
-  def list_messages_for_order(order_id, limit \\ 50, offset \\ 0) do
-    query =
-      from(m in Message,
-        where: m.order_id == ^order_id,
-        order_by: [asc: m.inserted_at],
-        offset: ^offset,
-        limit: ^limit
-      )
+  def list_messages_for_order(order_id, limit) do
+    query = from(m in Message,
+      where: m.order_id == ^order_id,
+      order_by: [asc: m.inserted_at],
+      limit: ^limit
+    )
 
     messages = Repo.all(query)
-    has_more_messages = length(messages) == limit
-    {:ok, messages, has_more_messages}
+    has_more = length(messages) == limit
+    {:ok, messages, has_more}
   end
 
   def list_messages_until(order_id, last_message_id) do
@@ -506,5 +504,14 @@ defmodule App.Chat do
       length(delivered_to) > 0 -> "delivered"
       true -> "sent"
     end
+  end
+
+  def list_messages_by_tag(order_id, tag) do
+    tag = String.downcase(tag)
+    query = from(m in Message,
+      where: m.order_id == ^order_id and ^tag in m.tags,
+      order_by: [asc: m.inserted_at]
+    )
+    Repo.all(query)
   end
 end

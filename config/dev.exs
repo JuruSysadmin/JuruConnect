@@ -82,12 +82,12 @@ config :phoenix_live_view,
 config :swoosh, :api_client, false
 
 config :ex_aws,
-  access_key_id: "admin",
-  secret_access_key: "admin123",
+  access_key_id: "minio",
+  secret_access_key: "minio123",
   region: "us-east-1"
 
 config :ex_aws, :s3,
   scheme: "http://",
-  host: "10.1.1.23",
+  host: "localhost",
   port: 9000,
   region: "us-east-1"

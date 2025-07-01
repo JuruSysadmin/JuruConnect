@@ -1,7 +1,7 @@
 defmodule AppWeb.Router do
   use AppWeb, :router
 
-  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007;"
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; img-src 'self' data: http://localhost:9000 http://10.1.1.23:9000;"
 
   pipeline :browser do
     plug :accepts, ["html"]

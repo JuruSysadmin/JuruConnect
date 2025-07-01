@@ -9,8 +9,10 @@ defmodule App.Minio do
   @bucket "chat-uploads"
   @allowed_image_types ~w(.jpg .jpeg .png .gif .webp)
   @allowed_audio_types ~w(.webm .mp3 .wav .m4a .ogg)
+  @allowed_document_types ~w(.pdf .doc .docx .xls .xlsx .ppt .pptx)
   @max_image_size 5_000_000
   @max_audio_size 10_000_000
+  @max_document_size 25_000_000
 
   @doc """
   Faz upload de um arquivo para o MinIO/S3.
@@ -50,10 +52,19 @@ defmodule App.Minio do
 
   @doc """
   Verifica se um tipo de arquivo é suportado.
+
+  ## Exemplos
+
+      iex> App.Minio.supported_file_type?("documento.pdf")
+      true
+
+      iex> App.Minio.supported_file_type?("virus.exe")
+      false
   """
+  @spec supported_file_type?(String.t()) :: boolean()
   def supported_file_type?(filename) do
     extension = filename |> Path.extname() |> String.downcase()
-    extension in (@allowed_image_types ++ @allowed_audio_types)
+    extension in (@allowed_image_types ++ @allowed_audio_types ++ @allowed_document_types)
   end
 
   @doc """
@@ -130,10 +141,11 @@ defmodule App.Minio do
   defp get_max_size_for_file(filename) do
     extension = filename |> Path.extname() |> String.downcase()
 
-    if extension in @allowed_image_types do
-      @max_image_size
-    else
-      @max_audio_size
+    cond do
+      extension in @allowed_image_types -> @max_image_size
+      extension in @allowed_audio_types -> @max_audio_size
+      extension in @allowed_document_types -> @max_document_size
+      true -> @max_image_size
     end
   end
 
@@ -148,21 +160,45 @@ defmodule App.Minio do
     |> ExAws.request()
   end
 
-  defp get_content_type(filename) do
-    case filename |> Path.extname() |> String.downcase() do
-      ".jpg" -> "image/jpeg"
-      ".jpeg" -> "image/jpeg"
-      ".png" -> "image/png"
-      ".gif" -> "image/gif"
-      ".webp" -> "image/webp"
-      ".webm" -> "audio/webm"
-      ".mp3" -> "audio/mp3"
-      ".wav" -> "audio/wav"
-      ".m4a" -> "audio/mp4"
-      ".ogg" -> "audio/ogg"
-      _ -> "application/octet-stream"
-    end
+  @doc """
+  Retorna o content-type correto para um arquivo baseado na extensão.
+
+  ## Exemplos
+
+      iex> App.Minio.get_content_type("arquivo.pdf")
+      "application/pdf"
+  """
+  @spec get_content_type(String.t()) :: String.t()
+  def get_content_type(filename) do
+    extension = filename |> Path.extname() |> String.downcase()
+    content_type_for_extension(extension)
   end
+
+  # Content types para imagens
+  defp content_type_for_extension(".jpg"), do: "image/jpeg"
+  defp content_type_for_extension(".jpeg"), do: "image/jpeg"
+  defp content_type_for_extension(".png"), do: "image/png"
+  defp content_type_for_extension(".gif"), do: "image/gif"
+  defp content_type_for_extension(".webp"), do: "image/webp"
+
+  # Content types para áudios
+  defp content_type_for_extension(".webm"), do: "audio/webm"
+  defp content_type_for_extension(".mp3"), do: "audio/mp3"
+  defp content_type_for_extension(".wav"), do: "audio/wav"
+  defp content_type_for_extension(".m4a"), do: "audio/mp4"
+  defp content_type_for_extension(".ogg"), do: "audio/ogg"
+
+  # Content types para documentos
+  defp content_type_for_extension(".pdf"), do: "application/pdf"
+  defp content_type_for_extension(".doc"), do: "application/msword"
+  defp content_type_for_extension(".docx"), do: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  defp content_type_for_extension(".xls"), do: "application/vnd.ms-excel"
+  defp content_type_for_extension(".xlsx"), do: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  defp content_type_for_extension(".ppt"), do: "application/vnd.ms-powerpoint"
+  defp content_type_for_extension(".pptx"), do: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+  # Fallback para tipos desconhecidos
+  defp content_type_for_extension(_), do: "application/octet-stream"
 
   defp build_public_url(filename) do
     config = Application.get_env(:ex_aws, :s3, [])
