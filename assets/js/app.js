@@ -501,6 +501,7 @@ const AudioRecorderHook = {
   mounted() {
     this.initializeAudioRecorder()
     this.setupAudioEventHandlers()
+    this.checkAudioSupport()
   },
 
   initializeAudioRecorder() {
@@ -516,8 +517,52 @@ const AudioRecorderHook = {
     this.handleEvent("play_audio_message", (data) => this.playAudioMessage(data))
   },
 
+  checkAudioSupport() {
+    const isSupported = this.isMediaRecordingSupported()
+    const isSecure = this.isSecureContext()
+    
+    this.updateAudioButtonState(isSupported && isSecure)
+    
+    if (!isSupported) {
+      console.warn("Audio recording not supported in this browser")
+    }
+    
+    if (!isSecure) {
+      console.warn("Audio recording requires secure context (HTTPS)")
+    }
+  },
+
+  updateAudioButtonState(isEnabled) {
+    const recordButton = document.getElementById('audio-record-button')
+    const recordIcon = document.getElementById('audio-record-icon')
+    
+    if (recordButton && recordIcon) {
+      if (isEnabled) {
+        recordButton.disabled = false
+        recordButton.classList.remove('opacity-50', 'cursor-not-allowed')
+        recordButton.classList.add('hover:bg-gray-500')
+        recordButton.title = 'Gravar áudio'
+      } else {
+        recordButton.disabled = true
+        recordButton.classList.add('opacity-50', 'cursor-not-allowed')
+        recordButton.classList.remove('hover:bg-gray-500')
+        recordButton.title = 'Gravação de áudio não disponível (requer HTTPS)'
+      }
+    }
+  },
+
   async startAudioRecording() {
     try {
+      // Verificar se a API de mídia está disponível
+      if (!this.isMediaRecordingSupported()) {
+        throw new Error("Gravação de áudio não suportada neste navegador ou contexto")
+      }
+
+      // Verificar se está em contexto seguro (HTTPS)
+      if (!this.isSecureContext()) {
+        throw new Error("Gravação de áudio requer conexão segura (HTTPS)")
+      }
+
       this.audioStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -541,7 +586,7 @@ const AudioRecorderHook = {
 
     } catch (error) {
       console.error("Error starting audio recording:", error)
-      this.pushEvent("audio_recording_error", { error: error.message })
+      this.pushEvent("audio_recording_error", { error: this.getErrorMessage(error) })
     }
   },
 
@@ -632,6 +677,48 @@ const AudioRecorderHook = {
         recordIcon.textContent = '🎙️'
       }
     }
+  },
+
+  // Verificações de compatibilidade e segurança
+  isMediaRecordingSupported() {
+    return !!(navigator.mediaDevices && 
+              navigator.mediaDevices.getUserMedia && 
+              window.MediaRecorder &&
+              MediaRecorder.isTypeSupported)
+  },
+
+  isSecureContext() {
+    return window.isSecureContext || 
+           location.protocol === 'https:' || 
+           location.hostname === 'localhost' ||
+           location.hostname === '127.0.0.1'
+  },
+
+  getErrorMessage(error) {
+    const errorMap = {
+      'NotAllowedError': 'Permissão de microfone negada. Por favor, autorize o acesso ao microfone.',
+      'NotFoundError': 'Nenhum microfone encontrado. Verifique se há um microfone conectado.',
+      'NotReadableError': 'Erro ao acessar o microfone. Pode estar sendo usado por outro aplicativo.',
+      'OverconstrainedError': 'Configurações de áudio não suportadas pelo dispositivo.',
+      'SecurityError': 'Gravação de áudio bloqueada por política de segurança.',
+      'AbortError': 'Gravação de áudio foi interrompida.',
+      'TypeError': 'Erro de configuração do gravador de áudio.'
+    }
+
+    if (error.name && errorMap[error.name]) {
+      return errorMap[error.name]
+    }
+
+    // Mensagens específicas para problemas comuns
+    if (error.message.includes('getUserMedia')) {
+      return 'Funcionalidade de gravação não disponível. Use HTTPS ou localhost.'
+    }
+
+    if (error.message.includes('mediaDevices')) {
+      return 'Navegador não suporta gravação de áudio ou conexão não é segura.'
+    }
+
+    return error.message || 'Erro desconhecido ao gravar áudio'
   }
 }
 

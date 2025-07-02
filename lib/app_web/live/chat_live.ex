@@ -42,20 +42,18 @@ defmodule AppWeb.ChatLive do
   """
   use AppWeb, :live_view
   alias App.ChatConfig
-  alias App.Chat.{MessageStatus, Notifications, RateLimiter}
+  alias App.Chat.{MessageStatus, Notifications}
   alias AppWeb.Presence
+  alias AppWeb.ChatLive.Helpers
+  alias AppWeb.ChatLive.UploadHandler
+  alias AppWeb.ChatLive.MessageHandler
+  alias AppWeb.ChatLive.PresenceManager
+  alias AppWeb.ChatLive.Components
   alias Phoenix.PubSub
 
   @type message_status :: :sent | :delivered | :read | :system
   @type message_type :: :mensagem | :imagem | :documento | :audio | :system_notification
   @type notification_type :: :join | :leave
-
-  @status_strings_to_atoms %{
-    "sent" => :sent,
-    "delivered" => :delivered,
-    "read" => :read,
-    "system" => :system
-  }
 
   @type message_params :: %{
     text: String.t(),
@@ -76,12 +74,12 @@ defmodule AppWeb.ChatLive do
   }
 
   @impl true
-  def mount(%{"order_id" => order_id} = _params, session, socket) do
+  def mount(%{"order_id" => order_id} = _params, _session, socket) do
     case socket.assigns[:current_user] do
       nil ->
         {:ok, socket |> put_flash(:error, "Usuário não autenticado") |> push_navigate(to: "/auth/login")}
 
-      user ->
+      _user ->
         initialized_socket =
           socket
           |> initialize_chat_socket(order_id)
@@ -97,21 +95,16 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("send_message", %{"message" => text}, socket) do
-    attachment_data = %{
-      image_url: process_image_upload(socket),
-      document_url: process_document_upload(socket)
-    }
+    image_url = UploadHandler.process_image_upload(socket)
+    document_url = UploadHandler.process_document_upload(socket)
 
+    attachments = MessageHandler.AttachmentData.new(image_url, document_url)
     trimmed_text = String.trim(text)
-    user_id = socket.assigns.current_user_id
 
-    link_preview_data = if trimmed_text != "", do: process_message_for_link_preview(trimmed_text), else: nil
+    link_preview_data = if trimmed_text != "", do: MessageHandler.process_message_for_link_preview(trimmed_text), else: nil
 
-    validate_and_send_enhanced_message(
-      %{text: trimmed_text, user_id: user_id, socket: socket},
-      attachment_data,
-      link_preview_data
-    )
+    request = MessageHandler.build_message_request(trimmed_text, socket, attachments, link_preview_data)
+    MessageHandler.send_message(request)
   end
 
   @impl true
@@ -152,7 +145,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("cancel_upload", %{"ref" => ref}, socket) do
-    updated_socket = cancel_upload_by_ref(socket, ref)
+    updated_socket = UploadHandler.cancel_upload_by_ref(socket, ref)
     {:noreply, updated_socket}
   end
 
@@ -162,7 +155,7 @@ defmodule AppWeb.ChatLive do
         {:noreply, socket}
 
       [entry | _] ->
-        validate_image_entry(entry, socket)
+        UploadHandler.validate_image_entry(entry, socket)
     end
   end
 
@@ -173,7 +166,7 @@ defmodule AppWeb.ChatLive do
         {:noreply, socket}
 
       [entry | _] ->
-        validate_document_entry(entry, socket)
+        UploadHandler.validate_document_entry(entry, socket)
     end
   end
 
@@ -323,55 +316,37 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("reply_to_message", %{"message_id" => message_id}, socket) do
-    try do
-      message = App.Chat.get_message!(message_id)
-      {:noreply,
-       socket
-       |> assign(:replying_to, message)
-       |> push_event("focus-message-input", %{})}
-    rescue
-      _ ->
-        {:noreply, put_flash(socket, :error, "Mensagem não encontrada")}
-    end
+    request = %AppWeb.ChatLive.ThreadManager.ThreadRequest{
+      message_id: message_id,
+      socket: socket,
+      action: :reply
+    }
+    AppWeb.ChatLive.ThreadManager.handle_reply_to_message(request)
   end
 
   @impl true
   def handle_event("cancel_reply", _params, socket) do
-    {:noreply, assign(socket, :replying_to, nil)}
+    AppWeb.ChatLive.ThreadManager.handle_cancel_reply(socket)
   end
 
   @impl true
   def handle_event("show_thread", %{"message_id" => message_id}, socket) do
-    thread_messages = App.Chat.get_thread_messages(message_id)
-
-    {root_message, replies} = case thread_messages do
-      [] -> {nil, []}
-      [root | rest] -> {root, rest}
-    end
-
-    {:noreply,
-     socket
-     |> assign(:thread_messages, thread_messages)
-     |> assign(:thread_root_message, root_message)
-     |> assign(:thread_replies, replies)
-     |> assign(:show_thread, true)
-     |> assign(:thread_reply_text, "")}
+    request = %AppWeb.ChatLive.ThreadManager.ThreadRequest{
+      message_id: message_id,
+      socket: socket,
+      action: :show
+    }
+    AppWeb.ChatLive.ThreadManager.handle_show_thread(request)
   end
 
   @impl true
   def handle_event("close_thread", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:thread_messages, [])
-     |> assign(:thread_root_message, nil)
-     |> assign(:thread_replies, [])
-     |> assign(:show_thread, false)
-     |> assign(:thread_reply_text, "")}
+    AppWeb.ChatLive.ThreadManager.handle_close_thread(socket)
   end
 
   @impl true
   def handle_event("update_thread_reply", %{"reply" => text}, socket) do
-    {:noreply, assign(socket, :thread_reply_text, text)}
+    AppWeb.ChatLive.ThreadManager.handle_update_thread_reply(text, socket)
   end
 
   @impl true
@@ -389,7 +364,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("audio_recorded", audio_params, socket) do
-    case process_recorded_audio(socket, audio_params) do
+    case UploadHandler.process_recorded_audio(socket, audio_params) do
       {:ok, updated_socket} ->
         {:noreply, updated_socket}
       {:error, error_message} ->
@@ -420,96 +395,43 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("send_thread_reply", %{"reply" => text}, socket) do
-    trimmed_text = String.trim(text)
-
-    case socket.assigns[:thread_root_message] do
-      nil ->
-        {:noreply, put_flash(socket, :error, "Thread não encontrada")}
-
-      root_message ->
-        if trimmed_text == "" do
-          {:noreply, put_flash(socket, :error, "Resposta não pode estar vazia")}
-        else
-          # Criar resposta na thread
-          params = %{
-            text: trimmed_text,
-            sender_id: socket.assigns.current_user_id,
-            sender_name: socket.assigns.current_user_name,
-            order_id: socket.assigns.order_id,
-            tipo: "mensagem",
-            status: "sent",
-            reply_to: root_message.id
-          }
-
-          case App.Chat.create_message(params) do
-            {:ok, message} ->
-              # Publicar a mensagem via PubSub
-              topic = "order:#{socket.assigns.order_id}"
-              PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-
-              # Atualizar thread local
-              updated_thread = socket.assigns.thread_messages ++ [message]
-              {_root, replies} = case updated_thread do
-                [root | rest] -> {root, rest}
-                _ -> {nil, []}
-              end
-
-              {:noreply,
-               socket
-               |> assign(:thread_reply_text, "")
-               |> assign(:thread_messages, updated_thread)
-               |> assign(:thread_replies, replies)
-               |> put_flash(:info, "Resposta enviada!")}
-
-            {:error, _changeset} ->
-              {:noreply, put_flash(socket, :error, "Erro ao enviar resposta")}
-          end
-        end
-    end
+    request = AppWeb.ChatLive.ThreadManager.ReplyRequest.new(text, socket)
+    AppWeb.ChatLive.ThreadManager.handle_send_thread_reply(request)
   end
 
   @impl true
   def handle_event("jump_to_message", %{"message_id" => message_id}, socket) do
-    # Encontrar a mensagem nas mensagens carregadas
-    target_message = Enum.find(socket.assigns.messages, fn msg ->
-      msg.id == String.to_integer(message_id)
-    end)
+    AppWeb.ChatLive.ThreadManager.handle_jump_to_message(message_id, socket)
+  end
 
-    case target_message do
-      nil ->
-        {:noreply, put_flash(socket, :info, "Mensagem não está visível no chat")}
-      _ ->
-        {:noreply,
-         socket
-         |> assign(:show_thread, false)
-         |> push_event("scroll-to-message", %{message_id: message_id})}
-    end
+  @impl true
+  def handle_event("filter_by_tag", %{"tag" => tag}, socket) do
+    filtered_messages = App.Chat.list_messages_by_tag(socket.assigns.order_id, tag)
+
+    {:noreply,
+      socket
+      |> assign(:filtered_messages, filtered_messages)
+      |> assign(:active_tag_filter, tag)
+      |> assign(:has_more_messages, false)
+    }
+  end
+
+  @impl true
+  def handle_event("clear_tag_filter", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:filtered_messages, socket.assigns.messages)
+      |> assign(:active_tag_filter, nil)
+      |> assign(:has_more_messages, true)
+    }
   end
 
   @impl true
   def handle_info({:new_message, msg}, socket) do
-    require Logger
-
-    Logger.info("NOVA MENSAGEM RECEBIDA via PubSub:")
-    Logger.info("  ID: #{msg.id}")
-    Logger.info("  Texto: #{inspect(msg.text)}")
-    Logger.info("  Tipo: #{msg.tipo}")
-    Logger.info("  Image URL: #{inspect(msg.image_url)}")
-    Logger.info("  Document URL: #{inspect(Map.get(msg, :document_url))}")
-    Logger.info("  Sender: #{msg.sender_name} (#{msg.sender_id})")
-    Logger.info("  Order ID: #{msg.order_id}")
-    Logger.info("  Current User: #{socket.assigns.current_user_id}")
-    Logger.info("  É própria mensagem?: #{msg.sender_id == socket.assigns.current_user_id}")
-
     case {msg.order_id, socket.assigns.order_id} do
       {same_order, same_order} ->
-        Logger.info("MENSAGEM ACEITA - mesmo order_id")
-
         new_messages = socket.assigns.messages ++ [msg]
         user_id = socket.assigns.current_user_id
-
-        Logger.info("Total mensagens após adicionar: #{length(new_messages)}")
-        Logger.info("has_image? #{inspect(has_image?(msg))}")
 
         if msg.sender_id != user_id do
           App.Chat.mark_message_delivered(msg.id, user_id)
@@ -517,7 +439,6 @@ defmodule AppWeb.ChatLive do
         end
 
         MessageStatus.update_user_presence(user_id, msg.order_id)
-
         all_messages = get_all_messages_with_notifications(new_messages, socket.assigns.system_notifications)
 
         {:noreply,
@@ -529,7 +450,6 @@ defmodule AppWeb.ChatLive do
          |> push_event("mark-messages-as-read", %{order_id: msg.order_id})}
 
       {_different_order, _current_order} ->
-        Logger.debug("MENSAGEM IGNORADA - order_id diferente")
         {:noreply, socket}
     end
   end
@@ -538,7 +458,6 @@ defmodule AppWeb.ChatLive do
   def handle_info({:older_messages_loaded, older_messages, has_more}, socket) do
     new_messages = older_messages ++ socket.assigns.messages
 
-    # ATUALIZAÇÃO: Usar função helper para mesclar mensagens + notificações
     all_messages = get_all_messages_with_notifications(new_messages, socket.assigns.system_notifications)
 
     {:noreply,
@@ -551,13 +470,8 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info(:reload_historical_messages, socket) do
-    # CORREÇÃO: Força recarregamento das mensagens históricas
     order_id = socket.assigns.order_id
-
     {:ok, messages, has_more} = App.Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
-
-    require Logger
-    Logger.info("ChatLive - Historical reload: #{length(messages)} messages for order #{order_id}")
 
     # Mesclar com notificações existentes
     all_messages = get_all_messages_with_notifications(messages, socket.assigns.system_notifications)
@@ -579,7 +493,7 @@ defmodule AppWeb.ChatLive do
       end)
 
       presences = Presence.list(socket.assigns.topic)
-      users_online = extract_unique_users_from_presences(presences)
+      users_online = PresenceManager.extract_unique_users_from_presences(presences)
 
       diff_end = System.monotonic_time(:microsecond)
       duration_ms = (diff_end - diff_start) / 1000
@@ -602,21 +516,25 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:system_notification, notification}, socket) do
-    # Não mostrar notificação de sistema para o próprio usuário que a gerou
-    if notification.target_user_id == socket.assigns.current_user_id do
+
+    target_user_id = Map.get(notification, :target_user_id)
+    current_user_id = socket.assigns.current_user_id
+
+
+    if target_user_id && target_user_id == current_user_id do
       {:noreply, socket}
     else
       require Logger
-      Logger.debug("Recebida notificação do sistema: #{notification.text}")
+      Logger.debug("Recebida notificação do sistema: #{inspect(Map.get(notification, :text, ""))}")
 
-      # CORREÇÃO: Adicionar notificação APENAS ao assign temporário
-      # Não misturar com mensagens persistentes
+
       system_notifications = socket.assigns.system_notifications ++ [notification]
 
-      # Limpar notificações antigas (mais de 5 minutos)
+
       cutoff_time = DateTime.add(DateTime.utc_now(), -300, :second)
       fresh_notifications = Enum.filter(system_notifications, fn notif ->
-        DateTime.compare(notif.inserted_at, cutoff_time) == :gt
+        notification_time = Map.get(notif, :inserted_at, DateTime.utc_now())
+        DateTime.compare(notification_time, cutoff_time) == :gt
       end)
 
       {:noreply,
@@ -656,7 +574,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:message_status_update, message_id, status, user_id}, socket) do
-    # Atualizar o status da mensagem na lista local
+
     updated_messages = Enum.map(socket.assigns.messages, fn msg ->
       if msg.id == message_id do
         case status do
@@ -680,13 +598,13 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:desktop_notification, notification_data}, socket) do
-    # Enviar notificação desktop via JavaScript
+
     {:noreply, push_event(socket, "desktop-notification", notification_data)}
   end
 
   @impl true
   def handle_info({:status_update, message_id, user_id, status}, socket) do
-    # Atualizar status de mensagem na interface
+
     {:noreply, push_event(socket, "message-status-update", %{
       message_id: message_id,
       user_id: user_id,
@@ -696,7 +614,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:bulk_read_update, user_id, count}, socket) do
-    # Atualizar contador de mensagens lidas
+
     {:noreply, push_event(socket, "bulk-read-update", %{
       user_id: user_id,
       count: count
@@ -705,7 +623,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:message_read_notification, %{message_id: message_id, reader_id: reader_id}}, socket) do
-    # Notificar que uma mensagem foi lida por outro usuário
+
     if socket.assigns.current_user_id != reader_id do
       Notifications.notify_message_read(socket.assigns.current_user_id, message_id, reader_id)
     end
@@ -715,7 +633,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:bulk_read_notification, %{count: count, reader_id: reader_id, order_id: order_id}}, socket) do
-    # Notificar sobre bulk read
+
     if socket.assigns.current_user_id != reader_id and socket.assigns.order_id == order_id do
       App.Chat.Notifications.notify_bulk_read(socket.assigns.current_user_id, order_id, count, reader_id)
     end
@@ -725,9 +643,9 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:mention_notification, %{message_id: message_id, mentioned_user: username} = notification}, socket) do
-    # Verificar se o usuário mencionado é o usuário atual
+
     if socket.assigns.current_user_name == username do
-      # Adicionar notificação visual
+
       {:noreply,
        socket
        |> put_flash(:info, "Você foi mencionado por #{notification.sender_name}")
@@ -739,28 +657,6 @@ defmodule AppWeb.ChatLive do
     else
       {:noreply, socket}
     end
-  end
-
-  @impl true
-  def handle_event("filter_by_tag", %{"tag" => tag}, socket) do
-    filtered_messages = App.Chat.list_messages_by_tag(socket.assigns.order_id, tag)
-
-    {:noreply,
-      socket
-      |> assign(:filtered_messages, filtered_messages)
-      |> assign(:active_tag_filter, tag)
-      |> assign(:has_more_messages, false) # Desativa "carregar mais" na visão de filtro
-    }
-  end
-
-  @impl true
-  def handle_event("clear_tag_filter", _params, socket) do
-    {:noreply,
-      socket
-      |> assign(:filtered_messages, socket.assigns.messages)
-      |> assign(:active_tag_filter, nil)
-      |> assign(:has_more_messages, true) # Reativar se necessário
-    }
   end
 
   @impl true
@@ -788,7 +684,7 @@ defmodule AppWeb.ChatLive do
           <p class="text-xs text-gray-600">{@order["status"]}</p>
         </div>
         <div class="flex items-center space-x-2">
-          <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
+          <div class={Helpers.get_connection_indicator_class(@connected)} aria-hidden="true"></div>
           <button
             class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-xs font-medium"
             aria-label="Buscar mensagens"
@@ -843,7 +739,7 @@ defmodule AppWeb.ChatLive do
                   Pedido #{@order["orderId"]}
                 </h3>
               </div>
-              <span class={get_status_class(@order["status"])}>
+              <span class={Helpers.get_status_class(@order["status"])}>
                 {@order["status"]}
               </span>
             </div>
@@ -865,7 +761,7 @@ defmodule AppWeb.ChatLive do
                   Valor:
                 </dt>
                 <dd class="font-bold text-green-700 text-sm md:text-base">
-                  R$ {format_currency(@order["amount"])}
+                  R$ {Helpers.format_currency(@order["amount"])}
                 </dd>
               </div>
               <div class="flex justify-between items-center">
@@ -878,7 +774,7 @@ defmodule AppWeb.ChatLive do
                 <dt class="text-gray-600 font-medium">
                   Data:
                 </dt>
-                <dd class="font-semibold text-gray-900">{format_date(@order["deliveryDate"])}</dd>
+                <dd class="font-semibold text-gray-900">{Helpers.format_date(@order["deliveryDate"])}</dd>
               </div>
             </dl>
           </div>
@@ -907,10 +803,10 @@ defmodule AppWeb.ChatLive do
                   role="listitem"
                 >
                   <div
-                    class={"w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mr-2 md:mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200 " <> get_avatar_color(user, user)}
+                    class={"w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mr-2 md:mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200 " <> Helpers.get_avatar_color(user, user)}
                     aria-hidden="true"
                   >
-                    <span class="text-white text-xs md:text-sm font-bold">{get_user_initial(user)}</span>
+                    <span class="text-white text-xs md:text-sm font-bold">{Helpers.get_user_initial(user)}</span>
                   </div>
                   <div class="flex-1 min-w-0">
                     <span class="text-xs md:text-sm font-semibold text-gray-800 truncate block">{user}</span>
@@ -938,13 +834,13 @@ defmodule AppWeb.ChatLive do
                 class="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-700 rounded-full flex items-center justify-center mr-2 shadow-md"
                 aria-hidden="true"
               >
-                <span class="text-white text-xs font-bold">{get_user_initial(@current_user_name)}</span>
+                <span class="text-white text-xs font-bold">{Helpers.get_user_initial(@current_user_name)}</span>
               </div>
               <div class="min-w-0 flex-1">
                 <p class="text-xs font-semibold text-gray-900 truncate">{@current_user_name}</p>
                 <p class="text-xs font-medium flex items-center">
-                  <span class={get_connection_indicator_class(@connected)} aria-hidden="true"></span>
-                  <span class={get_connection_text_class(@connected)}>{@connection_status}</span>
+                  <span class={Helpers.get_connection_indicator_class(@connected)} aria-hidden="true"></span>
+                  <span class={Components.get_connection_text_class(@connected)}>{@connection_status}</span>
                 </p>
               </div>
             </div>
@@ -983,7 +879,7 @@ defmodule AppWeb.ChatLive do
               <div>
                 <h1 class="text-base md:text-lg font-bold text-gray-900">Chat do Pedido</h1>
                 <div class="flex items-center mt-0.5">
-                  <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
+                  <div class={Helpers.get_connection_indicator_class(@connected)} aria-hidden="true"></div>
                   <span class="text-xs md:text-sm text-gray-600 font-medium">{@connection_status}</span>
                 </div>
               </div>
@@ -991,7 +887,7 @@ defmodule AppWeb.ChatLive do
           </div>
 
           <div class="flex items-center space-x-2">
-            <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
+            <div class={Helpers.get_connection_indicator_class(@connected)} aria-hidden="true"></div>
             <span class="text-xs text-gray-600">{@connection_status}</span>
             <button
               class="px-3 py-2 text-gray-500 hover:text-gray-700 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:shadow-sm text-sm font-medium"
@@ -1098,7 +994,7 @@ defmodule AppWeb.ChatLive do
                     <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                   </div>
                   <span class="text-sm text-gray-600">
-                    <%= format_typing_users(@typing_users) %> digitando...
+                    <%= Components.format_typing_users(@typing_users) %> digitando...
                   </span>
                 </div>
               </div>
@@ -1117,17 +1013,17 @@ defmodule AppWeb.ChatLive do
             </div>
           <% else %>
             <%= for msg <- @filtered_messages do %>
-              <%= if is_system_message?(msg) do %>
+              <%= if Helpers.is_system_message?(msg) do %>
                 <div class="flex justify-center my-3">
                   <div class="bg-gray-100 text-gray-600 text-sm px-4 py-2 rounded-full shadow-sm border">
-                    <%= if is_join_notification?(msg) do %>
+                    <%= if Helpers.is_join_notification?(msg) do %>
                       <span class="text-green-600">●</span> <%= msg.text %>
                     <% else %>
                       <span class="text-gray-500">●</span> <%= msg.text %>
                     <% end %>
-                    <span class="text-xs text-gray-400 ml-2">
-                      <%= format_time(msg.inserted_at) %>
-                    </span>
+                                          <span class="text-xs text-gray-400 ml-2">
+                        <%= Components.format_time(msg.inserted_at) %>
+                      </span>
                   </div>
                 </div>
               <% else %>
@@ -1138,20 +1034,20 @@ defmodule AppWeb.ChatLive do
               >
                 <div class={
                   "relative max-w-[85%] md:max-w-md lg:max-w-2xl xl:max-w-4xl px-4 lg:px-6 py-3 lg:py-4 rounded-2xl shadow-md transition-all duration-200 " <>
-                  get_message_color(msg.sender_id, @current_user_id, msg.sender_name)
+                  Components.get_message_color(msg.sender_id, @current_user_id, msg.sender_name)
                 }>
                   <%= if msg.sender_id != @current_user_id do %>
-                    <div class={"text-xs font-semibold mb-1 " <> get_username_color(msg.sender_id, msg.sender_name)}>{msg.sender_name}</div>
+                    <div class={"text-xs font-semibold mb-1 " <> Components.get_username_color(msg.sender_id, msg.sender_name)}>{msg.sender_name}</div>
                   <% end %>
 
-                  <%= if is_reply_message?(msg) do %>
-                    <% original_preview = build_original_message_preview(msg.reply_to, @messages) %>
+                  <%= if Helpers.is_reply_message?(msg) do %>
+                    <% original_preview = AppWeb.ChatLive.ThreadManager.build_original_message_preview(msg.reply_to, @messages) %>
                     <%= if original_preview do %>
                       <div class="bg-blue-50 border-l-4 border-blue-400 pl-3 pr-2 py-2 mb-3 rounded-r-lg">
                         <div class="flex items-start justify-between">
                           <div class="flex-1 min-w-0">
                             <div class="text-xs font-medium text-blue-700 mb-1">
-                              Respondendo à <span class={"font-medium " <> get_username_color(msg.reply_to, original_preview.sender_name)}>{original_preview.sender_name}</span>:
+                              Respondendo à <span class={"font-medium " <> Components.get_username_color(msg.reply_to, original_preview.sender_name)}>{original_preview.sender_name}</span>:
                             </div>
                             <div class="text-sm text-blue-600 italic truncate">
                               "{original_preview.text}"
@@ -1174,7 +1070,7 @@ defmodule AppWeb.ChatLive do
                     <% end %>
                   <% end %>
 
-                  <%= if is_audio_message?(msg) do %>
+                  <%= if Helpers.is_audio_message?(msg) do %>
                     <div
                       id={"whatsapp-audio-player-#{msg.id}"}
                       phx-hook="WhatsAppAudioPlayer"
@@ -1187,12 +1083,12 @@ defmodule AppWeb.ChatLive do
                   <% else %>
                     <%= unless msg.tipo == "imagem" and msg.text == "Imagem enviada" do %>
                       <div class="text-base lg:text-lg break-words leading-relaxed">
-                        <%= render_message_with_tags(msg) %>
+                        <%= Components.render_message_with_tags(msg) %>
                       </div>
                     <% end %>
                   <% end %>
 
-                  <%= if has_image?(msg) do %>
+                  <%= if Helpers.has_image?(msg) do %>
                     <img
                       src={msg.image_url}
                       class="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition mt-2"
@@ -1204,19 +1100,19 @@ defmodule AppWeb.ChatLive do
                   <% end %>
 
                   <!-- Preview de documento -->
-                  <%= if has_document?(msg) do %>
+                  <%= if Helpers.has_document?(msg) do %>
                     <div class="document-preview mt-2 fade-in">
                       <div class="document-icon bg-blue-100">
-                        <span class="text-xl">{get_document_icon(msg.document_name || "documento")}</span>
+                                                  <span class="text-xl">{Helpers.get_document_icon(msg.document_name || "documento")}</span>
                       </div>
                       <div class="document-info">
                         <div class="document-name">
                           {msg.document_name || "Documento"}
                         </div>
-                        <div class="document-size">
-                          {get_document_type(msg.document_name || "")} •
+                                                  <div class="document-size">
+                            {Helpers.get_document_type(msg.document_name || "")} •
                           <%= if msg.document_size do %>
-                            {format_file_size(msg.document_size)}
+                                                          {Components.format_file_size(msg.document_size)}
                           <% else %>
                             Tamanho desconhecido
                           <% end %>
@@ -1234,7 +1130,7 @@ defmodule AppWeb.ChatLive do
                   <% end %>
 
                   <!-- Preview de link -->
-                  <%= if has_link_preview?(msg) do %>
+                  <%= if Helpers.has_link_preview?(msg) do %>
                     <div class="link-preview mt-2 fade-in">
                       <%= if msg.link_preview_image && msg.link_preview_image != "" do %>
                         <img
@@ -1276,7 +1172,7 @@ defmodule AppWeb.ChatLive do
                         <span>Responder</span>
                       </button>
 
-                      <% replies_count = count_message_replies(msg.id, @messages) %>
+                      <% replies_count = Helpers.count_message_replies(msg.id, @messages) %>
                       <%= if replies_count do %>
                         <button
                           class="flex items-center space-x-1 text-xs text-gray-400 hover:text-purple-500 transition-colors px-2 py-1 rounded hover:bg-purple-50"
@@ -1285,12 +1181,12 @@ defmodule AppWeb.ChatLive do
                           title="Ver conversa completa"
                         >
                           <span>Thread</span>
-                          <span>{format_thread_reply_counter(replies_count)}</span>
+                                                      <span>{AppWeb.ChatLive.ThreadManager.format_thread_reply_counter(replies_count)}</span>
                         </button>
                       <% end %>
 
-                      <%= if is_original_message?(msg) do %>
-                        <%= unless count_message_replies(msg.id, @messages) do %>
+                      <%= if Helpers.is_original_message?(msg) do %>
+                        <%= unless Helpers.count_message_replies(msg.id, @messages) do %>
                           <button
                             class="flex items-center space-x-1 text-xs text-gray-300 hover:text-gray-500 transition-colors px-2 py-1 rounded hover:bg-gray-50"
                             phx-click="reply_to_message"
@@ -1304,10 +1200,10 @@ defmodule AppWeb.ChatLive do
                     </div>
 
                     <div class="flex items-center space-x-1">
-                      <span class="text-xs text-gray-300">{format_time(msg.inserted_at)}</span>
+                      <span class="text-xs text-gray-300">{Helpers.format_time(msg.inserted_at)}</span>
                       <%= if msg.sender_id == @current_user_id do %>
                         <div class="flex items-center space-x-1">
-                          <%= case get_message_status(msg) do %>
+                                                      <%= case Helpers.get_message_status(msg) do %>
                             <% "sent" -> %>
                               <span class="text-xs text-gray-300" title="Enviada">Enviada</span>
                             <% "delivered" -> %>
@@ -1420,12 +1316,12 @@ defmodule AppWeb.ChatLive do
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 truncate">{entry.client_name}</p>
                         <p class="text-xs text-gray-500">
-                          {format_file_size(entry.client_size)} • {entry.client_type}
+                          {Helpers.format_file_size(entry.client_size)} • {entry.client_type}
                         </p>
                         <%= if entry.valid? do %>
                           <p class="text-xs text-green-600">Pronto para envio</p>
                         <% else %>
-                          <p class="text-xs text-red-600">✗ {format_upload_error(entry.errors)}</p>
+                          <p class="text-xs text-red-600">✗ {Components.format_upload_error(entry.errors)}</p>
                         <% end %>
                       </div>
                     <% end %>
@@ -1446,19 +1342,19 @@ defmodule AppWeb.ChatLive do
                       <div class="flex items-center space-x-3 p-2 bg-white rounded-lg border border-blue-200">
                         <!-- Ícone do documento -->
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <span class="text-2xl">{get_document_icon(entry.client_name)}</span>
+                          <span class="text-2xl">{Helpers.get_document_icon(entry.client_name)}</span>
                         </div>
 
                         <!-- Info do documento -->
                         <div class="flex-1 min-w-0">
                           <p class="text-sm font-medium text-gray-900 truncate">{entry.client_name}</p>
                           <p class="text-xs text-gray-500">
-                            {format_file_size(entry.client_size)} • {get_document_type(entry.client_name)}
+                            {Helpers.format_file_size(entry.client_size)} • {Helpers.get_document_type(entry.client_name)}
                           </p>
                           <%= if entry.valid? do %>
                             <p class="text-xs text-green-600">Pronto para envio</p>
                           <% else %>
-                            <p class="text-xs text-red-600">✗ {format_upload_error(entry.errors)}</p>
+                            <p class="text-xs text-red-600">✗ {Components.format_upload_error(entry.errors)}</p>
                           <% end %>
                         </div>
 
@@ -1589,19 +1485,19 @@ defmodule AppWeb.ChatLive do
           <!-- Mensagem Original -->
           <div class="border-b border-gray-200 p-4 bg-purple-50">
             <div class="flex items-start space-x-3">
-              <div class={"w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 " <> get_avatar_color(@thread_root_message.sender_id, @thread_root_message.sender_name)}>
-                <span class="text-white font-bold text-sm">{get_user_initial(@thread_root_message.sender_name)}</span>
+                                <div class={"w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 " <> Helpers.get_avatar_color(@thread_root_message.sender_id, @thread_root_message.sender_name)}>
+                    <span class="text-white font-bold text-sm">{Helpers.get_user_initial(@thread_root_message.sender_name)}</span>
               </div>
               <div class="flex-1 min-w-0">
                                  <div class="flex items-center space-x-2 mb-2">
-                   <span class={"font-semibold " <> get_username_color(@thread_root_message.sender_id, @thread_root_message.sender_name)}>{@thread_root_message.sender_name}</span>
-                  <span class="text-xs text-gray-500">{format_time(@thread_root_message.inserted_at)}</span>
+                   <span class={"font-semibold " <> Components.get_username_color(@thread_root_message.sender_id, @thread_root_message.sender_name)}>{@thread_root_message.sender_name}</span>
+                  <span class="text-xs text-gray-500">{Components.format_time(@thread_root_message.inserted_at)}</span>
                   <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">Mensagem Original</span>
                 </div>
                 <%= unless @thread_root_message.tipo == "imagem" and @thread_root_message.text == "Imagem enviada" do %>
                   <div class="text-gray-800 leading-relaxed">
-                    <%= if has_mentions?(@thread_root_message) do %>
-                      {render_message_with_mention_highlights(@thread_root_message.text)}
+                    <%= if Helpers.has_mentions?(@thread_root_message) do %>
+                      {Components.render_message_with_mention_highlights(@thread_root_message.text)}
                     <% else %>
                       {@thread_root_message.text}
                     <% end %>
@@ -1622,22 +1518,22 @@ defmodule AppWeb.ChatLive do
             <% else %>
               <%= for {reply, index} <- Enum.with_index(@thread_replies) do %>
                                  <div class="flex items-start space-x-3 group">
-                   <div class={"w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 " <> get_avatar_color(reply.sender_id, reply.sender_name)}>
-                     <span class="text-white font-bold text-xs">{get_user_initial(reply.sender_name)}</span>
+                                       <div class={"w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 " <> Helpers.get_avatar_color(reply.sender_id, reply.sender_name)}>
+                      <span class="text-white font-bold text-xs">{Helpers.get_user_initial(reply.sender_name)}</span>
                    </div>
                   <div class="flex-1 min-w-0">
                                          <div class="flex items-center space-x-2 mb-1">
-                       <span class={"font-medium " <> get_username_color(reply.sender_id, reply.sender_name)}>{reply.sender_name}</span>
-                      <span class="text-xs text-gray-500">{format_time(reply.inserted_at)}</span>
+                       <span class={"font-medium " <> Components.get_username_color(reply.sender_id, reply.sender_name)}>{reply.sender_name}</span>
+                      <span class="text-xs text-gray-500">{Components.format_time(reply.inserted_at)}</span>
                       <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">#{index + 1}</span>
                     </div>
                     <div class={
                       "p-3 rounded-xl " <>
-                      get_thread_reply_color(reply.sender_id, @current_user_id, reply.sender_name)
+                      AppWeb.ChatLive.ThreadManager.get_thread_reply_color(reply.sender_id, @current_user_id, reply.sender_name)
                     }>
                       <%= unless reply.tipo == "imagem" and reply.text == "Imagem enviada" do %>
-                        <%= if has_mentions?(reply) do %>
-                          {render_message_with_mention_highlights(reply.text)}
+                        <%= if Helpers.has_mentions?(reply) do %>
+                          {Components.render_message_with_mention_highlights(reply.text)}
                         <% else %>
                           {reply.text}
                         <% end %>
@@ -1654,7 +1550,7 @@ defmodule AppWeb.ChatLive do
             <form phx-submit="send_thread_reply" class="space-y-3">
               <div class="flex items-start space-x-3">
                 <div class="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span class="text-white font-bold text-xs">{get_user_initial(@current_user_name)}</span>
+                                        <span class="text-white font-bold text-xs">{Helpers.get_user_initial(@current_user_name)}</span>
                 </div>
                 <div class="flex-1">
                   <textarea
@@ -1725,325 +1621,28 @@ defmodule AppWeb.ChatLive do
 
   # Funções auxiliares privadas
 
-  # Funções para verificação assertiva de tipos de mensagem
-  defp is_system_message?(%{is_system: true}), do: true
-  defp is_system_message?(_), do: false
-
-  defp is_join_notification?(%{notification_type: "join"}), do: true
-  defp is_join_notification?(_), do: false
-
-  defp is_reply_message?(%{is_reply: true, reply_to: reply_to}) when not is_nil(reply_to), do: true
-  defp is_reply_message?(%{reply_to: reply_to}) when not is_nil(reply_to), do: true
-  defp is_reply_message?(_), do: false
-
-  defp is_audio_message?(%{tipo: "audio", audio_url: url}) when not is_nil(url), do: true
-  defp is_audio_message?(_), do: false
 
 
 
-  defp has_mentions?(%{has_mentions: true}), do: true
-  defp has_mentions?(_), do: false
-
-  defp has_image?(%{image_url: url}) when not is_nil(url) and url != "", do: true
-  defp has_image?(_), do: false
-
-  # Verificação assertiva para documentos seguindo anti-padrões do Elixir
-  defp has_document?(%{document_url: url}) when not is_nil(url) and url != "", do: true
-  defp has_document?(_), do: false
-
-  # Verificação assertiva para preview de links seguindo anti-padrões do Elixir
-  defp has_link_preview?(%{link_preview_url: url}) when not is_nil(url) and url != "", do: true
-  defp has_link_preview?(_), do: false
-
-  defp is_original_message?(%{is_reply: false, reply_to: nil}), do: true
-  defp is_original_message?(%{reply_to: nil}), do: true
-  defp is_original_message?(_), do: false
-
-  defp get_message_status(%{status: status}) when not is_nil(status), do: status
-  defp get_message_status(_), do: "sent"
-
-  defp generate_unique_filename(original_name) do
-    timestamp = System.system_time(:millisecond)
-    uuid = UUID.uuid4() |> String.slice(0, 8)
-    extension = Path.extname(original_name)
-    base_name = Path.basename(original_name, extension) |> String.slice(0, 20)
-
-    "#{timestamp}_#{uuid}_#{base_name}#{extension}"
-  end
-
-  defp process_image_upload(socket) do
-    require Logger
-
-    case socket.assigns.uploads.image.entries do
-      [] ->
-        Logger.debug("Nenhuma imagem para upload - entries vazio")
-        nil
-
-      entries ->
-        Logger.debug("Processando upload de imagem - #{length(entries)} entries")
-        Logger.debug("Upload entries: #{inspect(Enum.map(entries, &%{name: &1.client_name, valid: &1.valid?}))}")
-
-        result = consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
-          filename = generate_unique_filename(entry.client_name)
-          Logger.debug("Upload de imagem: #{entry.client_name} -> #{filename}")
-          Logger.debug("Arquivo temporário: #{path}")
-
-          case App.Minio.upload_file(path, filename) do
-            {:ok, url} ->
-              Logger.info("Imagem enviada com sucesso: #{url}")
-              {:ok, url}
-            {:error, reason} ->
-              Logger.error("Falha no upload da imagem: #{inspect(reason)}")
-              {:ok, nil}
-          end
-        end)
-
-                Logger.debug("Resultado do consume_uploaded_entries: #{inspect(result)}")
-
-        case List.first(result) do
-          url when is_binary(url) and url != "" and url != nil ->
-            Logger.debug("URL final extraída: #{inspect(url)}")
-            url
-          {:ok, url} when is_binary(url) ->
-            Logger.debug("URL extraída de tupla: #{inspect(url)}")
-            url
-          other ->
-            Logger.debug("Resultado inesperado: #{inspect(other)}")
-            nil
-        end
-    end
-  end
-
-  defp process_recorded_audio(socket, audio_params) do
-    try do
-      audio_url = upload_audio_from_base64(audio_params)
-
-      params = %{
-        text: format_audio_message_text(audio_params),
-        sender_id: socket.assigns.current_user_id,
-        sender_name: socket.assigns.current_user_name,
-        order_id: socket.assigns.order_id,
-        tipo: "audio",
-        audio_url: audio_url,
-        audio_duration: audio_params["duration"] || 0,
-        audio_mime_type: audio_params["mime_type"] || "audio/webm",
-        status: "sent"
-      }
-
-      case App.Chat.create_message(params) do
-        {:ok, message} ->
-          topic = "order:#{socket.assigns.order_id}"
-          Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-
-          updated_socket = socket
-          |> assign(:is_recording_audio, false)
-          |> put_flash(:info, "Áudio enviado com sucesso!")
-
-          {:ok, updated_socket}
-
-        {:error, _changeset} ->
-          {:error, "Falha ao salvar mensagem de áudio"}
-      end
-    rescue
-      error ->
-        require Logger
-        Logger.error("Error processing recorded audio: #{inspect(error)}")
-        {:error, "Erro interno ao processar áudio"}
-    end
-  end
-
-  defp upload_audio_from_base64(audio_params) do
-    require Logger
-
-    audio_data = audio_params["audio_data"]
-    mime_type = audio_params["mime_type"] || "audio/webm"
-
-    Logger.debug("Processando upload de áudio: #{mime_type}")
-
-    file_extension = extract_audio_file_extension(mime_type)
-    filename = generate_audio_filename(file_extension)
-
-    try do
-      binary_data = Base.decode64!(audio_data)
-      temp_path = create_temp_audio_file(filename, binary_data)
-
-      case App.Minio.upload_file(temp_path, filename) do
-        {:ok, url} ->
-          File.rm(temp_path)
-          Logger.info("Áudio enviado: #{url}")
-          url
-        {:error, reason} ->
-          File.rm(temp_path)
-          Logger.error("Falha no upload do áudio: #{inspect(reason)}")
-          raise "Falha no upload de áudio: #{inspect(reason)}"
-      end
-    rescue
-      error ->
-        Logger.error("Erro no processamento de áudio: #{inspect(error)}")
-        reraise error, __STACKTRACE__
-    end
-  end
-
-  defp generate_audio_filename(extension) do
-    timestamp = System.system_time(:millisecond)
-    uuid = UUID.uuid4() |> String.slice(0, 8)
-    "audio_#{timestamp}_#{uuid}.#{extension}"
-  end
-
-  defp create_temp_audio_file(filename, binary_data) do
-    temp_path = System.tmp_dir!() |> Path.join(filename)
-
-    case File.write(temp_path, binary_data) do
-      :ok -> temp_path
-      {:error, reason} ->
-        raise "Falha ao criar arquivo temporário: #{reason}"
-    end
-  end
-
-  defp extract_audio_file_extension(mime_type) do
-    case mime_type do
-      "audio/webm" <> _ -> "webm"
-      "audio/mp4" -> "mp4"
-      "audio/wav" -> "wav"
-      "audio/mp3" -> "mp3"
-      _ -> "webm"
-    end
-  end
-
-  defp format_audio_message_text(%{"duration" => duration}) when is_integer(duration) do
-    minutes = div(duration, 60)
-    seconds = rem(duration, 60)
-    "Áudio #{String.pad_leading("#{minutes}", 2, "0")}:#{String.pad_leading("#{seconds}", 2, "0")}"
-  end
-
-  defp format_audio_message_text(_), do: "Mensagem de áudio"
 
 
 
-    # Envia uma mensagem no chat e atualiza o estado do socket.
-  # Para indicadores de digitação e limpa o campo de mensagem quando bem-sucedida.
-  # Em caso de erro, define uma mensagem de erro no socket.
-  defp send_chat_message(socket, text, image_url) do
-    # Parar indicador de digitação ao enviar mensagem
-    if socket.assigns[:is_typing] do
-      user_name = socket.assigns.current_user_name
-      topic = socket.assigns.topic
-      Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_stop, user_name})
-    end
 
-    # Preparar parâmetros da mensagem com lógica melhorada
-    has_image = not is_nil(image_url) and image_url != ""
-    text_empty = is_nil(text) or String.trim(text || "") == ""
 
-    message_type = if text_empty and has_image, do: "imagem", else: "mensagem"
-    message_text = cond do
-      text_empty and has_image -> "Imagem enviada"
-      text_empty -> "Mensagem vazia"  # Fallback para evitar erro de validação
-      true -> text
-    end
 
-    params = %{
-      text: message_text,
-      sender_id: socket.assigns.current_user_id,
-      sender_name: socket.assigns.current_user_name,
-      order_id: socket.assigns.order_id,
-      tipo: message_type,
-      image_url: image_url,
-      status: "sent"
-    }
-
-    # Adicionar reply_to se estiver respondendo
-    params = case socket.assigns[:replying_to] do
-      %{id: reply_id} -> Map.put(params, :reply_to, reply_id)
-      _ -> params
-    end
-
-    require Logger
-    Logger.debug("ANÁLISE DE UPLOAD:")
-    Logger.debug("  - image_url: #{inspect(image_url)}")
-    Logger.debug("  - has_image: #{has_image}")
-    Logger.debug("  - text_empty: #{text_empty}")
-    Logger.debug("  - message_type: #{message_type}")
-    Logger.debug("  - message_text: #{inspect(message_text)}")
-    Logger.debug("Parâmetros da mensagem: #{inspect(params)}")
-
-    case App.Chat.create_message(params) do
-      {:ok, message} ->
-        Logger.info("Mensagem criada com sucesso: #{message.id}")
-        # Publicar a mensagem via PubSub
-        topic = "order:#{socket.assigns.order_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-
-        {:noreply,
-         socket
-         |> assign(:message, "")
-         |> assign(:message_error, nil)
-         |> assign(:is_typing, false)
-         |> assign(:replying_to, nil)
-         |> push_event("clear-message-input", %{})}
-
-      {:error, changeset} ->
-        Logger.error("Erro ao criar mensagem - Changeset: #{inspect(changeset)}")
-        Logger.error("Erros do changeset: #{inspect(changeset.errors)}")
-
-        error_message = case changeset.errors do
-          [] -> "Erro desconhecido ao enviar mensagem"
-          errors -> "Erro de validação: #{format_errors(errors)}"
-        end
-
-        {:noreply, assign(socket, :message_error, error_message)}
-    end
-  end
 
   defp initialize_chat_socket(socket, order_id) do
     topic = "order:#{order_id}"
 
-    setup_presence_if_connected(socket, topic, order_id)
+    config = PresenceManager.build_presence_config(socket, topic, order_id)
+    PresenceManager.setup_presence_if_connected(config)
     order = load_order_data(order_id)
     {messages, has_more} = load_messages(order_id)
 
     setup_socket_assigns(socket, order_id, topic, order, messages, has_more)
   end
 
-  defp setup_presence_if_connected(socket, topic, _order_id) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(App.PubSub, topic)
 
-      current_user_name = resolve_current_user_name(socket)
-      current_user_id = resolve_unique_user_id(socket)
-
-      presence_key = current_user_id
-
-      Phoenix.PubSub.subscribe(App.PubSub, "notifications:#{current_user_id}")
-      Phoenix.PubSub.subscribe(App.PubSub, "sound_notifications:#{current_user_id}")
-      Phoenix.PubSub.subscribe(App.PubSub, "mentions:#{current_user_id}")
-
-      user_data = %{
-        user_id: current_user_id,
-        name: current_user_name,
-        joined_at: DateTime.utc_now() |> DateTime.to_iso8601(),
-        user_agent: get_connect_info(socket, :user_agent) || "Unknown",
-        socket_id: socket.id,
-        pid: inspect(self())
-      }
-
-      require Logger
-      Logger.debug("ChatLive - Tracking presence for user: #{current_user_name} (#{current_user_id}) on topic: #{topic}")
-
-            case Presence.track(self(), topic, presence_key, user_data) do
-        {:ok, _} ->
-          Logger.debug("ChatLive - Presence tracking successful for user: #{current_user_id}")
-
-          # CORREÇÃO: Agendar recarregamento das mensagens históricas após conexão
-          Process.send_after(self(), :reload_historical_messages, 500)
-          Logger.info("ChatLive - Scheduled historical message reload for connected user")
-
-          :ok
-        {:error, reason} ->
-          Logger.warning("ChatLive - Failed to track presence for user #{current_user_id}: #{inspect(reason)}")
-      end
-    end
-  end
 
   defp load_order_data(order_id) do
     case App.Orders.get_order(order_id) do
@@ -2070,7 +1669,7 @@ defmodule AppWeb.ChatLive do
     presences = Presence.list(topic)
     users_online =
       try do
-        extract_unique_users_from_presences(presences)
+        PresenceManager.extract_unique_users_from_presences(presences)
       rescue
         error ->
           require Logger
@@ -2135,52 +1734,14 @@ defmodule AppWeb.ChatLive do
     )
   end
 
-  defp extract_unique_users_from_presences(presences) do
-    unique_users = presences
-    |> Map.values()
-    |> Enum.flat_map(fn %{metas: user_metas} ->
-      Enum.map(user_metas, &extract_user_info_from_meta/1)
-    end)
-    |> Enum.uniq_by(fn {user_id, _name} -> user_id end)
-    |> Enum.map(fn {_user_id, display_name} -> display_name end)
-    |> Enum.sort()
 
-    log_user_extraction_result(unique_users)
-    unique_users
-  end
-
-  defp extract_user_info_from_meta(%{name: name, user_id: user_id})
-    when is_binary(name) and is_binary(user_id), do: {user_id, name}
-
-  defp extract_user_info_from_meta(%{"name" => name, "user_id" => user_id})
-    when is_binary(name) and is_binary(user_id), do: {user_id, name}
-
-  defp extract_user_info_from_meta(%{name: name}) when is_binary(name), do: {name, name}
-
-  defp extract_user_info_from_meta(%{"name" => name}) when is_binary(name), do: {name, name}
-
-  defp extract_user_info_from_meta(name) when is_binary(name), do: {name, name}
-
-  defp extract_user_info_from_meta(_) do
-    default_user = ChatConfig.default_username()
-    {default_user, default_user}
-  end
-
-  defp log_user_extraction_result(users) do
-    require Logger
-    Logger.debug("ChatLive - Extracted #{length(users)} unique users from presences: #{inspect(users)}")
-  end
 
   defp load_older_messages_async(socket) do
     order_id = socket.assigns.order_id
-    current_count = length(socket.assigns.messages)
+    _current_count = length(socket.assigns.messages)
 
     Task.start(fn ->
-      case App.Chat.list_messages_for_order(
-             order_id,
-             ChatConfig.pagination_config()[:default_limit],
-             current_count
-           ) do
+      case App.Chat.list_messages_for_order(order_id, ChatConfig.pagination_config()[:default_limit]) do
         {:ok, older_messages, has_more} ->
           send(self(), {:older_messages_loaded, older_messages, has_more})
       end
@@ -2189,511 +1750,31 @@ defmodule AppWeb.ChatLive do
     socket
   end
 
-  defp get_user_initial(user) when is_binary(user) and user != "" do
-    user |> String.first() |> String.upcase()
-  end
-
-  defp get_user_initial(_), do: "U"
-
-  defp get_status_class(status) do
-    base_classes = "px-3 py-1.5 text-xs font-semibold rounded-full border shadow-sm"
-
-    case String.downcase(status || "") do
-      "ativo" -> "#{base_classes} bg-green-100 text-green-800 border-green-200"
-      "pendente" -> "#{base_classes} bg-yellow-100 text-yellow-800 border-yellow-200"
-      "cancelado" -> "#{base_classes} bg-red-100 text-red-800 border-red-200"
-      "concluído" -> "#{base_classes} bg-blue-100 text-blue-800 border-blue-200"
-      _ -> "#{base_classes} bg-gray-100 text-gray-800 border-gray-200"
-    end
-  end
-
-  defp get_connection_indicator_class(connected) do
-    base_classes = "w-1.5 h-1.5 rounded-full mr-1.5"
-
-    if connected,
-      do: "#{base_classes} bg-green-500 animate-pulse",
-      else: "#{base_classes} bg-red-500"
-  end
-
-  defp get_connection_text_class(connected) do
-    if connected, do: "text-green-600", else: "text-red-600"
-  end
-
-  defp format_currency(amount) when is_binary(amount) do
-    case Float.parse(amount) do
-      {float_amount, _} -> :erlang.float_to_binary(float_amount, decimals: 2)
-      :error -> amount
-    end
-  end
-
-  defp format_currency(amount) when is_number(amount) do
-    :erlang.float_to_binary(amount * 1.0, decimals: 2)
-  end
-
-  defp format_currency(_), do: "0.00"
-
-  defp format_date(date_string) when is_binary(date_string) and date_string != "" do
-    case DateTime.from_iso8601(date_string) do
-      {:ok, datetime, _} ->
-        "#{String.pad_leading("#{datetime.day}", 2, "0")}/#{String.pad_leading("#{datetime.month}", 2, "0")}/#{datetime.year}"
-
-      _ ->
-        date_string
-    end
-  end
-
-  defp format_date(_), do: "Data não disponível"
-
-  defp format_time(datetime) do
-    case datetime do
-      %DateTime{} ->
-        "#{String.pad_leading("#{datetime.hour}", 2, "0")}:#{String.pad_leading("#{datetime.minute}", 2, "0")}"
-
-      _ ->
-        "Hora não disponível"
-    end
-  end
-
-  defp format_typing_users(typing_users) do
-    user_list = MapSet.to_list(typing_users)
-
-    case length(user_list) do
-      0 -> ""
-      1 -> List.first(user_list)
-      2 -> "#{Enum.at(user_list, 0)} e #{Enum.at(user_list, 1)}"
-      _ -> "#{length(user_list)} usuários"
-    end
-  end
-
-
-
-
-  defp render_message_with_mention_highlights(text) do
-    Regex.replace(~r/@(\w+)/, text, fn _match, username ->
-      ~s(<span class="bg-blue-100 text-blue-800 px-1 rounded font-medium">@#{username}</span>)
-    end)
-    |> Phoenix.HTML.raw()
-  end
-
-
-  defp count_message_replies(message_id, messages) do
-    reply_count = Enum.count(messages, fn msg ->
-      case msg do
-        %{is_system: true} -> false
-        %{reply_to: reply_to} -> reply_to == message_id
-        _ -> false
-      end
-    end)
-
-    if reply_count > 0, do: reply_count, else: false
-  end
-
-  defp build_original_message_preview(reply_to_id, messages) do
-    case Enum.find(messages, fn msg -> msg.id == reply_to_id end) do
-      nil -> nil
-      original_message ->
-        preview_text = truncate_message_text(original_message.text, 80)
-        %{
-          id: original_message.id,
-          text: preview_text,
-          sender_name: original_message.sender_name,
-          full_text: original_message.text
-        }
-    end
-  end
 
 
 
 
 
-  defp truncate_message_text(text, max_length) do
-    if String.length(text) > max_length do
-      String.slice(text, 0, max_length) <> "..."
-    else
-      text
-    end
-  end
 
 
-  defp format_thread_reply_counter(reply_count) when is_integer(reply_count) do
-    case reply_count do
-      1 -> "1 resposta"
-      count when count > 1 -> "#{count} respostas"
-      _ -> "Thread"
-    end
-  end
-
-  defp format_thread_reply_counter(_), do: "Thread"
 
 
-  defp get_user_color(user_id, user_name) do
-
-    hash = :crypto.hash(:md5, "#{user_id}#{user_name}")
-           |> :binary.bin_to_list()
-           |> Enum.take(3)
-           |> Enum.sum()
-
-
-    colors = [
-      %{
-        bg: "bg-gradient-to-br from-slate-500 to-slate-600",
-        light: "bg-gradient-to-br from-slate-100 to-slate-200 border-l-4 border-slate-400",
-        avatar: "bg-gradient-to-br from-slate-500 to-slate-600"
-      },
-      %{
-        bg: "bg-gradient-to-br from-gray-500 to-gray-600",
-        light: "bg-gradient-to-br from-gray-100 to-gray-200 border-l-4 border-gray-400",
-        avatar: "bg-gradient-to-br from-gray-500 to-gray-600"
-      },
-      %{
-        bg: "bg-gradient-to-br from-zinc-500 to-zinc-600",
-        light: "bg-gradient-to-br from-zinc-100 to-zinc-200 border-l-4 border-zinc-400",
-        avatar: "bg-gradient-to-br from-zinc-500 to-zinc-600"
-      },
-      %{
-        bg: "bg-gradient-to-br from-stone-500 to-stone-600",
-        light: "bg-gradient-to-br from-stone-100 to-stone-200 border-l-4 border-stone-400",
-        avatar: "bg-gradient-to-br from-stone-500 to-stone-600"
-      },
-      %{
-        bg: "bg-gradient-to-br from-neutral-500 to-neutral-600",
-        light: "bg-gradient-to-br from-neutral-100 to-neutral-200 border-l-4 border-neutral-400",
-        avatar: "bg-gradient-to-br from-neutral-500 to-neutral-600"
-      },
-      %{
-        bg: "bg-gradient-to-br from-slate-600 to-gray-700",
-        light: "bg-gradient-to-br from-slate-100 to-gray-200 border-l-4 border-slate-500",
-        avatar: "bg-gradient-to-br from-slate-600 to-gray-700"
-      },
-      %{
-        bg: "bg-gradient-to-br from-gray-600 to-zinc-700",
-        light: "bg-gradient-to-br from-gray-100 to-zinc-200 border-l-4 border-gray-500",
-        avatar: "bg-gradient-to-br from-gray-600 to-zinc-700"
-      },
-      %{
-        bg: "bg-gradient-to-br from-zinc-600 to-stone-700",
-        light: "bg-gradient-to-br from-zinc-100 to-stone-200 border-l-4 border-zinc-500",
-        avatar: "bg-gradient-to-br from-zinc-600 to-stone-700"
-      }
-    ]
-
-    color_index = rem(hash, length(colors))
-    Enum.at(colors, color_index)
-  end
-
-
-  defp get_message_color(sender_id, current_user_id, _sender_name) do
-    if sender_id == current_user_id do
-
-      "rounded-br-sm text-gray-800" <> " " <> "bg-[#DCF8C6]"
-    else
-
-      "bg-white border border-gray-200 text-gray-900 rounded-bl-sm shadow-sm"
-    end
-  end
-
-
-  defp get_avatar_color(user_id, user_name) do
-    user_color = get_user_color(user_id, user_name)
-    user_color.avatar
-  end
-
-
-  defp get_thread_reply_color(sender_id, current_user_id, _sender_name) do
-    if sender_id == current_user_id do
-      "bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-[#25D366]"
-    else
-
-      "bg-gray-50 border-l-4 border-gray-300"
-    end
-  end
-
-
-  defp get_username_color(user_id, user_name) do
-
-    hash = :crypto.hash(:md5, "#{user_id}#{user_name}")
-           |> :binary.bin_to_list()
-           |> Enum.take(2)
-           |> Enum.sum()
-
-
-    username_colors = [
-      "text-slate-600",
-      "text-gray-600",
-      "text-zinc-600",
-      "text-stone-600",
-      "text-neutral-600",
-      "text-slate-700",
-      "text-gray-700",
-      "text-zinc-700"
-    ]
-
-    color_index = rem(hash, length(username_colors))
-    Enum.at(username_colors, color_index)
-  end
 
 
   defp process_presence_notifications(diff, topic, current_user_id) do
-    notification_start_time = System.monotonic_time(:microsecond)
-    require Logger
-
-    user_joins = Map.get(diff, :joins, %{})
-    user_leaves = Map.get(diff, :leaves, %{})
-
-    Logger.debug("Processando presence diff - Joins: #{map_size(user_joins)}, Leaves: #{map_size(user_leaves)}")
-
-    # Processar joins diretamente (sem Task aninhada)
-    if map_size(user_joins) > 0 do
-      broadcast_user_join_notifications(user_joins, topic, current_user_id)
-    end
-
-    # Processar leaves diretamente (sem Task aninhada)
-    if map_size(user_leaves) > 0 do
-      broadcast_user_leave_notifications(user_leaves, topic, current_user_id)
-    end
-
-    log_presence_processing_time(notification_start_time, user_joins, user_leaves)
-  end
-
-  @doc """
-  Processa notificações de entrada de usuários seguindo anti-padrões do Elixir.
-  Implementa sistema robusto de debounce para evitar spam de notificações.
-  """
-  @spec broadcast_user_join_notifications(map(), String.t(), String.t()) :: :ok
-  defp broadcast_user_join_notifications(user_joins, topic, _current_user_id) do
-    require Logger
-
-    Enum.each(user_joins, fn {user_id, %{metas: [user_meta | _]}} ->
-      user_name = extract_user_name_from_meta(user_meta)
-
-      Logger.debug("User join detected: #{user_name} (#{user_id}) em #{topic}")
-
-      # Pattern matching assertivo para validação de entrada usando and ao invés de &&
-      case should_create_join_notification?(user_id, user_name) do
-        true ->
-          process_user_join_notification(user_id, user_name, topic)
-        false ->
-          Logger.debug("🚫 Notificação de entrada ignorada para #{user_name}")
-      end
-    end)
-  end
-
-  @doc """
-  Processa notificação de entrada válida seguindo anti-padrões do Elixir.
-  Cria notificação após validação de debounce.
-  """
-  @spec process_user_join_notification(String.t(), String.t(), String.t()) :: :ok
-  defp process_user_join_notification(user_id, user_name, topic) do
-    require Logger
-
-          Logger.debug("Criando notificação de entrada para: #{user_name}")
-    create_fast_system_notification(topic, "#{user_name} entrou na conversa", "join", user_id)
-  end
-
-  @doc """
-  Processa notificações de saída de usuários seguindo anti-padrões do Elixir.
-  Implementa cache robusto e pattern matching assertivo.
-  """
-  @spec broadcast_user_leave_notifications(map(), String.t(), String.t()) :: :ok
-  defp broadcast_user_leave_notifications(user_leaves, topic, _current_user_id) do
-    require Logger
-
-    Enum.each(user_leaves, fn {user_id, %{metas: [user_meta | _]}} ->
-      user_name = extract_user_name_from_meta(user_meta)
-      current_time = System.system_time(:second)
-
-      Logger.debug("User leave detected: #{user_name} (#{user_id}) em #{topic}")
-
-      # Pattern matching assertivo para validar saída usando and ao invés de &&
-      case should_create_leave_notification?(user_id, user_name, current_time) do
-        true ->
-          process_user_leave_notification(user_id, user_name, topic, current_time)
-        false ->
-          Logger.debug("🚫 Notificação de saída ignorada para #{user_name}")
-      end
-    end)
-  end
-
-  @doc """
-  Extrai nome do usuário dos metadados usando pattern matching assertivo.
-  Normaliza retornos conforme anti-padrões do Elixir.
-  """
-  @spec extract_user_name_from_meta(map()) :: String.t()
-  defp extract_user_name_from_meta(user_meta) do
-    # Pattern matching assertivo para diferentes formatos de metadados
-    case user_meta do
-      %{name: name} when is_binary(name) and name != "" -> name
-      %{"name" => name} when is_binary(name) and name != "" -> name
-      %{username: username} when is_binary(username) and username != "" -> username
-      %{"username" => username} when is_binary(username) and username != "" -> username
-      _ -> "Usuário desconhecido"
-    end
-  end
-
-  @doc """
-  Verifica se deve criar notificação de saída seguindo anti-padrões do Elixir.
-  Evita spam de notificações usando pattern matching assertivo.
-  """
-  @spec should_create_leave_notification?(String.t(), String.t(), integer()) :: boolean()
-    defp should_create_leave_notification?(user_id, user_name, current_time) do
-    require Logger
-
-    # Pattern matching assertivo para verificar última saída
-    case Process.get({:last_leave, user_id}) do
-      last_leave_time when is_integer(last_leave_time) ->
-        time_diff = current_time - last_leave_time
-
-        # Usar and ao invés de && conforme anti-padrões
-        if time_diff < 10 do
-          Logger.debug("Saída muito rápida para #{user_name}: #{time_diff}s - evitando spam")
-          false
-        else
-          true
-        end
-
-      _ ->
-        true
-    end
-  end
-
-  @doc """
-  Processa notificação de saída válida seguindo anti-padrões do Elixir.
-  Atualiza cache e cria notificação.
-  """
-  @spec process_user_leave_notification(String.t(), String.t(), String.t(), integer()) :: :ok
-  defp process_user_leave_notification(user_id, user_name, topic, current_time) do
-    require Logger
-
-    Logger.debug("Criando notificação de saída para: #{user_name}")
-
-    # Atualizar cache de saída
-    Process.put({:last_leave, user_id}, current_time)
-
-    create_fast_system_notification(topic, "#{user_name} saiu da conversa", "leave", user_id)
-  end
-
-  @doc """
-  Registra tempo de processamento de notificações seguindo anti-padrões do Elixir.
-  Inclui limpeza periódica de cache para evitar memory leaks.
-  """
-  @spec log_presence_processing_time(integer(), map(), map()) :: :ok
-  defp log_presence_processing_time(start_time, user_joins, user_leaves) do
-    end_time = System.monotonic_time(:microsecond)
-    duration_ms = (end_time - start_time) / 1000
-
-    require Logger
-    Logger.debug("Presence notifications processed in #{Float.round(duration_ms, 2)}ms - Joins: #{map_size(user_joins)}, Leaves: #{map_size(user_leaves)}")
-
-    # Limpeza periódica de cache para evitar memory leaks (pattern matching assertivo)
-    case :rand.uniform(100) do
-      n when n <= 5 -> # 5% de chance de limpeza
-        cleanup_notification_cache()
-      _ ->
-        :ok
-    end
-  end
-
-  @doc """
-  Limpa cache de notificações antigas seguindo anti-padrões do Elixir.
-  Remove entradas mais antigas que 5 minutos para evitar memory leaks.
-  """
-  @spec cleanup_notification_cache() :: :ok
-  defp cleanup_notification_cache() do
-    require Logger
-    current_time = System.system_time(:second)
-    cutoff_time = current_time - 300 # 5 minutos
-
-    # Pattern matching assertivo para limpeza de cache
-    process_dictionary_keys = Process.get_keys()
-
-    cleaned_count = process_dictionary_keys
-    |> Enum.filter(&is_notification_cache_key?/1)
-    |> Enum.filter(&is_cache_entry_expired?(&1, cutoff_time))
-    |> Enum.map(&Process.delete/1)
-    |> length()
-
-    if cleaned_count > 0 do
-      Logger.debug("🧹 Cache de notificações limpo: #{cleaned_count} entradas removidas")
-    end
-  end
-
-  @doc """
-  Verifica se chave é do cache de notificações usando pattern matching assertivo.
-  """
-  @spec is_notification_cache_key?(term()) :: boolean()
-  defp is_notification_cache_key?(key) do
-    # Pattern matching assertivo para tipos de cache
-    case key do
-      {:last_join, _user_id} -> true
-      {:last_leave, _user_id} -> true
-      _ -> false
-    end
-  end
-
-  @doc """
-  Verifica se entrada do cache expirou usando pattern matching assertivo.
-  """
-  @spec is_cache_entry_expired?(term(), integer()) :: boolean()
-  defp is_cache_entry_expired?(key, cutoff_time) do
-    case Process.get(key) do
-      timestamp when is_integer(timestamp) and timestamp < cutoff_time -> true
-      _ -> false
-    end
-  end
-
-  defp create_fast_system_notification(topic, message_text, notification_type, user_id) do
-    timing_start = System.monotonic_time(:microsecond)
-    require Logger
-
-    order_id = extract_order_id_fast(topic)
-    system_message = build_system_message(message_text, notification_type, user_id, order_id)
-
-    Logger.debug("Broadcasting system notification: #{message_text} para topic: #{topic}")
-
-    try do
-      Phoenix.PubSub.broadcast!(App.PubSub, topic, {:system_notification, system_message})
-      Logger.debug(" Broadcast realizado com sucesso para: #{topic}")
-    rescue
-      error ->
-        Logger.error("Erro no broadcast: #{inspect(error)}")
-        reraise error, __STACKTRACE__
-    end
-
-    log_notification_timing(timing_start, notification_type, message_text)
-  end
-
-  defp extract_order_id_fast(topic) do
-    binary_part(topic, 6, byte_size(topic) - 6)
-  end
-
-  defp build_system_message(message_text, notification_type, user_id, order_id) do
-    %{
-      id: System.unique_integer([:positive]),
-      text: message_text,
-      sender_id: "system",
-      sender_name: "Sistema",
-      order_id: order_id,
-      tipo: "system_notification",
-      notification_type: notification_type,
-      target_user_id: user_id,
-      inserted_at: DateTime.utc_now(),
-      is_system: true,
-      reply_to: nil,
-      is_reply: false,
-      has_mentions: false,
-      mentions: [],
-      image_url: nil,
-      status: "system"
+    change = %PresenceManager.PresenceChange{
+      joins: Map.get(diff, :joins, %{}),
+      leaves: Map.get(diff, :leaves, %{}),
+      topic: topic,
+      socket: %{assigns: %{current_user_id: current_user_id}}
     }
+
+    PresenceManager.process_presence_change(change)
   end
 
-  defp log_notification_timing(start_time, notification_type, message_text) do
-    end_time = System.monotonic_time(:microsecond)
-    duration_ms = (end_time - start_time) / 1000
 
-    require Logger
-    Logger.debug("FAST notification created and broadcast in #{Float.round(duration_ms, 2)}ms - #{notification_type}: #{message_text}")
-  end
+
+
 
   defp resolve_current_user_name(socket) do
     current_user = socket.assigns[:current_user]
@@ -2741,270 +1822,7 @@ defmodule AppWeb.ChatLive do
 
   defp extract_user_id(_), do: generate_anonymous_user_id()
 
-  # Função aprimorada seguindo anti-padrões do Elixir
-  defp validate_and_send_enhanced_message(trimmed_text, socket, user_id, image_url, document_url, link_preview_data) do
-    case validate_enhanced_message_content(trimmed_text, socket, image_url, document_url) do
-      :valid ->
-        process_enhanced_message_sending(trimmed_text, socket, user_id, image_url, document_url, link_preview_data)
-      {:error, message} ->
-        {:noreply, put_flash(socket, :error, message)}
-    end
-  end
 
-  # Manter função original para compatibilidade
-  defp validate_and_send_message(trimmed_text, socket, user_id, image_url) do
-    validate_and_send_enhanced_message(trimmed_text, socket, user_id, image_url, nil, nil)
-  end
-
-  # Validação aprimorada para múltiplos tipos de conteúdo
-  defp validate_enhanced_message_content(trimmed_text, _socket, image_url, document_url) do
-    text_empty = is_nil(trimmed_text) or String.trim(trimmed_text || "") == ""
-    has_image = not is_nil(image_url) and image_url != ""
-    has_document = not is_nil(document_url) and document_url != ""
-    has_attachment = has_image or has_document
-
-    cond do
-      text_empty and not has_attachment ->
-        {:error, "Mensagem não pode estar vazia sem anexo"}
-
-      not text_empty and String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
-        {:error, "Mensagem muito longa"}
-
-      has_image and has_document ->
-        {:error, "Envie apenas um tipo de anexo por vez"}
-
-      true ->
-        :valid
-    end
-  end
-
-  # Manter função original para compatibilidade
-  defp validate_message_content(trimmed_text, socket, image_url) do
-    validate_enhanced_message_content(trimmed_text, socket, image_url, nil)
-  end
-
-  # Processamento aprimorado seguindo anti-padrões do Elixir
-  defp process_enhanced_message_sending(trimmed_text, socket, user_id, image_url, document_url, link_preview_data) do
-    case RateLimiter.check_message_rate(user_id, trimmed_text) do
-      {:ok, :allowed} ->
-        handle_successful_enhanced_rate_check(trimmed_text, socket, user_id, image_url, document_url, link_preview_data)
-
-      {:error, reason, wait_time} ->
-        error_message = format_rate_limit_error(reason, wait_time)
-        {:noreply, put_flash(socket, :error, error_message)}
-    end
-  end
-
-  # Manter função original para compatibilidade
-  defp process_message_sending(trimmed_text, socket, user_id, image_url) do
-    process_enhanced_message_sending(trimmed_text, socket, user_id, image_url, nil, nil)
-  end
-
-  # Função aprimorada seguindo anti-padrões do Elixir
-  defp handle_successful_enhanced_rate_check(trimmed_text, socket, user_id, image_url, document_url, link_preview_data) do
-    result = send_enhanced_chat_message(socket, trimmed_text, image_url, document_url, link_preview_data)
-
-    case result do
-      {:noreply, socket} ->
-        if is_nil(socket.assigns[:message_error]) do
-          RateLimiter.record_message(user_id, trimmed_text)
-        end
-        result
-      _ ->
-        result
-    end
-  end
-
-  # Manter função original para compatibilidade
-  defp handle_successful_rate_check(trimmed_text, socket, user_id, image_url) do
-    handle_successful_enhanced_rate_check(trimmed_text, socket, user_id, image_url, nil, nil)
-  end
-
-  # Função principal de envio de mensagem aprimorada
-  defp send_enhanced_chat_message(socket, text, image_url, document_url, link_preview_data) do
-    require Logger
-
-    # Determinar tipo de mensagem usando pattern matching assertivo
-    message_type = determine_message_type(text, image_url, document_url)
-
-    # Construir parâmetros da mensagem
-    base_params = build_base_message_params(socket, text, message_type)
-    enhanced_params = add_attachment_params(base_params, image_url, document_url, link_preview_data)
-
-    Logger.debug("Enviando mensagem aprimorada: tipo=#{message_type}")
-
-    case App.Chat.create_message(enhanced_params) do
-      {:ok, message} ->
-        handle_successful_message_creation(socket, message)
-      {:error, changeset} ->
-        handle_message_creation_error(socket, changeset)
-    end
-  end
-
-  # Pattern matching assertivo para determinação do tipo de mensagem
-  defp determine_message_type(text, image_url, document_url) do
-    cond do
-      not is_nil(image_url) and image_url != "" -> "imagem"
-      not is_nil(document_url) and document_url != "" -> "documento"
-      not is_nil(text) and text != "" -> "mensagem"
-      true -> "mensagem"
-    end
-  end
-
-  # Construção de parâmetros base da mensagem
-  defp build_base_message_params(socket, text, message_type) do
-    %{
-      text: text || "",
-      sender_id: socket.assigns.current_user_id,
-      sender_name: socket.assigns.current_user_name,
-      order_id: socket.assigns.order_id,
-      tipo: message_type,
-      status: "sent",
-      reply_to: get_reply_to_id(socket),
-      is_reply: not is_nil(socket.assigns[:replying_to])
-    }
-  end
-
-  # Adiciona parâmetros de anexos usando pattern matching
-  defp add_attachment_params(base_params, image_url, document_url, link_preview_data) do
-    base_params
-    |> add_image_params(image_url)
-    |> add_document_params(document_url)
-    |> add_link_preview_params(link_preview_data)
-  end
-
-  # Pattern matching para adicionar parâmetros de imagem
-  defp add_image_params(params, image_url) when is_binary(image_url) and image_url != "" do
-    Map.put(params, :image_url, image_url)
-  end
-  defp add_image_params(params, _), do: params
-
-  # Pattern matching para adicionar parâmetros de documento
-  defp add_document_params(params, document_url) when is_binary(document_url) and document_url != "" do
-    params
-    |> Map.put(:document_url, document_url)
-    |> Map.put(:document_name, extract_filename_from_url(document_url))
-    |> Map.put(:document_size, nil) # Será determinado pelo upload
-  end
-  defp add_document_params(params, _), do: params
-
-  # Pattern matching para adicionar parâmetros de preview de link
-  defp add_link_preview_params(params, %{title: title, description: desc, image: image, url: url}) do
-    params
-    |> Map.put(:link_preview_title, title)
-    |> Map.put(:link_preview_description, desc)
-    |> Map.put(:link_preview_image, image)
-    |> Map.put(:link_preview_url, url)
-  end
-  defp add_link_preview_params(params, _), do: params
-
-  # Extrai nome do arquivo da URL usando pattern matching
-  defp extract_filename_from_url(url) when is_binary(url) do
-    url
-    |> String.split("/")
-    |> List.last()
-    |> case do
-      nil -> "documento"
-      filename -> filename
-    end
-  end
-  defp extract_filename_from_url(_), do: "documento"
-
-  # Pattern matching para obter ID de resposta
-  defp get_reply_to_id(%{assigns: %{replying_to: %{id: id}}}), do: id
-  defp get_reply_to_id(_), do: nil
-
-  @doc """
-  Tratamento de sucesso na criação da mensagem seguindo anti-padrões do Elixir.
-  Adiciona logs detalhados para debug de sincronização de imagens.
-  """
-  @spec handle_successful_message_creation(Phoenix.LiveView.Socket.t(), map()) :: {:noreply, Phoenix.LiveView.Socket.t()}
-  defp handle_successful_message_creation(socket, message) do
-    require Logger
-
-    # Debug detalhado da mensagem criada
-    Logger.info("🚀 MENSAGEM CRIADA COM SUCESSO:")
-    Logger.info("  ID: #{message.id}")
-    Logger.info("  Texto: #{inspect(message.text)}")
-    Logger.info("  Tipo: #{message.tipo}")
-    Logger.info("  Image URL: #{inspect(message.image_url)}")
-    Logger.info("  Document URL: #{inspect(Map.get(message, :document_url))}")
-    Logger.info("  Sender: #{message.sender_name} (#{message.sender_id})")
-    Logger.info("  Order ID: #{message.order_id}")
-
-    topic = "order:#{socket.assigns.order_id}"
-
-    Logger.info("INICIANDO BROADCAST:")
-    Logger.info("  Topic: #{topic}")
-    Logger.info("  Broadcast data: #{inspect(%{id: message.id, image_url: message.image_url, tipo: message.tipo})}")
-
-    try do
-      Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-      Logger.info("BROADCAST ENVIADO COM SUCESSO para topic: #{topic}")
-    rescue
-      error ->
-        Logger.error("ERRO NO BROADCAST: #{inspect(error)}")
-        reraise error, __STACKTRACE__
-    end
-
-    Logger.info("Finalizando handle_successful_message_creation")
-
-    {:noreply,
-     socket
-     |> assign(:message, "")
-     |> assign(:replying_to, nil)
-     |> assign(:message_error, nil)
-     |> put_flash(:info, "Mensagem enviada com sucesso!")}
-  end
-
-  # Tratamento de erro na criação da mensagem
-  defp handle_message_creation_error(socket, changeset) do
-    require Logger
-
-    error_message = format_errors(changeset.errors)
-    Logger.error("❌ Falha ao criar mensagem: #{error_message}")
-
-    {:noreply,
-     socket
-     |> assign(:message_error, error_message)
-     |> put_flash(:error, "Erro ao enviar mensagem: #{error_message}")}
-  end
-
-  defp format_rate_limit_error(reason, wait_time) do
-    case reason do
-      :rate_limited -> "Muitas mensagens. Aguarde #{wait_time} segundos."
-      :duplicate_spam -> "Não repita a mesma mensagem. Aguarde #{wait_time} segundos."
-      :long_message_spam -> "Muitas mensagens longas. Aguarde #{wait_time} segundos."
-      _ -> "Rate limit atingido. Aguarde #{wait_time} segundos."
-    end
-  end
-
-    defp format_upload_error(errors) do
-    error_messages = Enum.map(errors, fn
-      :too_large -> "Arquivo muito grande (máximo 5MB)"
-      :not_accepted -> "Tipo de arquivo não aceito (apenas JPG, PNG, GIF)"
-      :too_many_files -> "Apenas uma imagem por vez"
-      :external_client_failure -> "Falha no upload"
-      error -> "Erro: #{inspect(error)}"
-    end)
-
-    case error_messages do
-      [single_error] -> single_error
-      multiple_errors -> "Problemas: " <> Enum.join(multiple_errors, ", ")
-    end
-  end
-
-  defp format_file_size(size) when is_integer(size) do
-    cond do
-      size >= 1_048_576 -> "#{Float.round(size / 1_048_576, 1)}MB"
-      size >= 1_024 -> "#{Float.round(size / 1_024, 1)}KB"
-      true -> "#{size}B"
-    end
-  end
-
-  defp format_file_size(_), do: "Tamanho desconhecido"
-
-  # NOVA FUNÇÃO: Mescla mensagens persistentes com notificações temporárias
   defp get_all_messages_with_notifications(messages, system_notifications) do
     # Combinar e ordenar por timestamp
     all_items = messages ++ system_notifications
@@ -3013,472 +1831,4 @@ defmodule AppWeb.ChatLive do
       DateTime.compare(a.inserted_at, b.inserted_at) != :gt
     end)
   end
-
-  # Função para formatar erros do changeset de forma legível
-  defp format_errors(errors) do
-    errors
-    |> Enum.map(fn {field, {message, _opts}} -> "#{field}: #{message}" end)
-    |> Enum.join(", ")
-  end
-
-  @doc """
-  Verifica se deve criar notificação de entrada seguindo anti-padrões do Elixir.
-  Implementa sistema robusto de debounce para evitar notificações duplicadas.
-  Usa pattern matching assertivo e normaliza retornos em função privada.
-  """
-  @spec should_create_join_notification?(String.t(), String.t()) :: boolean()
-  defp should_create_join_notification?(user_id, user_name) do
-    require Logger
-
-    current_time = System.system_time(:second)
-
-    # Pattern matching assertivo para diferentes cenários de cache
-    case get_user_notification_cache(user_id) do
-      {:recent_join, timestamp} when current_time - timestamp < 30 ->
-        log_duplicate_notification_blocked(user_name, current_time - timestamp)
-        false
-
-      {:recent_leave, timestamp} when current_time - timestamp < 15 ->
-        log_quick_reconnection_detected(user_name, current_time - timestamp)
-        false
-
-      _ ->
-        process_valid_join_notification(user_id, user_name, current_time)
-    end
-  end
-
-  @doc """
-  Obtém cache de notificação do usuário usando pattern matching assertivo.
-  Normaliza retornos conforme anti-padrões do Elixir.
-  """
-  @spec get_user_notification_cache(String.t()) :: {:recent_join, integer()} | {:recent_leave, integer()} | nil
-  defp get_user_notification_cache(user_id) do
-    join_cache = Process.get({:last_join, user_id})
-    leave_cache = Process.get({:last_leave, user_id})
-
-    # Pattern matching assertivo para priorizar eventos mais recentes
-    case {join_cache, leave_cache} do
-      {join_time, leave_time} when is_integer(join_time) and is_integer(leave_time) ->
-        if join_time > leave_time do
-          {:recent_join, join_time}
-        else
-          {:recent_leave, leave_time}
-        end
-
-      {join_time, nil} when is_integer(join_time) ->
-        {:recent_join, join_time}
-
-      {nil, leave_time} when is_integer(leave_time) ->
-        {:recent_leave, leave_time}
-
-      _ ->
-        nil
-    end
-  end
-
-  @doc """
-  Processa notificação de entrada válida seguindo anti-padrões do Elixir.
-  Atualiza cache e normaliza retorno.
-  """
-  @spec process_valid_join_notification(String.t(), String.t(), integer()) :: boolean()
-  defp process_valid_join_notification(user_id, user_name, current_time) do
-    require Logger
-
-    # Atualizar cache de entrada usando and ao invés de &&
-    Process.put({:last_join, user_id}, current_time)
-
-    Logger.debug("✅ Notificação de entrada válida para #{user_name}")
-    true
-  end
-
-  @doc """
-  Registra bloqueio de notificação duplicada seguindo anti-padrões do Elixir.
-  """
-  @spec log_duplicate_notification_blocked(String.t(), integer()) :: :ok
-  defp log_duplicate_notification_blocked(user_name, time_diff) do
-    require Logger
-    Logger.debug("🚫 Notificação duplicada bloqueada para #{user_name}: #{time_diff}s desde última entrada")
-  end
-
-  @doc """
-  Registra reconexão rápida detectada seguindo anti-padrões do Elixir.
-  """
-  @spec log_quick_reconnection_detected(String.t(), integer()) :: :ok
-  defp log_quick_reconnection_detected(user_name, time_diff) do
-    require Logger
-    Logger.debug("⚡ Reconexão rápida detectada para #{user_name}: #{time_diff}s - evitando spam")
-  end
-
-  defp get_connection_text_class(connected?) do
-    if connected?, do: "text-green-600", else: "text-red-500"
-  end
-
-  defp render_message_with_tags(message) do
-    # Primeiro, escapa o HTML para segurança
-    escaped_html = Phoenix.HTML.html_escape(message.text)
-
-    # Extrai o texto seguro da estrutura {:safe, content}
-    safe_text = case escaped_html do
-      {:safe, content} -> content
-      content -> content
-    end
-
-    # Depois, substitui #tags por links clicáveis
-    text_with_tags = Regex.replace(~r/#([a-zA-Z0-9_]+)/, safe_text, fn _full_match, tag ->
-      """
-      <a href="#" phx-click="filter_by_tag" phx-value-tag="#{tag}" class="text-blue-600 font-semibold hover:underline">
-        ##{tag}
-      </a>
-      """
-    end)
-
-    # Finalmente, marca como seguro para renderizar o HTML
-    raw(text_with_tags)
-  end
-
-  # Funções auxiliares para documentos - seguindo anti-padrões do Elixir
-
-  @doc """
-  Retorna o ícone apropriado para um tipo de documento baseado na extensão.
-  Usa pattern matching assertivo ao invés de condicionais complexas.
-  """
-  @spec get_document_icon(String.t()) :: String.t()
-  defp get_document_icon(filename) when is_binary(filename) do
-    filename
-    |> Path.extname()
-    |> String.downcase()
-    |> document_icon_for_extension()
-  end
-
-  defp get_document_icon(_), do: "📄"
-
-  # Pattern matching assertivo para ícones de documentos
-  defp document_icon_for_extension(".pdf"), do: "📕"
-  defp document_icon_for_extension(".doc"), do: "📘"
-  defp document_icon_for_extension(".docx"), do: "📘"
-  defp document_icon_for_extension(".xls"), do: "📗"
-  defp document_icon_for_extension(".xlsx"), do: "📗"
-  defp document_icon_for_extension(".ppt"), do: "📙"
-  defp document_icon_for_extension(".pptx"), do: "📙"
-  defp document_icon_for_extension(_), do: "📄"
-
-  @doc """
-  Retorna o tipo amigável de documento baseado na extensão.
-  Usa pattern matching assertivo conforme anti-padrões do Elixir.
-  """
-  @spec get_document_type(String.t()) :: String.t()
-  defp get_document_type(filename) when is_binary(filename) do
-    filename
-    |> Path.extname()
-    |> String.downcase()
-    |> document_type_for_extension()
-  end
-
-  defp get_document_type(_), do: "Documento"
-
-  # Pattern matching assertivo para tipos de documentos
-  defp document_type_for_extension(".pdf"), do: "PDF"
-  defp document_type_for_extension(".doc"), do: "Word"
-  defp document_type_for_extension(".docx"), do: "Word"
-  defp document_type_for_extension(".xls"), do: "Excel"
-  defp document_type_for_extension(".xlsx"), do: "Excel"
-  defp document_type_for_extension(".ppt"), do: "PowerPoint"
-  defp document_type_for_extension(".pptx"), do: "PowerPoint"
-  defp document_type_for_extension(_), do: "Documento"
-
-  @doc """
-  Processa upload de documento usando pattern matching assertivo.
-  Normaliza retornos em função privada conforme anti-padrões do Elixir.
-  """
-  @spec process_document_upload(Phoenix.LiveView.Socket.t()) :: String.t() | nil
-  defp process_document_upload(socket) do
-    require Logger
-
-    case socket.assigns.uploads.document.entries do
-      [] ->
-        Logger.debug("📄 Nenhum documento para upload")
-        nil
-
-      entries ->
-        Logger.debug("📄 Processando upload de documento - #{length(entries)} entries")
-        process_document_entries(socket, entries)
-    end
-  end
-
-  # Normaliza processamento de documentos em função privada
-  defp process_document_entries(socket, entries) do
-    require Logger
-
-    result = consume_uploaded_entries(socket, :document, fn %{path: path}, entry ->
-      process_single_document_upload(path, entry)
-    end)
-
-    Logger.debug("📄 Resultado do consume_uploaded_entries: #{inspect(result)}")
-    extract_document_url_from_result(result)
-  end
-
-  # Pattern matching assertivo para processamento de documento individual
-  defp process_single_document_upload(path, entry) do
-    require Logger
-
-    filename = generate_unique_filename(entry.client_name)
-    Logger.debug("📄 Upload de documento: #{entry.client_name} -> #{filename}")
-
-    case App.Minio.upload_file(path, filename) do
-      {:ok, url} ->
-        Logger.info("✅ Documento enviado com sucesso: #{url}")
-        {:ok, url}
-      {:error, reason} ->
-        Logger.error("❌ Falha no upload do documento: #{inspect(reason)}")
-        {:ok, nil}
-    end
-  end
-
-  # Pattern matching assertivo para extração de URL
-  defp extract_document_url_from_result(result) do
-    case List.first(result) do
-      url when is_binary(url) and url != "" and url != nil -> url
-      {:ok, url} when is_binary(url) -> url
-      _ -> nil
-    end
-  end
-
-  @doc """
-  Processa texto da mensagem para detectar links e extrair preview.
-  Usa with para controle de fluxo assertivo conforme anti-padrões do Elixir.
-  """
-  @spec process_message_for_link_preview(String.t()) :: map() | nil
-  defp process_message_for_link_preview(message_text) when is_binary(message_text) do
-    with {:ok, link_data} <- App.LinkPreview.process_message_for_links(message_text),
-         true <- not is_nil(link_data) do
-      link_data
-    else
-      _ -> nil
-    end
-  end
-
-  defp process_message_for_link_preview(_), do: nil
-
-  @doc """
-  Valida tipos de documento permitidos usando pattern matching assertivo.
-  """
-  @spec validate_document_type(String.t()) :: boolean()
-  defp validate_document_type(filename) when is_binary(filename) do
-    App.Minio.supported_file_type?(filename)
-  end
-
-  defp validate_document_type(_), do: false
-
-  # Funções auxiliares privadas para validação seguindo anti-padrões do Elixir
-
-  defp cancel_upload_by_ref(socket, ref) do
-    case socket.assigns.uploads do
-      %{image: %{entries: image_entries}, document: %{entries: document_entries}} ->
-        cond do
-          Enum.any?(image_entries, &(&1.ref == ref)) ->
-            cancel_upload(socket, :image, ref)
-          Enum.any?(document_entries, &(&1.ref == ref)) ->
-            cancel_upload(socket, :document, ref)
-          true ->
-            socket
-        end
-      _ ->
-        socket
-    end
-  end
-
-  defp validate_image_entry(entry, socket) do
-    if entry.valid? do
-      {:noreply,
-       socket
-       |> assign(:message_error, nil)
-       |> put_flash(:info, "Imagem selecionada: #{entry.client_name}")
-      }
-    else
-      error_message = format_upload_error(entry.errors)
-      {:noreply, put_flash(socket, :error, error_message)}
-    end
-  end
-
-  defp validate_document_entry(entry, socket) do
-    cond do
-      entry.valid? and validate_document_type(entry.client_name) ->
-        document_type = get_document_type(entry.client_name)
-
-        {:noreply,
-         socket
-         |> assign(:message_error, nil)
-         |> put_flash(:info, "#{document_type} selecionado: #{entry.client_name}")
-        }
-
-      not entry.valid? ->
-        error_message = format_document_upload_error(entry.errors)
-        {:noreply, put_flash(socket, :error, error_message)}
-
-      true ->
-        {:noreply, put_flash(socket, :error, "Tipo de documento não suportado")}
-    end
-  end
-
-  defp format_document_upload_error(errors) do
-    Enum.map_join(errors, ", ", fn
-      :too_large -> "Documento muito grande (máximo 25MB)"
-      :not_accepted -> "Tipo de arquivo não aceito (apenas PDF, Word, Excel, PowerPoint)"
-      :too_many_files -> "Apenas um documento por vez"
-      :external_client_failure -> "Falha no upload"
-      error -> "Erro: #{inspect(error)}"
-    end)
-  end
-
-  defp validate_and_send_enhanced_message(
-    %{text: trimmed_text, user_id: user_id, socket: socket},
-    attachment_data,
-    link_preview_data
-  ) do
-    case validate_enhanced_message_content(trimmed_text, socket, attachment_data.image_url, attachment_data.document_url) do
-      :valid ->
-        process_enhanced_message_sending(trimmed_text, socket, user_id, attachment_data, link_preview_data)
-      {:error, message} ->
-        {:noreply, put_flash(socket, :error, message)}
-    end
-  end
-
-  defp validate_enhanced_message_content(trimmed_text, _socket, image_url, document_url) do
-    text_empty = is_nil(trimmed_text) or String.trim(trimmed_text || "") == ""
-    has_image = not is_nil(image_url) and image_url != ""
-    has_document = not is_nil(document_url) and document_url != ""
-    has_attachment = has_image or has_document
-
-    cond do
-      text_empty and not has_attachment ->
-        {:error, "Mensagem não pode estar vazia sem anexo"}
-
-      not text_empty and String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
-        {:error, "Mensagem muito longa"}
-
-      has_image and has_document ->
-        {:error, "Envie apenas um tipo de anexo por vez"}
-
-      true ->
-        :valid
-    end
-  end
-
-  defp process_enhanced_message_sending(trimmed_text, socket, user_id, attachment_data, link_preview_data) do
-    case RateLimiter.check_message_rate(user_id, trimmed_text) do
-      {:ok, :allowed} ->
-        result = send_enhanced_chat_message(socket, trimmed_text, attachment_data, link_preview_data)
-        if is_nil(socket.assigns[:message_error]) do
-          RateLimiter.record_message(user_id, trimmed_text)
-        end
-        result
-
-      {:error, reason, wait_time} ->
-        error_message = format_rate_limit_error(reason, wait_time)
-        {:noreply, put_flash(socket, :error, error_message)}
-    end
-  end
-
-  defp send_enhanced_chat_message(socket, text, attachment_data, link_preview_data) do
-    message_type = determine_message_type(text, attachment_data.image_url, attachment_data.document_url)
-
-    base_params = build_base_message_params(socket, text, message_type)
-    enhanced_params = add_attachment_params(base_params, attachment_data, link_preview_data)
-
-    case App.Chat.create_message(enhanced_params) do
-      {:ok, message} ->
-        handle_successful_message_creation(socket, message)
-      {:error, changeset} ->
-        handle_message_creation_error(socket, changeset)
-    end
-  end
-
-  defp determine_message_type(text, image_url, document_url) do
-    cond do
-      not is_nil(image_url) and image_url != "" -> :imagem
-      not is_nil(document_url) and document_url != "" -> :documento
-      not is_nil(text) and text != "" -> :mensagem
-      true -> :mensagem
-    end
-  end
-
-  defp build_base_message_params(socket, text, message_type) do
-    %{
-      text: text || "",
-      sender_id: socket.assigns.current_user_id,
-      sender_name: socket.assigns.current_user_name,
-      order_id: socket.assigns.order_id,
-      tipo: message_type,
-      status: :sent,
-      reply_to: get_reply_to_id(socket),
-      is_reply: not is_nil(socket.assigns[:replying_to])
-    }
-  end
-
-  defp add_attachment_params(base_params, attachment_data, link_preview_data) do
-    base_params
-    |> add_image_params(attachment_data.image_url)
-    |> add_document_params(attachment_data.document_url)
-    |> add_link_preview_params(link_preview_data)
-  end
-
-  defp add_image_params(params, image_url) when is_binary(image_url) and image_url != "" do
-    Map.put(params, :image_url, image_url)
-  end
-  defp add_image_params(params, _), do: params
-
-  defp add_document_params(params, document_url) when is_binary(document_url) and document_url != "" do
-    params
-    |> Map.put(:document_url, document_url)
-    |> Map.put(:document_name, extract_filename_from_url(document_url))
-    |> Map.put(:document_size, nil)
-  end
-  defp add_document_params(params, _), do: params
-
-  defp add_link_preview_params(params, %{title: title, description: desc, image: image, url: url}) do
-    params
-    |> Map.put(:link_preview_title, title)
-    |> Map.put(:link_preview_description, desc)
-    |> Map.put(:link_preview_image, image)
-    |> Map.put(:link_preview_url, url)
-  end
-  defp add_link_preview_params(params, _), do: params
-
-  defp get_reply_to_id(%{assigns: %{replying_to: %{id: id}}}), do: id
-  defp get_reply_to_id(_), do: nil
-
-  defp handle_successful_message_creation(socket, message) do
-    topic = "order:#{socket.assigns.order_id}"
-    Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-
-    {:noreply,
-     socket
-     |> assign(:message, "")
-     |> assign(:replying_to, nil)
-     |> assign(:message_error, nil)
-     |> put_flash(:info, "Mensagem enviada com sucesso!")}
-  end
-
-  defp handle_message_creation_error(socket, changeset) do
-    error_message = format_errors(changeset.errors)
-
-    {:noreply,
-     socket
-     |> assign(:message_error, error_message)
-     |> put_flash(:error, "Erro ao enviar mensagem: #{error_message}")}
-  end
-
-  defp format_rate_limit_error(reason, wait_time) do
-    case reason do
-      :rate_limited -> "Muitas mensagens. Aguarde #{wait_time} segundos."
-      :duplicate_spam -> "Não repita a mesma mensagem. Aguarde #{wait_time} segundos."
-      :long_message_spam -> "Muitas mensagens longas. Aguarde #{wait_time} segundos."
-      _ -> "Rate limit atingido. Aguarde #{wait_time} segundos."
-    end
-  end
-
-  defp extract_filename_from_url(url) when is_binary(url) do
-    url |> String.split("/") |> List.last() || "documento"
-  end
-  defp extract_filename_from_url(_), do: "documento"
 end
