@@ -2,6 +2,19 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+
+/* Animação para confetti */
+@keyframes confettifall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
 /* This file is for your main application CSS */
 
 /* Apple-like Login Custom Styles */
@@ -197,4 +210,476 @@
     .apple-login .title {
         font-size: 20px;
     }
+}
+
+/* Preview de imagem - garantir que fallback funcione */
+.live_img_preview {
+  position: relative;
+  z-index: 2;
+}
+
+.live_img_preview:empty + div {
+  display: flex !important;
+}
+
+/* Melhorar visibilidade do preview */
+.image-preview-container {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 2px dashed #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.image-preview-container:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+/* Garantir que o ícone de fallback apareça */
+.image-preview-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 244, 246, 0.9);
+  border-radius: 0.5rem;
+}
+
+/* Ocultar fallback quando live_img_preview carregar */
+.live_img_preview img ~ .image-preview-fallback {
+  display: none;
+}
+
+/* ========================================
+   LAYOUT RESPONSIVO PARA TABLETS
+   Samsung Tab 9 e iPad Air Otimizado
+   ======================================== */
+
+/* Tablets em landscape (1024px - 1366px) */
+@media screen and (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .chat-container {
+    max-width: 100%;
+    padding: 0 24px;
+    margin: 0 auto;
+  }
+
+  .chat-header {
+    padding: 16px 24px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .chat-messages {
+    padding: 16px 24px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+  }
+
+  .message-bubble {
+    max-width: 65%;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 18px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .message-input-area {
+    padding: 16px 24px;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .message-input {
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 24px;
+  }
+
+  .send-button {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+  }
+
+  /* Otimização para upload de arquivos em tablets */
+  .upload-area {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .upload-button {
+    min-width: 120px;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .upload-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Preview de documentos otimizado para tablets */
+  .document-preview {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 12px;
+  }
+
+  .document-icon {
+    width: 48px;
+    height: 48px;
+    margin-right: 16px;
+    border-radius: 8px;
+  }
+
+  .document-info {
+    flex: 1;
+  }
+
+  .document-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .document-size {
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  /* Preview de links otimizado para tablets */
+  .link-preview {
+    display: flex;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 12px;
+    max-width: 480px;
+    transition: all 0.2s ease;
+  }
+
+  .link-preview:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .link-preview-image {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    background: #f1f5f9;
+  }
+
+  .link-preview-content {
+    padding: 16px;
+    flex: 1;
+  }
+
+  .link-preview-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1e293b;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .link-preview-description {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .link-preview-url {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 8px;
+    text-decoration: none;
+  }
+}
+
+/* Tablets em portrait (768px - 1024px) */
+@media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .chat-container {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+
+  .chat-header {
+    padding: 14px 20px;
+    font-size: 17px;
+  }
+
+  .chat-messages {
+    padding: 14px 20px;
+    max-height: calc(100vh - 140px);
+  }
+
+  .message-bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border-radius: 16px;
+    font-size: 15px;
+  }
+
+  .message-input-area {
+    padding: 14px 20px;
+  }
+
+  .message-input {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 15px;
+    border-radius: 22px;
+  }
+
+  .send-button {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  .upload-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .upload-button {
+    min-width: 100px;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .link-preview {
+    max-width: 100%;
+  }
+
+  .link-preview-image {
+    width: 100px;
+    height: 75px;
+  }
+
+  .link-preview-content {
+    padding: 12px;
+  }
+
+  .link-preview-title {
+    font-size: 15px;
+  }
+
+  .link-preview-description {
+    font-size: 13px;
+  }
+}
+
+/* iPad Air específico (820x1180 portrait, 1180x820 landscape) */
+@media screen and (min-device-width: 820px) and (max-device-width: 1180px) {
+  .chat-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+  }
+
+  .chat-sidebar {
+    display: none; /* Ocultar sidebar em tablets */
+  }
+
+  .chat-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .message-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .message-action-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .message-action-button:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #374151;
+  }
+}
+
+/* Samsung Tab 9 específico (800x1280 portrait, 1280x800 landscape) */
+@media screen and (min-device-width: 800px) and (max-device-width: 1280px) {
+  .theme-customizer {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 280px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1000;
+  }
+
+  .theme-color-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .theme-color-option {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .theme-color-option:hover {
+    transform: scale(1.1);
+  }
+
+  .theme-color-option.active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+
+  .theme-setting-group {
+    margin-bottom: 20px;
+  }
+
+  .theme-setting-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .theme-setting-options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .theme-setting-option {
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .theme-setting-option:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+  }
+
+  .theme-setting-option.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+}
+
+/* Otimizações gerais para todos os tablets */
+@media screen and (min-width: 768px) and (max-width: 1366px) {
+  /* Melhor aproveitamento do espaço em tablets */
+  .container {
+    max-width: none;
+    width: 100%;
+  }
+
+  /* Botões de ação mais amigáveis ao touch */
+  button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+  }
+
+  /* Links e elementos clicáveis maiores */
+  a, .clickable {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+  }
+
+  /* Scrollbars customizadas para tablets */
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Animações suaves para transições */
+  .fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 }

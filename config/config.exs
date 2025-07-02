@@ -7,6 +7,17 @@
 # General application configuration
 import Config
 
+config :mime, :types, %{
+  "audio/mp4" => ["m4a"],
+  "audio/wav" => ["wav"],
+  "audio/mpeg" => ["mp3"],
+  "audio/ogg" => ["ogg"]
+}
+
+config :mime, :extensions, %{
+  "webm" => "audio/webm"
+}
+
 config :app,
   ecto_repos: [App.Repo],
   generators: [timestamp_type: :utc_datetime]
@@ -20,7 +31,7 @@ config :app, AppWeb.Endpoint,
     layout: false
   ],
   pubsub_server: App.PubSub,
-  live_view: [signing_salt: "rdThFUm0"]
+  live_view: [signing_salt: "ePeRom9A"]
 
 # Configures the mailer
 #
@@ -47,9 +58,16 @@ config :app, AppWeb.Auth.Guardian,
     System.get_env("GUARDIAN_SECRET") ||
       "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
 
+# Configure Guardian.DB
+config :guardian, Guardian.DB,
+  repo: App.Repo,
+  schema_name: "guardian_tokens",
+  token_types: ["access", "refresh"],
+  sweep_interval: 60
+
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "3.4.3",
+  version: "3.4.0",
   app: [
     args: ~w(
       --config=tailwind.config.js
@@ -66,6 +84,17 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure Oban
+config :app, Oban,
+  repo: App.Repo,
+  plugins: [
+    Oban.Plugins.Pruner
+  ],
+  queues: [
+    default: 10,
+    api_sync: 5
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

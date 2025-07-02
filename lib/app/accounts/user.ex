@@ -45,9 +45,6 @@ defmodule App.Accounts.User do
     timestamps()
   end
 
-  @doc """
-  Cria um conjunto de alterações para criar um usuário.
-  """
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:username, :name, :role, :store_id, :password, :website, :avatar_url])
@@ -61,7 +58,7 @@ defmodule App.Accounts.User do
     if changeset.valid? && get_change(changeset, :password) do
       password = get_change(changeset, :password)
 
-      put_change(changeset, :password_hash, Pbkdf2.hash_pwd_salt(password))
+      put_change(changeset, :password_hash, Argon2.hash_pwd_salt(password))
     else
       changeset
     end

@@ -17,7 +17,7 @@ defmodule AppWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images robots.txt)
 
   def router do
     quote do
@@ -26,12 +26,6 @@ defmodule AppWeb do
       import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
-    end
-  end
-
-  def channel do
-    quote do
-      use Phoenix.Channel
     end
   end
 
@@ -79,7 +73,6 @@ defmodule AppWeb do
 
   defp html_helpers do
     quote do
-      # Translation
       use Gettext, backend: AppWeb.Gettext
 
       import Phoenix.HTML
@@ -103,9 +96,6 @@ defmodule AppWeb do
     end
   end
 
-  @doc """
-  When used, dispatch to the appropriate controller/live_view/etc.
-  """
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end

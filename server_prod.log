@@ -1,0 +1,285 @@
+nohup: ignoring input
+=CRASH REPORT==== 1-Jul-2025::09:30:53.534159 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 151
+  neighbours:
+
+=CRASH REPORT==== 1-Jul-2025::09:30:53.534159 ===
+  crasher:
+    initial call: prim_tty:reader/1
+    pid: <0.68.0>
+    registered_name: user_drv_reader
+    exception error: no case clause matching {error,{read,ebadf}}
+      in function  prim_tty:reader_loop/6 (prim_tty.erl, line 476)
+    ancestors: [user_drv,<0.64.0>,kernel_sup,<0.47.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.65.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 28
+    reductions: 151
+  neighbours:
+
+==> decimal
+Compiling 4 files (.ex)
+Generated decimal app
+==> mime
+Compiling 1 file (.ex)
+Generated mime app
+==> nimble_options
+Compiling 3 files (.ex)
+Generated nimble_options app
+==> app
+===> Analyzing applications...
+===> Compiling unicode_util_compat
+===> Analyzing applications...
+===> Compiling idna
+===> Analyzing applications...
+===> Compiling telemetry
+==> telemetry_metrics
+Compiling 7 files (.ex)
+Generated telemetry_metrics app
+==> app
+===> Analyzing applications...
+===> Compiling telemetry_poller
+==> thousand_island
+Compiling 16 files (.ex)
+Generated thousand_island app
+==> comeonin
+Compiling 3 files (.ex)
+Generated comeonin app
+==> pbkdf2_elixir
+Compiling 5 files (.ex)
+Generated pbkdf2_elixir app
+==> jason
+Compiling 10 files (.ex)
+Generated jason app
+==> esbuild
+Compiling 4 files (.ex)
+Generated esbuild app
+==> phoenix_html
+Compiling 6 files (.ex)
+Generated phoenix_html app
+==> phoenix_template
+Compiling 4 files (.ex)
+Generated phoenix_template app
+==> db_connection
+Compiling 17 files (.ex)
+Generated db_connection app
+==> expo
+Compiling 2 files (.erl)
+Compiling 22 files (.ex)
+Generated expo app
+==> phoenix_pubsub
+Compiling 11 files (.ex)
+Generated phoenix_pubsub app
+==> plug_crypto
+Compiling 5 files (.ex)
+Generated plug_crypto app
+==> hpax
+Compiling 4 files (.ex)
+Generated hpax app
+==> app
+===> Analyzing applications...
+===> Compiling mimerl
+==> dns_cluster
+Compiling 1 file (.ex)
+Generated dns_cluster app
+==> gettext
+Compiling 18 files (.ex)
+Generated gettext app
+==> app
+===> Analyzing applications...
+===> Compiling fuse
+==> jose
+Compiling 112 files (.erl)
+Compiling 8 files (.ex)
+Generated jose app
+==> app
+===> Analyzing applications...
+===> Compiling ranch
+==> ssl_verify_fun
+Compiling 7 files (.erl)
+Generated ssl_verify_fun app
+==> app
+===> Analyzing applications...
+===> Compiling certifi
+==> ecto
+Compiling 56 files (.ex)
+Generated ecto app
+==> plug
+Compiling 1 file (.erl)
+Compiling 40 files (.ex)
+Generated plug app
+==> guardian
+Compiling 25 files (.ex)
+Generated guardian app
+==> postgrex
+Compiling 68 files (.ex)
+Generated postgrex app
+==> app
+===> Analyzing applications...
+===> Compiling parse_trans
+==> ecto_sql
+Compiling 25 files (.ex)
+Generated ecto_sql app
+==> guardian_db
+Compiling 5 files (.ex)
+Generated guardian_db app
+==> oban
+Compiling 61 files (.ex)
+Generated oban app
+==> nimble_pool
+Compiling 2 files (.ex)
+Generated nimble_pool app
+==> app
+===> Analyzing applications...
+===> Compiling metrics
+===> Analyzing applications...
+===> Compiling hackney
+==> cors_plug
+Compiling 1 file (.ex)
+Generated cors_plug app
+==> elixir_make
+Compiling 8 files (.ex)
+Generated elixir_make app
+==> argon2_elixir
+mkdir -p /home/juru/JuruConnect/_build/prod/lib/argon2_elixir/priv
+cc -g -O3 -pthread -Wall -Wno-format-truncation -I"/home/juru/.asdf/installs/erlang/26.2.3/erts-14.2.3/include" -Iargon2/include -Iargon2/src -Ic_src -shared -fPIC -fvisibility=hidden -Wl,-soname,libargon2.so.0 argon2/src/argon2.c argon2/src/core.c argon2/src/blake2/blake2b.c argon2/src/thread.c argon2/src/encoding.c argon2/src/ref.c c_src/argon2_nif.c -o /home/juru/JuruConnect/_build/prod/lib/argon2_elixir/priv/argon2_nif.so
+Compiling 3 files (.ex)
+     warning: using single-quoted strings to represent charlists is deprecated.
+     Use ~c"" if you indeed want a charlist or use "" instead.
+     You may run "mix format --migrate" to change all single-quoted
+     strings to use the ~c sigil and fix this warning.
+     │
+ 130 │     path = :filename.join(:code.priv_dir(:argon2_elixir), 'argon2_nif')
+     │                                                           ~
+     │
+     └─ lib/argon2/base.ex:130:59
+
+    warning: incompatible types given to ArgumentError.exception/1:
+
+        ArgumentError.exception(Argon2.Base.handle_error(error))
+
+    given types:
+
+        -none()-
+
+    the 1st argument is empty (often represented as none()), most likely because it is the result of an expression that always fails, such as a `raise` or a previous invalid call. This causes any function called with this value to fail
+
+    where "error" was given the type:
+
+        # type: dynamic()
+        # from: lib/argon2.ex:93:7
+        error
+
+    typing violation found at:
+    │
+ 93 │       error -> raise ArgumentError, Base.handle_error(error)
+    │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/argon2.ex:93: Argon2.verify_pass/2
+
+Generated argon2_elixir app
+==> bcrypt_elixir
+mkdir -p "/home/juru/JuruConnect/_build/prod/lib/bcrypt_elixir/priv"
+cc -g -O3 -Wall -Wno-format-truncation -I"/home/juru/.asdf/installs/erlang/26.2.3/erts-14.2.3/include" -Ic_src -fPIC -shared  c_src/bcrypt_nif.c c_src/blowfish.c -o "/home/juru/JuruConnect/_build/prod/lib/bcrypt_elixir/priv/bcrypt_nif.so"
+Compiling 3 files (.ex)
+Generated bcrypt_elixir app
+==> castore
+Compiling 1 file (.ex)
+Generated castore app
+==> tailwind
+Compiling 3 files (.ex)
+Generated tailwind app
+==> mint
+Compiling 1 file (.erl)
+Compiling 20 files (.ex)
+Generated mint app
+==> finch
+Compiling 14 files (.ex)
+Generated finch app
+==> websock
+Compiling 1 file (.ex)
+Generated websock app
+==> bandit
+Compiling 54 files (.ex)
+Generated bandit app
+==> sweet_xml
+Compiling 2 files (.ex)
+Generated sweet_xml app
+==> ex_aws
+Compiling 28 files (.ex)
+Generated ex_aws app
+==> ex_aws_s3
+Compiling 7 files (.ex)
+Generated ex_aws_s3 app
+==> httpoison
+Compiling 3 files (.ex)
+Generated httpoison app
+==> app
+===> Analyzing applications...
+===> Compiling cowlib
+===> Analyzing applications...
+===> Compiling cowboy
+===> Analyzing applications...
+===> Compiling cowboy_telemetry
+==> plug_cowboy
+Compiling 5 files (.ex)
+Generated plug_cowboy app
+==> swoosh
+Compiling 53 files (.ex)
+Generated swoosh app
+==> websock_adapter
+Compiling 4 files (.ex)
+Generated websock_adapter app
+==> phoenix
+Compiling 71 files (.ex)
+Generated phoenix app
+==> phoenix_live_view
+Compiling 39 files (.ex)
+Generated phoenix_live_view app
+==> phoenix_live_dashboard
+Compiling 36 files (.ex)
+Generated phoenix_live_dashboard app
+==> uuid
+Compiling 1 file (.ex)
+    warning: use Bitwise is deprecated. import Bitwise instead
+    │
+  2 │   use Bitwise, only_operators: true
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/uuid.ex:2: UUID (module)
+
+Generated uuid app
+==> phoenix_ecto
+Compiling 7 files (.ex)
+Generated phoenix_ecto app
+==> app
+Compiling 81 files (.ex)
+Generated app app
+** (RuntimeError) environment variable DATABASE_URL is missing.
+For example: ecto://USER:PASS@HOST/DATABASE
+
+    /home/juru/JuruConnect/config/runtime.exs:26: (file)
+    (stdlib 5.2.1) erl_eval.erl:750: :erl_eval.do_apply/7
+    (stdlib 5.2.1) erl_eval.erl:494: :erl_eval.expr/6
+    (stdlib 5.2.1) erl_eval.erl:136: :erl_eval.exprs/6
+    (elixir 1.18.4) lib/code.ex:572: Code.validated_eval_string/3

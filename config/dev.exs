@@ -3,8 +3,8 @@ import Config
 # Configure your database
 config :app, App.Repo,
   username: "postgres",
-  password: "password",
-  port: 5433,
+  password: "1234",
+  port: 5432,
   hostname: "localhost",
   database: "chat_app_test",
   stacktrace: true,
@@ -30,6 +30,12 @@ config :app, AppWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:app, ~w(--watch)]}
   ]
 
+config :phoenix, :json_library, Jason
+config :app, AppWeb.Endpoint,
+  live_view: [
+    signing_salt: "ePeRom9A"
+  ]
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed
@@ -53,7 +59,7 @@ config :app, AppWeb.Endpoint,
 # configured to run both http and https servers on
 # different ports.
 
-# Watch static and templates for browser reloading.
+
 config :app, AppWeb.Endpoint,
   live_reload: [
     patterns: [
@@ -63,24 +69,25 @@ config :app, AppWeb.Endpoint,
     ]
   ]
 
-# Enable dev routes for dashboard and mailbox
 config :app, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 
-# Set a higher stacktrace during development. Avoid configuring such
-# in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20
-
-# Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
 config :phoenix_live_view,
-  # Include HEEx debug annotations as HTML comments in rendered markup
   debug_heex_annotations: true,
-  # Enable helpful, but potentially expensive runtime checks
   enable_expensive_runtime_checks: true
-
-# Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+config :ex_aws,
+  access_key_id: "minio",
+  secret_access_key: "minio123",
+  region: "us-east-1"
+
+config :ex_aws, :s3,
+  scheme: "http://",
+  host: "localhost",
+  port: 9000,
+  region: "us-east-1"

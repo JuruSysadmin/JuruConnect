@@ -9,7 +9,15 @@ defmodule App.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+
+      # Documentação
+      name: "JuruConnect",
+      description: "Sistema de gestão comercial para Jurunense Home Center",
+      source_url: "https://github.com/jurunense/juruconnect",
+      homepage_url: "https://juruconnect.com.br",
+      docs: docs(),
+      package: package()
     ]
   end
 
@@ -43,16 +51,10 @@ defmodule App.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.1.1",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
       {:sweet_xml, "~> 0.6"},
       {:comeonin, "~> 5.3"},
-      {:pbkdf2_elixir, "~> 1.3"},
+      {:argon2_elixir, "~> 3.0"},
+      {:pbkdf2_elixir, "~> 2.0"},
       {:live_debugger, "~> 0.3", only: [:dev]},
       {:fuse, "~> 2.5.0"},
       {:uuid, "~> 1.1"},
@@ -60,6 +62,7 @@ defmodule App.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:cors_plug, "~> 3.0"},
       {:guardian, "~> 2.3"},
+      {:guardian_db, "~> 2.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.3"},
@@ -69,10 +72,15 @@ defmodule App.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:igniter, "~> 0.5.40", only: :dev, runtime: false},
+      {:oban, "~> 2.15"},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.2"},
+      {:bcrypt_elixir, "~> 3.0"},
+
+      # Documentação
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 
@@ -89,12 +97,107 @@ defmodule App.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind app", "esbuild app"],
-      "assets.deploy": [
-        "tailwind app --minify",
-        "esbuild app --minify",
-        "phx.digest"
-      ]
+      "assets.build": ["tailwind default", "esbuild default"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+    ]
+  end
+
+  # Configuração da documentação
+  defp docs do
+    [
+      # Página principal
+      main: "readme",
+
+      # Arquivos extras para incluir
+      extras: [
+        "README.md",
+        "CHANGELOG.md": [title: "Changelog"],
+        "docs/getting-started.md": [title: "Começando"],
+        "docs/api-guide.md": [title: "Guia da API"],
+        "docs/authentication.md": [title: "Autenticação"],
+        "docs/deployment.md": [title: "Deploy"]
+      ],
+
+      # Grupos de módulos
+      groups_for_modules: [
+        "Core": [
+          App.Application,
+          App.Repo
+        ],
+        "Contexts": [
+          App.Accounts,
+          App.Auth,
+          App.Chat,
+          App.Dashboard,
+          App.Sales
+        ],
+        "Authentication": [
+          App.Auth.Manager,
+          App.Auth.RateLimiter,
+          App.Auth.SecurityLogger,
+          App.Auth.PasswordPolicy,
+          App.Auth.PasswordReset
+        ],
+        "Web Layer": [
+          AppWeb,
+          AppWeb.Endpoint,
+          AppWeb.Router
+        ],
+        "Live Views": [
+          AppWeb.DashboardResumoLive,
+          AppWeb.AuthLive.Login,
+          AppWeb.AdminLive.SecurityDashboard,
+          AppWeb.ObanMonitorLive
+        ],
+        "Components": [
+          AppWeb.CoreComponents,
+          AppWeb.DashboardComponents
+        ],
+        "Controllers": [
+          AppWeb.SessionController,
+          AppWeb.ErrorController
+        ],
+        "Auth Plugs": [
+          AppWeb.Auth.Guardian,
+          AppWeb.Auth.GuardianPlug,
+          AppWeb.Auth.GuardianSessionPlug,
+          AppWeb.Auth.GuardianErrorHandler
+        ],
+        "Background Jobs": [
+          JuruConnect.Workers,
+          JuruConnect.Api
+        ],
+        "Schemas": [
+          App.Accounts.User,
+          App.Chat.Message,
+          App.Schemas
+        ]
+      ],
+
+      # Filtros
+      filter_modules: fn module, _metadata ->
+        # Incluir apenas módulos do projeto
+        module
+        |> Atom.to_string()
+        |> String.starts_with?(["App", "AppWeb", "JuruConnect"])
+      end,
+
+      # Formatação
+      source_ref: "main",
+      formatters: ["html"]
+    ]
+  end
+
+  # Informações do pacote
+  defp package do
+    [
+      description: "Sistema de gestão comercial para Jurunense Home Center",
+      files: ~w(lib priv .formatter.exs mix.exs README* CHANGELOG*),
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/jurunense/juruconnect",
+        "Docs" => "https://docs.juruconnect.com.br"
+      }
     ]
   end
 end

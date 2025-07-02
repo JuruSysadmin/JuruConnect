@@ -1,19 +1,52 @@
 <!DOCTYPE html>
-<html lang="en" class="[scrollbar-gutter:stable]">
+<html lang="pt-BR" class="[scrollbar-gutter:stable]">
   <head>
     {Application.get_env(:live_debugger, :live_debugger_tags)}
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="App" suffix=" · Phoenix Framework">
-      {assigns[:page_title]}
+    <.live_title suffix=" · Phoenix Framework">
+      <%= assigns[:page_title] || "App" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
+    
+
   </head>
-  <body class="bg-white">
-    {@inner_content}
+  <body class="bg-gray-50 antialiased min-h-screen">
+    <!-- Header com informações do usuário (apenas se logado) -->
+    <%= if assigns[:current_user] do %>
+      <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <span class="text-xl font-bold text-blue-600">JuruConnect</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="text-sm text-gray-700">
+                Olá, <span class="font-medium"><%= get_user_display_name(@current_user) %></span>
+                <%= if get_user_role(@current_user) do %>
+                  <span class="text-gray-500">(<%= get_user_role(@current_user) %>)</span>
+                <% end %>
+              </div>
+              <a 
+                href="/logout" 
+                class="text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+              >
+                Sair
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+    <% end %>
+    <main class="w-full h-full min-h-screen">
+      <.flash_group flash={@flash} />
+      <%= @inner_content %>
+    </main>
   </body>
 </html>

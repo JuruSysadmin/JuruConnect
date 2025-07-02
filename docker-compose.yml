@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: postgres
+      POSTGRES_DB: chat_app_test
     ports:
       - "5432:5432"
     volumes:

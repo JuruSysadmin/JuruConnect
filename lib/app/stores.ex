@@ -18,9 +18,6 @@ defmodule App.Stores do
     end
   end
 
-  @doc """
-  Busca uma loja pelo nome (case insensitive). Exemplo: get_store_by!("loja padrao")
-  """
   def get_store_by!(name) when is_binary(name) do
     Repo.get_by!(Store, name: name)
   rescue

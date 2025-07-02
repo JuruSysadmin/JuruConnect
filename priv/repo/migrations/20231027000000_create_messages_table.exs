@@ -3,13 +3,12 @@ defmodule App.Repo.Migrations.CreateMessagesTable do
 
   def change do
     create table(:messages) do
-      add :text, :text, null: false
-      add :sender, :string, null: false
-      add :order_id, :integer, null: false
-      add :image_url, :string
-      timestamps(type: :utc_datetime_usec)
+      add :text, :string
+      add :sender, :string
+      add :chat_id, :string, null: false
+      timestamps()
     end
 
-    create index(:messages, [:order_id])
+    create index(:messages, [:chat_id])
   end
 end
