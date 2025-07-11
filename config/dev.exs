@@ -4,7 +4,7 @@ import Config
 config :app, App.Repo,
   username: "postgres",
   password: "1234",
-  port: 5432,
+  port: 5436,
   hostname: "localhost",
   database: "chat_app_test",
   stacktrace: true,

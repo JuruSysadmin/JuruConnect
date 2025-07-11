@@ -12,6 +12,5 @@ defmodule App.Repo.Migrations.AddMessageStatusFields do
 
     # Índices para performance de consultas de status
     create index(:messages, [:status])
-    create index(:messages, [:order_id, :status])
   end
 end

@@ -89,12 +89,13 @@ config :phoenix, :json_library, Jason
 config :app, Oban,
   repo: App.Repo,
   plugins: [
-    Oban.Plugins.Pruner
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron, crontab: [
+      # Executa o worker todo dia às 23:59
+      {"59 23 * * *", App.Workers.DailySalesHistoryWorker}
+    ]}
   ],
-  queues: [
-    default: 10,
-    api_sync: 5
-  ]
+  queues: [default: 10]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

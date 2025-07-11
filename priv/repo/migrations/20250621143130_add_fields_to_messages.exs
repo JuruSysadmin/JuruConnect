@@ -30,6 +30,8 @@ defmodule App.Repo.Migrations.AddFieldsToMessages do
     end
 
     create index(:messages, [:order_id])
+    create index(:messages, [:order_id, :status])
+    create index(:messages, [:order_id, :has_mentions])
     execute "DROP INDEX IF EXISTS messages_chat_id_index"
   end
 

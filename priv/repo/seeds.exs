@@ -75,7 +75,6 @@ Enum.each(test_users, fn user_data ->
       case Accounts.create_user(%{
         username: user_data.username,
         name: user_data.name,
-        email: user_data.email,
         password: user_data.password,
         role: user_data.role,
         store_id: default_store.id,
@@ -85,7 +84,6 @@ Enum.each(test_users, fn user_data ->
         {:ok, user} ->
           Logger.info(" Usuário #{user.username} criado com sucesso!")
           Logger.info("   - Nome: #{user.name}")
-          Logger.info("   - E-mail: #{user.email}")
           Logger.info("   - Role: #{user.role}")
           Logger.info("   - Loja: #{default_store.name}")
 

@@ -61,8 +61,6 @@ defmodule App.MixProject do
       {:swoosh, "~> 1.5"},
       {:plug_cowboy, "~> 2.5"},
       {:cors_plug, "~> 3.0"},
-      {:guardian, "~> 2.3"},
-      {:guardian_db, "~> 2.1"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_aws, "~> 2.4"},
       {:ex_aws_s3, "~> 2.3"},
@@ -72,12 +70,14 @@ defmodule App.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:igniter, "~> 0.5.40", only: :dev, runtime: false},
-      {:oban, "~> 2.15"},
+      {:oban, "~> 2.17"},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:bcrypt_elixir, "~> 3.0"},
+      {:timex, "~> 3.7"},
+      {:tzdata, "~> 1.1"},
 
       # Documentação
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}

@@ -54,7 +54,7 @@ Hooks.GaugeChart = {
       this.updateChart(data.value);
     });
   },
-  
+
   /**
    * Cria o gráfico de gauge inicial
    * @memberof Hooks.GaugeChart
@@ -62,7 +62,7 @@ Hooks.GaugeChart = {
   initChart() {
     const ctx = this.el.getContext('2d');
     const value = parseFloat(this.el.dataset.value) || 0;
-    
+
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -95,7 +95,7 @@ Hooks.GaugeChart = {
       }
     });
   },
-  
+
   /**
    * Atualiza o valor do gauge com animação
    * @memberof Hooks.GaugeChart
@@ -108,7 +108,7 @@ Hooks.GaugeChart = {
       this.chart.update('active');
     }
   },
-  
+
   /**
    * Retorna a cor baseada no valor do gauge
    * @memberof Hooks.GaugeChart
@@ -118,11 +118,11 @@ Hooks.GaugeChart = {
   getColor(value) {
     if (value >= 100) return '#059669'; // Green-600
     if (value >= 80) return '#10B981';  // Green-500
-    if (value >= 60) return '#F59E0B';  // Yellow-500
-    if (value >= 40) return '#F97316';  // Orange-500
+    if (value >= 60) return '#60A5FA';  // Blue-400
+    if (value >= 40) return '#3B82F6';  // Blue-500
     return '#EF4444'; // Red-500
   },
-  
+
   /**
    * Callback executado quando o elemento é atualizado
    * @memberof Hooks.GaugeChart
@@ -148,7 +148,7 @@ Hooks.GaugeChartMonthly = {
       this.updateChart(data.value);
     });
   },
-  
+
   /**
    * Cria o gráfico de gauge mensal com configurações específicas
    * @memberof Hooks.GaugeChartMonthly
@@ -156,7 +156,7 @@ Hooks.GaugeChartMonthly = {
   initChart() {
     const ctx = this.el.getContext('2d');
     const value = parseFloat(this.el.dataset.value) || 0;
-    
+
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -190,7 +190,7 @@ Hooks.GaugeChartMonthly = {
       }
     });
   },
-  
+
   /**
    * Atualiza o gauge mensal com animação inteligente
    * @memberof Hooks.GaugeChartMonthly
@@ -201,7 +201,7 @@ Hooks.GaugeChartMonthly = {
       // Preserva o valor atual para animação suave
       const currentValue = this.chart.data.datasets[0].data[0];
       const targetValue = Math.min(value, 100);
-      
+
       // Se for uma diferença pequena, anima suavemente
       if (Math.abs(targetValue - currentValue) < 10) {
         this.animateToValue(currentValue, targetValue);
@@ -213,7 +213,7 @@ Hooks.GaugeChartMonthly = {
       }
     }
   },
-  
+
   /**
    * Anima suavemente entre dois valores
    * @memberof Hooks.GaugeChartMonthly
@@ -223,27 +223,27 @@ Hooks.GaugeChartMonthly = {
   animateToValue(startValue, endValue) {
     const duration = 1000;
     const startTime = performance.now();
-    
+
     const animate = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Easing function para suavidade
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       const currentValue = startValue + (endValue - startValue) * easeProgress;
-      
+
       this.chart.data.datasets[0].data = [currentValue, 100 - currentValue];
       this.chart.data.datasets[0].backgroundColor[0] = this.getColor(currentValue);
       this.chart.update('none'); // Update sem animação para controle manual
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
-    
+
     requestAnimationFrame(animate);
   },
-  
+
   /**
    * Retorna a cor baseada no valor do gauge
    * @memberof Hooks.GaugeChartMonthly
@@ -253,11 +253,11 @@ Hooks.GaugeChartMonthly = {
   getColor(value) {
     if (value >= 100) return '#059669'; // Green-600
     if (value >= 80) return '#10B981';  // Green-500
-    if (value >= 60) return '#F59E0B';  // Yellow-500
-    if (value >= 40) return '#F97316';  // Orange-500
+    if (value >= 60) return '#60A5FA';  // Blue-400
+    if (value >= 40) return '#1E3A8A';  // Blue-900 (mais escuro)
     return '#EF4444'; // Red-500
   },
-  
+
   /**
    * Callback executado quando o elemento é atualizado
    * @memberof Hooks.GaugeChartMonthly
@@ -282,7 +282,7 @@ Hooks.GoalCelebration = {
     this.handleEvent("goal-achieved-multiple", (data) => this.celebrateMultiple(data))
     this.handleEvent("goal-achieved-real", (data) => this.celebrateReal(data))
   },
-  
+
   /**
    * Executa a celebração completa com som, toast e confetti
    * @memberof Hooks.GoalCelebration
@@ -295,7 +295,7 @@ Hooks.GoalCelebration = {
     this.showToast(data.store_name, data.achieved)
     this.createConfetti()
   },
-  
+
   /**
    * Reproduz um som de sucesso usando Web Audio API
    * @memberof Hooks.GoalCelebration
@@ -305,23 +305,23 @@ Hooks.GoalCelebration = {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)()
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
-      
+
       oscillator.connect(gainNode)
       gainNode.connect(audioContext.destination)
-      
+
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
       oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1)
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
-      
+
       oscillator.start(audioContext.currentTime)
       oscillator.stop(audioContext.currentTime + 0.5)
     } catch (e) {
       console.log("Audio not available")
     }
   },
-  
+
   /**
    * Exibe uma notificação toast no canto da tela
    * @memberof Hooks.GoalCelebration
@@ -341,17 +341,17 @@ Hooks.GoalCelebration = {
         </div>
       </div>
     `
-    
+
     document.body.appendChild(toast)
-    
+
     setTimeout(() => toast.classList.remove('translate-x-full'), 100)
-    
+
     setTimeout(() => {
       toast.classList.add('translate-x-full')
       setTimeout(() => document.body.removeChild(toast), 300)
     }, 4000)
   },
-  
+
   /**
    * Cria efeito de confetti com múltiplas partículas
    * @memberof Hooks.GoalCelebration
@@ -361,7 +361,7 @@ Hooks.GoalCelebration = {
       setTimeout(() => this.createConfettiPiece(), i * 50)
     }
   },
-  
+
   /**
    * Cria uma única partícula de confetti animada
    * @memberof Hooks.GoalCelebration
@@ -369,7 +369,7 @@ Hooks.GoalCelebration = {
   createConfettiPiece() {
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
     const confetti = document.createElement('div')
-    
+
     confetti.style.position = 'fixed'
     confetti.style.top = '-10px'
     confetti.style.left = Math.random() * window.innerWidth + 'px'
@@ -380,9 +380,9 @@ Hooks.GoalCelebration = {
     confetti.style.pointerEvents = 'none'
     confetti.style.zIndex = '9999'
     confetti.style.animation = 'confettifall 3s linear forwards'
-    
+
     document.body.appendChild(confetti)
-    
+
     setTimeout(() => {
       if (confetti.parentNode) confetti.parentNode.removeChild(confetti)
     }, 3000)
@@ -444,11 +444,11 @@ window.addEventListener("phx:mark-messages-as-read", (e) => {
 // Event listener para notificações de som
 window.addEventListener("phx:play_read_sound", (e) => {
   const { sound_type, count } = e.detail;
-  
+
   // Só reproduzir som se o usuário permitiu notificações
   if (localStorage.getItem('sound_enabled') !== 'false') {
     let audioFile = '/audio/message_read.mp3';
-    
+
     switch(sound_type) {
       case 'bulk_read':
         audioFile = '/audio/bulk_read.mp3';
@@ -459,12 +459,12 @@ window.addEventListener("phx:play_read_sound", (e) => {
       default:
         audioFile = '/audio/message_read.mp3';
     }
-    
+
     try {
       const audio = new Audio(audioFile);
       audio.volume = 0.3; // Volume baixo para não incomodar
       audio.play().catch(console.warn); // Falha silenciosa se não conseguir reproduzir
-      
+
       // Log para debug (remover em produção)
       console.log(`Som reproduzido: ${sound_type}${count ? ` (${count} mensagens)` : ''}`);
     } catch (error) {
@@ -476,18 +476,18 @@ window.addEventListener("phx:play_read_sound", (e) => {
 // Event listener para bulk read success
 window.addEventListener("phx:bulk-read-success", (e) => {
   const { count } = e.detail;
-  
+
   // Mostrar feedback visual
   const notification = document.createElement('div');
   notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
   notification.textContent = `${count} mensagens marcadas como lidas`;
   document.body.appendChild(notification);
-  
+
   // Remover após 3 segundos
   setTimeout(() => {
     notification.remove();
   }, 3000);
-  
+
   // Scroll para o fim da conversa
   const messagesContainer = document.getElementById('messages');
   if (messagesContainer) {
@@ -520,13 +520,13 @@ const AudioRecorderHook = {
   checkAudioSupport() {
     const isSupported = this.isMediaRecordingSupported()
     const isSecure = this.isSecureContext()
-    
+
     this.updateAudioButtonState(isSupported && isSecure)
-    
+
     if (!isSupported) {
       console.warn("Audio recording not supported in this browser")
     }
-    
+
     if (!isSecure) {
       console.warn("Audio recording requires secure context (HTTPS)")
     }
@@ -535,7 +535,7 @@ const AudioRecorderHook = {
   updateAudioButtonState(isEnabled) {
     const recordButton = document.getElementById('audio-record-button')
     const recordIcon = document.getElementById('audio-record-icon')
-    
+
     if (recordButton && recordIcon) {
       if (isEnabled) {
         recordButton.disabled = false
@@ -563,12 +563,12 @@ const AudioRecorderHook = {
         throw new Error("Gravação de áudio requer conexão segura (HTTPS)")
       }
 
-      this.audioStream = await navigator.mediaDevices.getUserMedia({ 
+      this.audioStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
-        } 
+        }
       })
 
       this.mediaRecorder = new MediaRecorder(this.audioStream, {
@@ -580,7 +580,7 @@ const AudioRecorderHook = {
 
       this.mediaRecorder.start(1000)
       this.isRecording = true
-      
+
       this.pushEvent("audio_recording_started", {})
       this.updateRecordingUI(true)
 
@@ -612,10 +612,10 @@ const AudioRecorderHook = {
   },
 
   async processRecordedAudio() {
-    const audioBlob = new Blob(this.audioChunks, { 
-      type: this.getSupportedMimeType() 
+    const audioBlob = new Blob(this.audioChunks, {
+      type: this.getSupportedMimeType()
     })
-    
+
     const audioDuration = await this.calculateAudioDuration(audioBlob)
     const audioBase64 = await this.convertBlobToBase64(audioBlob)
 
@@ -633,7 +633,7 @@ const AudioRecorderHook = {
       'audio/mp4',
       'audio/wav'
     ]
-    
+
     return types.find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm'
   },
 
@@ -665,7 +665,7 @@ const AudioRecorderHook = {
   updateRecordingUI(isRecording) {
     const recordButton = document.getElementById('audio-record-button')
     const recordIcon = document.getElementById('audio-record-icon')
-    
+
     if (recordButton && recordIcon) {
       if (isRecording) {
         recordButton.classList.add('bg-red-500', 'animate-pulse')
@@ -681,15 +681,15 @@ const AudioRecorderHook = {
 
   // Verificações de compatibilidade e segurança
   isMediaRecordingSupported() {
-    return !!(navigator.mediaDevices && 
-              navigator.mediaDevices.getUserMedia && 
+    return !!(navigator.mediaDevices &&
+              navigator.mediaDevices.getUserMedia &&
               window.MediaRecorder &&
               MediaRecorder.isTypeSupported)
   },
 
   isSecureContext() {
-    return window.isSecureContext || 
-           location.protocol === 'https:' || 
+    return window.isSecureContext ||
+           location.protocol === 'https:' ||
            location.hostname === 'localhost' ||
            location.hostname === '127.0.0.1'
   },
@@ -757,7 +757,7 @@ const ChatHook = {
 
     // Criar URL temporária da imagem
     const imageUrl = URL.createObjectURL(file)
-    
+
     // Procurar por elemento de preview existente ou criar um novo
     let previewContainer = this.el.querySelector('.js-manual-image-preview')
     if (!previewContainer) {
@@ -781,13 +781,13 @@ const ChatHook = {
     container.innerHTML = `
       <img class="js-preview-image w-16 h-16 object-cover rounded-lg border-2 border-blue-200 shadow-sm" style="display: none" alt="Preview da imagem">
     `
-    
+
     // Tentar inserir antes do live_img_preview existente
     const existingPreview = this.el.querySelector('.live_img_preview, [data-phx-entry-ref]')
     if (existingPreview && existingPreview.parentNode) {
       existingPreview.parentNode.insertBefore(container, existingPreview)
     }
-    
+
     return container
   },
 
@@ -832,35 +832,35 @@ const GoalCelebrationHook = {
     this.handleEvent("goal-achieved-multiple", (data) => this.celebrateMultiple(data))
     this.handleEvent("goal-achieved-real", (data) => this.celebrateReal(data))
   },
-  
+
   celebrate(data) {
     this.playSound()
     this.showToast(data.store_name, data.achieved)
     this.createConfetti()
   },
-  
+
   playSound() {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)()
       const oscillator = audioContext.createOscillator()
       const gainNode = audioContext.createGain()
-      
+
       oscillator.connect(gainNode)
       gainNode.connect(audioContext.destination)
-      
+
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
       oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1)
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
-      
+
       oscillator.start(audioContext.currentTime)
       oscillator.stop(audioContext.currentTime + 0.5)
     } catch (e) {
       console.log("Audio not available")
     }
   },
-  
+
   showToast(storeName, achieved) {
     const toast = document.createElement('div')
     toast.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300'
@@ -874,7 +874,7 @@ const GoalCelebrationHook = {
         </div>
       </div>
     `
-    
+
     document.body.appendChild(toast)
     setTimeout(() => toast.classList.remove('translate-x-full'), 100)
     setTimeout(() => {
@@ -882,17 +882,17 @@ const GoalCelebrationHook = {
       setTimeout(() => document.body.removeChild(toast), 300)
     }, 4000)
   },
-  
+
   createConfetti() {
     for (let i = 0; i < 50; i++) {
       setTimeout(() => this.createConfettiPiece(), i * 50)
     }
   },
-  
+
   createConfettiPiece() {
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
     const confetti = document.createElement('div')
-    
+
     confetti.style.position = 'fixed'
     confetti.style.top = '-10px'
     confetti.style.left = Math.random() * window.innerWidth + 'px'
@@ -903,7 +903,7 @@ const GoalCelebrationHook = {
     confetti.style.pointerEvents = 'none'
     confetti.style.zIndex = '9999'
     confetti.style.animation = 'confettifall 3s linear forwards'
-    
+
     document.body.appendChild(confetti)
     setTimeout(() => {
       if (confetti.parentNode) confetti.parentNode.removeChild(confetti)
@@ -922,14 +922,14 @@ const GoalCelebrationHook = {
 const AutoDismissFlashHook = {
   mounted() {
     const kind = this.el.dataset.kind
-    
+
     if (kind === 'info') {
       this.timeout = setTimeout(() => {
         this.el.click()
       }, 4000)
     }
   },
-  
+
   destroyed() {
     if (this.timeout) {
       clearTimeout(this.timeout)
@@ -941,7 +941,7 @@ const ChartHook = {
   mounted() {
     const ctx = this.el.getContext('2d')
     const data = JSON.parse(this.el.dataset.chartData)
-    
+
     new Chart(ctx, {
       type: 'doughnut',
       data: data,
@@ -965,11 +965,11 @@ const GaugeChartHook = {
       this.updateChart(data.value)
     })
   },
-  
+
   initChart() {
     const ctx = this.el.getContext('2d')
     const value = parseFloat(this.el.dataset.value) || 0
-    
+
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -1002,7 +1002,7 @@ const GaugeChartHook = {
       }
     })
   },
-  
+
   updateChart(value) {
     if (this.chart) {
       this.chart.data.datasets[0].data = [value, 100 - value]
@@ -1010,15 +1010,15 @@ const GaugeChartHook = {
       this.chart.update('active')
     }
   },
-  
+
   getColor(value) {
     if (value >= 100) return '#059669'
     if (value >= 80) return '#10B981'
-    if (value >= 60) return '#F59E0B'
-    if (value >= 40) return '#F97316'
+    if (value >= 60) return '#60A5FA'
+    if (value >= 40) return '#3B82F6'
     return '#EF4444'
   },
-  
+
   updated() {
     const value = parseFloat(this.el.dataset.value) || 0
     this.updateChart(value)
@@ -1063,16 +1063,16 @@ window.addEventListener("phx:mark-messages-as-read", (e) => {
 
 window.addEventListener("phx:bulk-read-success", (e) => {
   const { count } = e.detail
-  
+
   const notification = document.createElement('div')
   notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse'
   notification.textContent = `${count} mensagens marcadas como lidas`
   document.body.appendChild(notification)
-  
+
   setTimeout(() => {
     notification.remove()
   }, 3000)
-  
+
   const messagesContainer = document.getElementById('messages')
   if (messagesContainer) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight

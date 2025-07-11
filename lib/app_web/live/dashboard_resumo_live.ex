@@ -7,6 +7,7 @@ defmodule AppWeb.DashboardResumoLive do
   import AppWeb.DashboardComponents
   import AppWeb.DashboardUtils
   alias App.DashboardDataServer
+  import Timex
 
   @impl true
   def mount(_params, _session, socket) do
@@ -40,7 +41,7 @@ defmodule AppWeb.DashboardResumoLive do
       assign_success_data(socket, data_with_atom_keys)
       |> assign(
         api_status: :ok,
-        last_update: DateTime.utc_now(),
+        last_update: DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo"),
         loading: false,
         api_error: nil
       )
@@ -169,41 +170,6 @@ defmodule AppWeb.DashboardResumoLive do
 
 
 
-  @impl true
-  def handle_event("test_goal_achieved", _params, socket) do
-    celebration_id = System.unique_integer([:positive])
-
-    lojas_teste = [
-      "Loja Centro - TESTE",
-      "Loja Norte - TESTE",
-      "Loja Sul - TESTE",
-      "Loja Shopping - TESTE",
-      "Loja Matriz - TESTE"
-    ]
-
-    loja_random = Enum.random(lojas_teste)
-    valor_base = Enum.random(30_000..80_000)
-    meta_base = valor_base - Enum.random(5_000..15_000)
-    percentual = (valor_base / meta_base * 100) |> Float.round(1)
-
-    goal_data = %{
-      store_name: loja_random,
-      achieved: valor_base * 1.0,
-      target: meta_base * 1.0,
-      percentage: percentual,
-      timestamp: DateTime.utc_now(),
-      celebration_id: celebration_id
-    }
-
-    Phoenix.PubSub.broadcast(App.PubSub, "dashboard:goals", {:daily_goal_achieved, goal_data})
-
-    {:noreply, socket}
-  end
-
-
-
-
-
   defp assign_loading_state(socket) do
     assign(socket,
       loading: true,
@@ -223,7 +189,7 @@ defmodule AppWeb.DashboardResumoLive do
           assign_success_data(socket, data_with_atom_keys)
           |> assign(
             api_status: :ok,
-            last_update: DateTime.utc_now(),
+            last_update: DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo"),
             loading: false,
             api_error: nil
           )
@@ -247,7 +213,7 @@ defmodule AppWeb.DashboardResumoLive do
         |> assign(
           api_status: :error,
           loading: false,
-          last_update: DateTime.utc_now()
+          last_update: DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo")
         )
 
       {:timeout, reason} ->
@@ -257,7 +223,7 @@ defmodule AppWeb.DashboardResumoLive do
         |> assign(
           api_status: :timeout,
           loading: false,
-          last_update: DateTime.utc_now()
+          last_update: DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo")
         )
 
       _unexpected ->
@@ -267,7 +233,7 @@ defmodule AppWeb.DashboardResumoLive do
         |> assign(
           api_status: :error,
           loading: false,
-          last_update: DateTime.utc_now()
+          last_update: DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo")
         )
     end
   end
@@ -291,6 +257,11 @@ defmodule AppWeb.DashboardResumoLive do
     sale_mensal_num = Map.get(data, :sale_mensal, 0.0)
     objetivo_mensal_num = Map.get(data, :objetivo_mensal, 0.0)
     devolution_mensal_num = Map.get(data, :devolution_mensal, 0.0)
+
+    # Horário de Brasília
+    last_update_brasilia =
+      DateTime.utc_now()
+      |> Timex.Timezone.convert("America/Sao_Paulo")
 
     assigns = [
       # Dados DIÁRIOS
@@ -316,7 +287,7 @@ defmodule AppWeb.DashboardResumoLive do
       sale_mensal_num: sale_mensal_num,
       objetivo_mensal_num: objetivo_mensal_num,
       lojas_data: get_companies_data(data),
-      last_update: DateTime.utc_now(),
+      last_update: last_update_brasilia,
       api_status: :ok,
       loading: false,
       api_error: nil
@@ -705,18 +676,6 @@ defmodule AppWeb.DashboardResumoLive do
           <% end %>
 
     <!-- Botões de Teste -->
-          <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            <button
-              phx-click="test_goal_achieved"
-              class="relative px-2 sm:px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-xs font-medium animate-pulse hover:animate-none border border-green-400 hover:border-green-300 w-full sm:w-auto"
-              title="Clique para testar a animação de meta atingida"
-            >
-              <span class="flex items-center justify-center space-x-1">
-                <span class="text-sm mobile-hide"></span>
-                <span class="text-center">Testar Celebração</span>
-              </span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -744,71 +703,88 @@ defmodule AppWeb.DashboardResumoLive do
             >
             </.card>
           </div>
+          <!-- Card do gráfico de vendas diárias -->
+          <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-5 md:p-6 mt-4 flex flex-col items-center justify-center">
+            <h2 class="text-base sm:text-lg font-bold text-blue-700 mb-2 flex items-center gap-2">
+              <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 text-blue-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 3v18h18'/></svg>
+              Histórico de Vendas Diárias
+            </h2>
+            <div class="w-full flex justify-center items-center min-h-[180px]">
+              <!-- Placeholder para o gráfico -->
+              <div class="w-full h-40 flex items-center justify-center text-gray-400">
+                [Gráfico de vendas diárias em breve]
+              </div>
+            </div>
+          </div>
 
     <!-- Seção de Metas em Tempo Real -->
           <div class="grid grid-cols-1 gap-4 sm:gap-5">
             <!-- Card - Realizado: até ontem -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sm:p-5 md:p-6 transition-all duration-300 hover:shadow-xl">
               <div class="text-center mb-4 sm:mb-5">
-                <h2 class="text-base sm:text-lg font-medium text-gray-900 mb-1">Realizado: Mensal</h2>
+                <h2 class="text-base sm:text-lg font-bold text-blue-700 mb-1 flex items-center justify-center gap-2">
+                  <svg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5 text-blue-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 16h-1v-4h-1m4 0h-1v-4h-1m4 0h-1v-4h-1' /></svg>
+Realizado até ontem
+                </h2>
               </div>
 
-              <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-5 sm:gap-6">
+              <div class="flex flex-col items-center justify-center gap-6">
                 <!-- Gráfico Circular -->
-                <div class="flex justify-center">
+                <div class="flex justify-center w-full">
                   <%= if @loading do %>
-                    <div class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
-                      <div class="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500">
-                      </div>
+                    <div class="w-32 h-32 flex items-center justify-center">
+                      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                     </div>
                   <% else %>
-                    <div class="relative">
+                    <div class="relative w-32 h-32 sm:w-40 sm:h-40">
                       <canvas
                         id="gauge-chart-2"
                         phx-hook="GaugeChartMonthly"
                         phx-update="ignore"
                         data-value={min(@percentual_sale, 100)}
-                        class="w-24 h-24 sm:w-32 sm:h-32"
+                        class="w-32 h-32 sm:w-40 sm:h-40"
                       >
                       </canvas>
                       <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-lg sm:text-xl font-medium text-gray-800">
+                        <span class="text-2xl sm:text-3xl font-bold text-blue-700 drop-shadow">
                           {format_percent(@percentual_sale)}
                         </span>
+                        <span class="text-xs text-gray-500 mt-1">do objetivo mensal</span>
                       </div>
                     </div>
                   <% end %>
                 </div>
 
-    <!-- Dados Absolutos MENSAIS -->
-                <div class="flex flex-col space-y-3 text-center sm:text-left">
-                  <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
-                    <div class="text-xs text-gray-600 mb-1">Meta Mensal</div>
-                    <div class="font-mono text-sm sm:text-base font-medium text-gray-900">
-                      {@objetivo_mensal}
+                <!-- Cards horizontais -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full justify-center items-center mt-2">
+                  <div class="flex-1 min-w-[120px] bg-gray-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-gray-100">
+                    <div class="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                      <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-gray-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
+                      Meta Mensal
                     </div>
+                    <div class="font-mono text-base font-semibold text-gray-900">{@objetivo_mensal}</div>
                   </div>
-
-                  <div class="bg-blue-50 rounded-lg p-3 sm:p-4">
-                    <div class="text-xs text-gray-600 mb-1">Vendas Mensais</div>
-                    <div class="font-mono text-sm sm:text-base font-medium text-blue-700">
-                      {@sale_mensal}
+                  <div class="flex-1 min-w-[120px] bg-blue-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-blue-100">
+                    <div class="flex items-center gap-1 text-xs text-blue-700 mb-1">
+                      <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 17l6-6 4 4 8-8' /></svg>
+                      Vendas Mensais
                     </div>
+                    <div class="font-mono text-base font-semibold text-blue-700">{@sale_mensal}</div>
                   </div>
-
-                  <div class="bg-red-50 rounded-lg p-3 sm:p-4">
-                    <div class="text-xs text-gray-600 mb-1">Devoluções Mensais</div>
-                    <div class="font-mono text-sm sm:text-base font-medium text-red-700">
-                      {@devolution_mensal}
+                  <div class="flex-1 min-w-[120px] bg-red-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-red-100">
+                    <div class="flex items-center gap-1 text-xs text-red-700 mb-1">
+                      <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12' /></svg>
+                      Devoluções Mensais
                     </div>
+                    <div class="font-mono text-base font-semibold text-red-700">{@devolution_mensal}</div>
                   </div>
-
                   <%= if @sale_mensal_num > 0 and @objetivo_mensal_num > 0 do %>
-                    <div class="bg-green-50 rounded-lg p-3 sm:p-4">
-                      <div class="text-xs text-gray-600 mb-1">Falta Atingir (Mensal)</div>
-                      <div class="font-mono text-sm sm:text-base font-medium text-green-700">
-                        {format_money(@objetivo_mensal_num - @sale_mensal_num)}
+                    <div class="flex-1 min-w-[120px] bg-green-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-green-100">
+                      <div class="flex items-center gap-1 text-xs text-green-700 mb-1">
+                        <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
+                        Falta Atingir
                       </div>
+                      <div class="font-mono text-base font-semibold text-green-700">{format_money(@objetivo_mensal_num - @sale_mensal_num)}</div>
                     </div>
                   <% end %>
                 </div>

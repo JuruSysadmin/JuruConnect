@@ -28,6 +28,10 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
+  database_port = System.get_env("DATABASE_PORT") || "5432"
+  # Adiciona a porta na URL se não estiver presente
+  database_url = Regex.replace(~r/^(ecto:\/\/[^:]+:[^@]+@[^:]+)(:\d+)?(\/.*)$/, database_url, "\\1:" <> database_port <> "\\3")
+
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :app, App.Repo,

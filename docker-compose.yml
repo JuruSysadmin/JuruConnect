@@ -1,43 +1,18 @@
 version: '3.8'
 services:
-  db:
+
+  db_5436:
     image: postgres:14-alpine
-    container_name: phoenix_chat_app_db
+    container_name: phoenix_chat_app_db_5436
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: chat_app_test
     ports:
-      - "5432:5432"
+      - "5436:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  db_test:
-    image: postgres:14-alpine
-    container_name: chat_app_db_test
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: chat_app_test
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-
-  minio:
-    image: minio/minio
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
+      - postgres_5436_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
-  postgres_test_data:
-  minio_data: 
+  postgres_5436_data:

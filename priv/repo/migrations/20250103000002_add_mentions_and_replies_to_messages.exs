@@ -30,7 +30,7 @@ defmodule App.Repo.Migrations.AddMentionsAndRepliesToMessages do
     create index(:messages, [:mentions], using: :gin)
 
     # Índice composto para buscar menções de um usuário específico
-    create index(:messages, [:order_id, :has_mentions])
+    # create index(:messages, [:order_id, :has_mentions])
 
     # Índice para buscar threads (mensagem + respostas)
     create index(:messages, [:reply_to, :inserted_at])
@@ -62,7 +62,7 @@ defmodule App.Repo.Migrations.AddMentionsAndRepliesToMessages do
   def down do
     # Remover índices
     drop index(:messages, [:reply_to, :inserted_at])
-    drop index(:messages, [:order_id, :has_mentions])
+    # drop index(:messages, [:order_id, :has_mentions])
     drop index(:messages, [:mentions])
     drop index(:messages, [:reply_to])
     drop index(:messages, [:has_mentions])
