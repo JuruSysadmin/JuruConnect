@@ -44,7 +44,8 @@ defmodule AppWeb.Router do
 
     # Dashboards principais
     live "/hello", DashboardLive
-    live "/dashboard", DashboardResumoLive
+    live "/dashboard", DashboardLive, :dashboard
+    live "/consulta-pedido", DashboardLive, :consulta_pedido
 
     # Funcionalidades do sistema (mantém protegidas se necessário)
     live "/chat/:order_id", ChatLive
