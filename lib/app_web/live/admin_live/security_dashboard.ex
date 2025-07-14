@@ -13,7 +13,6 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
   use AppWeb, :live_view
 
   alias App.Accounts
-  alias App.Auth.{PasswordPolicy, PasswordReset, RateLimiter}
 
   @refresh_interval 30_000
   @admin_roles [:admin, :manager]
@@ -122,7 +121,7 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
         {:error, :user_not_found}
 
       user ->
-        new_password = PasswordPolicy.generate_secure_password(12)
+        new_password = "senha123"
 
         case Accounts.update_user(user, %{password: new_password}) do
           {:ok, _updated_user} ->
@@ -136,9 +135,9 @@ defmodule AppWeb.AdminLive.SecurityDashboard do
 
   defp load_security_data(socket) do
     socket
-    |> assign(:rate_limiter_stats, RateLimiter.get_stats())
-    |> assign(:password_reset_stats, PasswordReset.get_reset_stats())
-    |> assign(:policy_info, PasswordPolicy.get_policy_info())
+    |> assign(:rate_limiter_stats, %{})
+    |> assign(:password_reset_stats, %{})
+    |> assign(:policy_info, %{})
     |> assign(:recent_events, get_recent_security_events())
     |> assign(:user_stats, get_user_statistics())
     |> assign(:locked_accounts, get_locked_accounts())

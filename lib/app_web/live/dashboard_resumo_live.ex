@@ -5,22 +5,20 @@ defmodule AppWeb.DashboardResumoLive do
 
   use AppWeb, :live_view
 
-  import AppWeb.DashboardComponents
   import AppWeb.DashboardUtils
   import AppWeb.DashboardNotificationPanel
   import AppWeb.DashboardDailyMetrics
   import AppWeb.DashboardStoresTable
   import AppWeb.DashboardConfetti
+  import AppWeb.SupervisorModal
 
   alias App.DashboardDataServer
-  alias AppWeb.DashboardCelebrationUtils
-
-  import Timex
 
   @impl true
   @spec mount(map, map, Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
     if connected?(socket) do
+      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:goals")
     end
@@ -37,7 +35,9 @@ defmodule AppWeb.DashboardResumoLive do
     |> assign(%{
       notifications: [],
       show_celebration: false,
-      sales_per_hour: sales_per_hour
+      sales_per_hour: sales_per_hour,
+      show_drawer: false,
+      supervisor_data: []
     })
     |> fetch_and_assign_data_safe()
     |> then(&assign_template_values(&1))
@@ -118,21 +118,21 @@ defmodule AppWeb.DashboardResumoLive do
 
     notification = %{
       id: celebration_id,
-      store_name: DashboardCelebrationUtils.store_name(data),
-      achieved: DashboardCelebrationUtils.achieved(data),
-      target: DashboardCelebrationUtils.target(data),
+      store_name: data.store_name,
+      achieved: data.achieved,
+      target: data.target,
       percentage: data.percentage,
       timestamp: data.timestamp,
       celebration_id: celebration_id,
       type: data.type,
       level: data.level,
-      message: DashboardCelebrationUtils.message(data)
+      message: data.message
     }
 
     formatted_achieved = format_money(notification.achieved)
     unix_timestamp = DateTime.to_unix(data.timestamp, :millisecond)
     sound = Map.get(data.data, :sound, "goal_achieved.mp3")
-    duration = DashboardCelebrationUtils.duration(data.level)
+    duration = 8000
 
     socket
     |> assign(%{
@@ -167,6 +167,48 @@ defmodule AppWeb.DashboardResumoLive do
     show = updated != []
 
     {:noreply, assign(socket, notifications: updated, show_celebration: show)}
+  end
+
+  # Atualiza supervisor_data em tempo real ao receber evento PubSub
+  @impl true
+  def handle_info({:supervisor_updated, supervisor_data}, socket) do
+    {:noreply, assign(socket, supervisor_data: supervisor_data)}
+  end
+
+  @impl true
+  def handle_info({:devolucao_aumentou, %{devolution: val, diff: diff, sellerName: seller}}, socket) do
+    msg = "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{format_money(val)} (aumento de R$ #{format_money(diff)})"
+    {:noreply, put_flash(socket, :error, msg)}
+  end
+
+  @impl true
+  def handle_info({:devolucao_aumentou, %{anterior: anterior, atual: atual}}, socket) do
+    msg = "Atenção: Houve uma nova devolução registrada. Valor total de devoluções do dia: #{format_money(atual)} (anterior: #{format_money(anterior)})"
+    {:noreply, put_flash(socket, :error, msg)}
+  end
+
+  @doc """
+  Evento para exibir o modal de supervisor. Realiza subscribe no tópico PubSub do supervisor, busca os dados atuais via API e atribui ao socket. Permite atualização em tempo real via PubSub.
+  """
+  def handle_event("show_supervisor_drawer", %{"supervisor-id" => id}, socket) do
+    topic = "supervisor:#{id}"
+    Phoenix.PubSub.subscribe(App.PubSub, topic)
+    case App.ApiClient.fetch_supervisor_data(id) do
+      {:ok, sale_supervisors} ->
+        {:noreply, assign(socket, show_drawer: true, supervisor_data: sale_supervisors, supervisor_topic: topic, supervisor_id: id)}
+      {:error, _reason} ->
+        {:noreply, assign(socket, show_drawer: true, supervisor_data: [], supervisor_topic: topic, supervisor_id: id)}
+    end
+  end
+
+  @doc """
+  Evento para fechar o modal de supervisor. Realiza unsubscribe do tópico PubSub e limpa os assigns relacionados ao supervisor.
+  """
+  def handle_event("close_drawer", _params, socket) do
+    if topic = socket.assigns[:supervisor_topic] do
+      Phoenix.PubSub.unsubscribe(App.PubSub, topic)
+    end
+    {:noreply, assign(socket, show_drawer: false, supervisor_data: nil, supervisor_topic: nil, supervisor_id: nil)}
   end
 
   @spec assign_loading_state(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
@@ -281,10 +323,23 @@ defmodule AppWeb.DashboardResumoLive do
   @spec get_companies_data(any) :: list
   defp get_companies_data(_), do: []
 
+
+
+
   @impl true
   @spec render(map) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
+    <%= if @flash[:error] do %>
+      <div id="dashboard-flash-error" phx-hook="AutoHideFlash" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+        <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
+          <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-1.414-1.414A9 9 0 105.636 18.364l1.414 1.414A9 9 0 1018.364 5.636z" />
+          </svg>
+          <span class="font-semibold"><%= @flash[:error] %></span>
+        </div>
+      </div>
+    <% end %>
     <div id="dashboard-main" class="min-h-screen bg-white" phx-hook="GoalCelebration">
       <!-- Confetti/Celebration Effect -->
       <.confetti notifications={@notifications} show_celebration={@show_celebration} />
@@ -376,7 +431,7 @@ defmodule AppWeb.DashboardResumoLive do
                   <div class="flex-1 min-w-[120px] bg-gray-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-gray-100">
                     <div class="flex items-center gap-1 text-xs text-gray-600 mb-1">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-gray-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
-                      Meta Mensal
+                      Objetivo mensal
                     </div>
                     <div class="font-mono text-base font-semibold text-gray-900">{@objetivo_mensal}</div>
                   </div>
@@ -444,6 +499,8 @@ defmodule AppWeb.DashboardResumoLive do
           </div>
         </div>
       <% end %>
+
+      <.supervisor_modal show={@show_drawer} supervisor_data={@supervisor_data} on_close="close_drawer" />
 
     </div>
     """

@@ -1,6 +1,5 @@
 defmodule AppWeb.DashboardNotificationPanel do
   use Phoenix.Component
-  import AppWeb.DashboardUtils
 
   @doc """
   Renderiza o painel de notificações de celebração.

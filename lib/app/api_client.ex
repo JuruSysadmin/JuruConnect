@@ -3,9 +3,13 @@ defmodule App.ApiClient do
   Cliente para consumir APIs externas
   """
 
+  require Logger
+  require :telemetry
+
   @base_url "http://10.1.1.212:8065/api/v1"
 
   def fetch_dashboard_summary do
+    start_time = System.monotonic_time(:millisecond)
     with {:ok, sale_data} <- fetch_sale_data(),
          {:ok, company_result} <- fetch_companies_data() do
       summary = %{
@@ -25,17 +29,24 @@ defmodule App.ApiClient do
         "devolution_mensal" => Map.get(company_result, :devolution, 0.0),
         "nfs_mensal" => Map.get(company_result, :nfs, 0)
       }
-
+      duration = System.monotonic_time(:millisecond) - start_time
+      Logger.info("fetch_dashboard_summary success", api: "dashboard_summary", status: :ok, duration_ms: duration)
+      :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :ok})
       {:ok, summary}
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.error("fetch_dashboard_summary error", api: "dashboard_summary", status: :error, duration_ms: duration, error: inspect(reason))
+        :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :error, error: inspect(reason)})
+        {:error, reason}
     end
   end
 
   defp fetch_sale_data do
     url = "#{@base_url}/dashboard/sale"
 
-    case HTTPoison.get(url) do
+    timeout_opts = [timeout: App.Config.api_timeout_ms(), recv_timeout: App.Config.api_timeout_ms()]
+    case HTTPoison.get(url, [], timeout_opts) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, data} -> {:ok, data}
@@ -65,25 +76,42 @@ defmodule App.ApiClient do
   defp fetch_sales_feed_with_limit(limit) do
     url = "#{App.Config.api_urls().sales_feed}/#{limit}"
 
-    case HTTPoison.get(url) do
+    timeout_opts = [timeout: App.Config.api_timeout_ms(), recv_timeout: App.Config.api_timeout_ms()]
+    start_time = System.monotonic_time(:millisecond)
+    case HTTPoison.get(url, [], timeout_opts) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, data} when is_map(data) ->
             sales_data = Map.get(data, "saleSupervisor", [])
             formatted_sales = Enum.map(sales_data, &format_sale_supervisor/1)
+            duration = System.monotonic_time(:millisecond) - start_time
+            Logger.info("fetch_sales_feed_with_limit success", api: "sales_feed", status: :ok, duration_ms: duration, limit: limit)
+            :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :ok, limit: limit})
             {:ok, formatted_sales}
 
           {:ok, _} ->
+            duration = System.monotonic_time(:millisecond) - start_time
+            Logger.error("fetch_sales_feed_with_limit invalid format", api: "sales_feed", status: :error, duration_ms: duration, limit: limit)
+            :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :error, limit: limit, error: "invalid_format"})
             {:error, "Formato de dados inválido"}
 
           {:error, error} ->
+            duration = System.monotonic_time(:millisecond) - start_time
+            Logger.error("fetch_sales_feed_with_limit decode error", api: "sales_feed", status: :error, duration_ms: duration, limit: limit, error: inspect(error))
+            :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :error, limit: limit, error: inspect(error)})
             {:error, "Erro ao decodificar JSON: #{inspect(error)}"}
         end
 
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.error("fetch_sales_feed_with_limit status error", api: "sales_feed", status: :error, duration_ms: duration, limit: limit, status_code: status_code)
+        :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :error, limit: limit, status_code: status_code})
         {:error, "API retornou status #{status_code}"}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.error("fetch_sales_feed_with_limit http error", api: "sales_feed", status: :error, duration_ms: duration, limit: limit, error: inspect(reason))
+        :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :error, limit: limit, error: inspect(reason)})
         {:error, "Erro de conexão: #{inspect(reason)}"}
     end
   end
@@ -136,14 +164,25 @@ defmodule App.ApiClient do
   def fetch_companies_data do
     url = "http://10.1.1.212:8065/api/v1/dashboard/sale/company"
 
-    case HTTPoison.get(url) do
+    timeout_opts = [timeout: App.Config.api_timeout_ms(), recv_timeout: App.Config.api_timeout_ms()]
+    start_time = System.monotonic_time(:millisecond)
+    case HTTPoison.get(url, [], timeout_opts) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.info("fetch_companies_data success", api: "companies_data", status: :ok, duration_ms: duration)
+        :telemetry.execute([:app, :api, :companies_data], %{duration: duration}, %{status: :ok})
         process_companies_response(body)
 
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.error("fetch_companies_data status error", api: "companies_data", status: :error, duration_ms: duration, status_code: status_code)
+        :telemetry.execute([:app, :api, :companies_data], %{duration: duration}, %{status: :error, status_code: status_code})
         {:error, "API retornou status #{status_code}"}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
+        duration = System.monotonic_time(:millisecond) - start_time
+        Logger.error("fetch_companies_data http error", api: "companies_data", status: :error, duration_ms: duration, error: inspect(reason))
+        :telemetry.execute([:app, :api, :companies_data], %{duration: duration}, %{status: :error, error: inspect(reason)})
         {:error, "Erro de conexão: #{inspect(reason)}"}
     end
   end
@@ -212,6 +251,24 @@ defmodule App.ApiClient do
       venda_hoje == 0 -> :sem_vendas
       perc_hora >= 100 -> :atingida_hora
       true -> :abaixo_meta
+    end
+  end
+
+  @doc """
+  Busca os dados de saleSupervisor para um supervisor específico.
+  """
+  def fetch_supervisor_data(supervisor_id) do
+    url = "http://10.1.1.108:8065/api/v1/dashboard/sale/#{supervisor_id}"
+    timeout_opts = [recv_timeout: 5_000]
+    case HTTPoison.get(url, [], timeout_opts) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, %{"saleSupervisor" => sale_supervisors}} -> {:ok, sale_supervisors}
+          {:ok, _} -> {:ok, []}
+          _ -> {:error, :invalid_json}
+        end
+      _ ->
+        {:error, :api_error}
     end
   end
 

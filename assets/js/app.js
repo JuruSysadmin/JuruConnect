@@ -38,6 +38,14 @@ Chart.register(annotationPlugin);
  */
 let Hooks = {}
 
+Hooks.AutoHideFlash = {
+  mounted() {
+    setTimeout(() => {
+      this.el.style.display = "none";
+    }, 4000);
+  }
+}
+
 // Chart hook já definido como const ChartHook mais abaixo
 
 // WhatsAppAudioPlayer hook - sem definição duplicada
@@ -159,11 +167,13 @@ Hooks.GaugeChartMonthly = {
   initChart() {
     const ctx = this.el.getContext('2d');
     const value = parseFloat(this.el.dataset.value) || 0;
+    // O arco nunca passa de 100%
+    const arcValue = Math.min(value, 100);
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [value, 100 - value],
+          data: [arcValue, 100 - arcValue],
           backgroundColor: [
             this.getColor(value),
             '#EAEAEA'
@@ -173,9 +183,6 @@ Hooks.GaugeChartMonthly = {
         }]
       },
       options: {
-        aspectRatio: 2,
-        circumference: 180,
-        rotation: -90,
         cutout: '75%',
         plugins: {
           legend: { display: false },
@@ -191,7 +198,7 @@ Hooks.GaugeChartMonthly = {
                 drawTime: 'beforeDraw',
                 position: { y: '-50%' },
                 font: [{ size: 32, weight: 'bold' }, { size: 14 }],
-                color: ['#2563eb', 'grey']
+                color: [value > 100 ? '#065f46' : '#2563eb', 'grey'] // Verde escuro se >100%
               }
             }
           }
@@ -212,7 +219,9 @@ Hooks.GaugeChartMonthly = {
    */
   updateChart(value) {
     if (this.chart) {
-      this.chart.data.datasets[0].data = [value, 100 - value];
+      // O arco nunca passa de 100%
+      const arcValue = Math.min(value, 100);
+      this.chart.data.datasets[0].data = [arcValue, 100 - arcValue];
       this.chart.data.datasets[0].backgroundColor[0] = this.getColor(value);
       // Atualiza o label do annotation
       if (this.chart.options.plugins && this.chart.options.plugins.annotation && this.chart.options.plugins.annotation.annotations && this.chart.options.plugins.annotation.annotations.label) {
@@ -220,6 +229,7 @@ Hooks.GaugeChartMonthly = {
           value.toFixed(1) + ' %',
           'do objetivo mensal'
         ];
+        this.chart.options.plugins.annotation.annotations.label.color = [value > 100 ? '#065f46' : '#2563eb', 'grey'];
       }
       this.chart.update('active');
     }
@@ -262,11 +272,11 @@ Hooks.GaugeChartMonthly = {
    * @returns {string} Código hexadecimal da cor
    */
   getColor(value) {
-    if (value >= 100) return '#059669'; // Green-600
-    if (value >= 80) return '#10B981';  // Green-500
-    if (value >= 60) return '#60A5FA';  // Blue-400
-    if (value >= 40) return '#1E3A8A';  // Blue-900 (mais escuro)
-    return '#EF4444'; // Red-500
+    // 0-20 vermelho, 20-60 amarelo, 60-100 verde, >100 verde escuro
+    if (value > 100) return '#065f46'; // Verde escuro
+    if (value >= 60) return '#10B981'; // Verde
+    if (value >= 20) return '#f59e0b'; // Amarelo
+    return '#ef4444'; // Vermelho
   },
 
   /**
@@ -1023,11 +1033,11 @@ const GaugeChartHook = {
   },
 
   getColor(value) {
-    if (value >= 100) return '#059669'
-    if (value >= 80) return '#10B981'
-    if (value >= 60) return '#60A5FA'
-    if (value >= 40) return '#3B82F6'
-    return '#EF4444'
+    if (value >= 100) return '#059669'; // Green-600
+    if (value >= 80) return '#10B981';  // Green-500
+    if (value >= 60) return '#60A5FA';  // Blue-400
+    if (value >= 40) return '#3B82F6';  // Blue-500
+    return '#EF4444'; // Red-500
   },
 
   updated() {

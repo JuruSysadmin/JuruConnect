@@ -13,7 +13,7 @@ defmodule App.DashboardDataServer do
   alias App.ApiClient
 
   @fetch_interval 30_000
-  @call_timeout 10_000
+  @call_timeout App.Config.api_timeout_ms()
 
   # API Pública
   def start_link(_) do
@@ -75,7 +75,8 @@ defmodule App.DashboardDataServer do
       api_error: nil,
       last_update: nil,
       fetching: false,
-      fetch_count: 0
+      fetch_count: 0,
+      last_devolution: 0.0 # Valor anterior de devolução diária
     }
 
     # Disparo imediato de fetch
@@ -108,6 +109,20 @@ defmodule App.DashboardDataServer do
 
     case fetch_dashboard_data() do
       {:ok, data} ->
+        # Detecta aumento de devolução diária
+        current_devolution =
+          case data do
+            %{"devolution" => v} when is_number(v) -> v
+            %{devolution: v} when is_number(v) -> v
+            _ -> 0.0
+          end
+        last_devolution = Map.get(state, :last_devolution, 0.0)
+        notify_devolution = current_devolution > last_devolution
+        if notify_devolution do
+          require Logger
+          Logger.info("Nova devolução registrada: anterior=#{:erlang.float_to_binary(last_devolution, decimals: 2)}, atual=#{:erlang.float_to_binary(current_devolution, decimals: 2)}, timestamp=#{DateTime.utc_now()}")
+          Phoenix.PubSub.broadcast(App.PubSub, "dashboard:devolucao", {:devolucao_aumentou, %{anterior: last_devolution, atual: current_devolution}})
+        end
         success_state = %{
           new_state
           | data: data,
@@ -115,7 +130,8 @@ defmodule App.DashboardDataServer do
             api_error: nil,
             last_update: DateTime.utc_now(),
             fetching: false,
-            fetch_count: state.fetch_count + 1
+            fetch_count: state.fetch_count + 1,
+            last_devolution: current_devolution
         }
 
         Phoenix.PubSub.broadcast(App.PubSub, "dashboard:updated", {:dashboard_updated, data})
@@ -213,7 +229,6 @@ defmodule App.DashboardDataServer do
           "percentualSale" => percentual_sale
         })
 
-      # Nova verificação de celebrações REAL baseada nos dados da API
       App.CelebrationManager.process_api_data(merged_data)
 
 

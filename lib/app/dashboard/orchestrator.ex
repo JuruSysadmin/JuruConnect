@@ -23,7 +23,7 @@ defmodule App.Dashboard.Orchestrator do
   end
 
   def get_data(opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 10_000)
+    timeout = Keyword.get(opts, :timeout, App.Config.api_timeout_ms())
     cache_key = "dashboard_data"
 
     case CacheManager.get(cache_key) do

@@ -9,8 +9,6 @@ defmodule App.Auth.RateLimiterCleanup do
   use GenServer
   require Logger
 
-  alias App.Auth.RateLimiter
-
   @cleanup_interval_ms 300_000
 
   def start_link(_opts) do
@@ -26,12 +24,6 @@ defmodule App.Auth.RateLimiterCleanup do
 
   @impl true
   def handle_info(:cleanup, state) do
-    {deleted_attempts, deleted_blocks} = RateLimiter.cleanup_expired()
-
-    if deleted_attempts + deleted_blocks > 0 do
-      Logger.debug("RateLimiter cleanup completed: #{deleted_attempts} attempts, #{deleted_blocks} blocks removed")
-    end
-
     schedule_cleanup()
     {:noreply, state}
   end

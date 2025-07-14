@@ -151,7 +151,7 @@ defmodule AppWeb.ChatLive.ThreadManager do
   """
   @spec handle_cancel_reply(Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_cancel_reply(socket) do
-    {:noreply, Phoenix.LiveView.assign(socket, :replying_to, nil)}
+    {:noreply, assign(socket, :replying_to, nil)}
   end
 
   @doc """
@@ -189,7 +189,7 @@ defmodule AppWeb.ChatLive.ThreadManager do
   """
   @spec handle_update_thread_reply(String.t(), Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_update_thread_reply(reply_text, socket) when is_binary(reply_text) do
-    {:noreply, Phoenix.LiveView.assign(socket, :thread_reply_text, reply_text)}
+    {:noreply, assign(socket, :thread_reply_text, reply_text)}
   end
 
   def handle_update_thread_reply(_invalid_text, socket) do
@@ -233,7 +233,7 @@ defmodule AppWeb.ChatLive.ThreadManager do
          {:ok, _message} <- find_message_in_list(parsed_id, socket.assigns.messages) do
       {:noreply,
        socket
-       |> Phoenix.LiveView.assign(:show_thread, false)
+       |> assign(:show_thread, false)
        |> Phoenix.LiveView.push_event("scroll-to-message", %{message_id: message_id})}
     else
       {:error, _reason} ->

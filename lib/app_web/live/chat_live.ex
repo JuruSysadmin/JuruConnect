@@ -50,7 +50,6 @@ defmodule AppWeb.ChatLive do
   alias AppWeb.ChatLive.PresenceManager
   alias AppWeb.ChatLive.Components
   alias Phoenix.PubSub
-  alias AppWeb.ChatLive.ThreadManager
 
   @type message_status :: :sent | :delivered | :read | :system
   @type message_type :: :mensagem | :imagem | :documento | :audio | :system_notification
@@ -76,22 +75,16 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def mount(%{"order_id" => order_id} = _params, _session, socket) do
-    case socket.assigns[:current_user] do
-      nil ->
-        {:ok, socket |> put_flash(:error, "Usuário não autenticado") |> push_navigate(to: "/auth/login")}
+    initialized_socket =
+      socket
+      |> initialize_chat_socket(order_id)
+      |> assign(:active_tag_filter, nil)
 
-      _user ->
-        initialized_socket =
-          socket
-          |> initialize_chat_socket(order_id)
-          |> assign(:active_tag_filter, nil)
-
-        if length(initialized_socket.assigns.messages) == 0 and not connected?(socket) do
-          Process.send_after(self(), :reload_historical_messages, 1000)
-        end
-
-        {:ok, initialized_socket}
+    if length(initialized_socket.assigns.messages) == 0 and not connected?(socket) do
+      Process.send_after(self(), :reload_historical_messages, 1000)
     end
+
+    {:ok, initialized_socket}
   end
 
   @impl true

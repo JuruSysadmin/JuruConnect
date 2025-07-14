@@ -23,51 +23,44 @@ defmodule AppWeb.CoreComponents do
   attr :on_cancel, JS, default: %JS{}
   slot :inner_block, required: true
 
+  @doc """
+  Modal enterprise responsivo, mobile first, com foco em UX/UI e acessibilidade.
+  Props:
+    - id: identificador único do modal
+    - show: booleano para exibir ou ocultar
+    - on_close: evento phx-click para fechar
+    - title: título opcional do modal
+    - inner_block: conteúdo do modal
+  """
   def modal(assigns) do
     ~H"""
-    <div
-      id={@id}
-      phx-mounted={@show && show_modal(@id)}
-      phx-remove={hide_modal(@id)}
-      data-cancel={JS.exec(@on_cancel, "phx-remove")}
-      class="relative z-50 hidden"
-    >
-      <div id={"#{@id}-bg"} class="bg-zinc-50/90 fixed inset-0 transition-opacity" aria-hidden="true" />
-      <div
-        class="fixed inset-0 overflow-y-auto"
-        aria-labelledby={"#{@id}-title"}
-        aria-describedby={"#{@id}-description"}
-        role="dialog"
-        aria-modal="true"
-        tabindex="0"
-      >
-        <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
-            <.focus_wrap
-              id={"#{@id}-container"}
-              phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
-              phx-key="escape"
-              phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
-            >
-              <div class="absolute top-6 right-5">
-                <button
-                  phx-click={JS.exec("data-cancel", to: "##{@id}")}
-                  type="button"
-                  class="-m-3 flex-none p-3 opacity-20 hover:opacity-40"
-                  aria-label={gettext("close")}
-                >
-                  ×
-                </button>
-              </div>
-              <div id={"#{@id}-content"}>
-                {render_slot(@inner_block)}
-              </div>
-            </.focus_wrap>
+    <%= if @show do %>
+      <div id={@id} class="fixed inset-0 z-50 flex items-center justify-center">
+        <!-- Overlay com desfoque -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" phx-click={@on_close} aria-label="Fechar modal" tabindex="-1"></div>
+        <!-- Modal -->
+        <div
+          class="relative w-full max-w-full sm:max-w-xl md:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-200 mx-auto p-0 animate-fade-in overflow-y-auto max-h-[80vh] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={"#{@id}-title"}
+        >
+          <!-- Cabeçalho -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50 rounded-t-2xl sticky top-0 z-10">
+            <h2 id={"#{@id}-title"} class="text-lg font-semibold text-gray-900 truncate">
+              <%= if assigns[:title], do: assigns[:title], else: "" %>
+            </h2>
+            <button phx-click={@on_close} class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Fechar">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <!-- Conteúdo -->
+          <div class="px-5 py-6 sm:py-8 overflow-y-auto">
+            <%= render_slot(@inner_block) %>
           </div>
         </div>
       </div>
-    </div>
+    <% end %>
     """
   end
 

@@ -23,8 +23,6 @@ defmodule AppWeb.ChatLive.UploadHandler do
 
   require Logger
 
-  alias AppWeb.ChatLive.MessageHandler
-  alias AppWeb.ChatLive.Helpers
   use AppWeb, :live_view
 
   @type upload_type :: :image | :document | :audio

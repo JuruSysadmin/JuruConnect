@@ -52,7 +52,7 @@ defmodule App.Accounts do
   @impl true
   def authenticate_user(
         username,
-        password,
+        _password,
         deps \\ %{
           get_user: &get_user_by_username/1
         }

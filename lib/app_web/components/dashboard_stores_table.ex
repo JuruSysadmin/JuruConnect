@@ -56,10 +56,7 @@ defmodule AppWeb.DashboardStoresTable do
             <% end %>
           <% else %>
             <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
-              <tr class={[
-                if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50"),
-                "hover:bg-gray-100 transition-colors duration-200"
-              ]}>
+              <tr phx-click="show_supervisor_drawer" phx-value-supervisor-id={loja.supervisor_id} class={[if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50"), "hover:bg-gray-100 transition-colors duration-200 cursor-pointer"]}>
                 <td class="py-4 px-4 border-r border-gray-200">
                   <div class="flex items-center space-x-3">
                     <div class={[

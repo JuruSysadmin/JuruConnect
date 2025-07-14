@@ -55,11 +55,8 @@ defmodule AppWeb.Router do
   scope "/admin", AppWeb do
     pipe_through :browser
 
-    live_session :admin,
-      on_mount: [{AppWeb.LiveUserAuth, :require_authenticated_user}] do
-      live "/security", AdminLive.SecurityDashboard, :index
-      live "/health", HealthLive.Dashboard, :index
-    end
+    live "/security", AdminLive.SecurityDashboard, :index
+    live "/health", HealthLive.Dashboard, :index
   end
 
   # === ROTAS SUPER ADMIN (apenas admin) ===

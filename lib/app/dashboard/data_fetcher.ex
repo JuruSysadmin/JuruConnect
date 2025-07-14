@@ -14,7 +14,7 @@ defmodule App.Dashboard.DataFetcher do
   end
 
   def fetch_dashboard_data do
-    GenServer.call(__MODULE__, :fetch_data, 10_000)
+    GenServer.call(__MODULE__, :fetch_data, App.Config.api_timeout_ms())
   end
 
   @impl true
