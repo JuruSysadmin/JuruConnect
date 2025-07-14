@@ -40,7 +40,7 @@ defmodule AppWeb.CoreComponents do
         <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" phx-click={@on_close} aria-label="Fechar modal" tabindex="-1"></div>
         <!-- Modal -->
         <div
-          class="relative w-full max-w-full sm:max-w-xl md:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-200 mx-auto p-0 animate-fade-in overflow-y-auto max-h-[80vh] flex flex-col"
+          class="relative w-full max-w-full bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-200 mx-auto p-0 animate-fade-in overflow-y-auto max-h-[80vh] flex flex-col"
           role="dialog"
           aria-modal="true"
           aria-labelledby={"#{@id}-title"}

@@ -13,59 +13,42 @@ defmodule AppWeb.SupervisorModal do
   def supervisor_modal(assigns) do
     ~H"""
     <.modal id="supervisor-modal" show={@show} on_close={@on_close}>
-      <%= for s <- @supervisor_data do %>
-        <div class="rounded-xl border border-gray-200 p-6 mb-4 bg-white">
-          <div class="flex items-center justify-between mb-1">
-            <div class="text-xl font-bold text-gray-900"><%= s["sellerName"] %></div>
-          </div>
-          <div class="text-gray-400 text-sm mb-4">ID: <%= s["sellerId"] %></div>
-          <div class="mb-4">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-sm text-gray-700">Progresso Diário</span>
-              <span class="text-sm text-gray-700 font-semibold">
-                <%= :erlang.float_to_binary((s["percentualObjective"] || 0) * 1.0, decimals: 1) %>%
-              </span>
-            </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full">
-              <div class="h-2 bg-gray-900 rounded-full" style={"width: #{min(Float.round((s["percentualObjective"] || 0) * 1.0, 1), 100)}%"}></div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <div class="text-xs text-gray-500">Vendas mensais</div>
-              <div class="text-lg font-bold text-gray-900">R$ <%= format_money(s["saleValue"]) %></div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Objetivo mensal</div>
-              <div class="text-lg font-bold text-gray-900">R$ <%= format_money(s["objetivo"]) %></div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Notas(mês)</div>
-              <div class="text-lg font-bold text-gray-900"><%= s["qtdeInvoice"] %></div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Notas(dia)</div>
-              <div class="text-lg font-bold text-gray-900"><%= s["qtdeInvoiceDay"] %></div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Ticket Médio</div>
-              <div class="text-lg font-bold text-gray-900">R$ <%= format_money(s["ticket"]) %></div>
-            </div>
-            <div>
-              <div class="text-xs text-gray-500">Devoluções</div>
-              <div class="text-lg font-bold text-gray-900">R$ <%= format_money(s["devolution"]) %></div>
-            </div>
-          </div>
-          <hr class="my-2" />
-          <div class="flex items-center justify-between mt-2">
-            <span class="text-sm text-gray-600">Falta para a meta</span>
-            <span class="text-base font-bold text-red-600 flex items-center">
-              <svg class="w-4 h-4 mr-1 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l-4 4m0 0l-4-4m4 4V4" /></svg>
-              R$ <%= format_money(abs(s["dif"])) %>
-            </span>
-          </div>
-        </div>
-      <% end %>
+      <div class="w-full max-w-full">
+        <table class="w-full min-w-0 divide-y divide-gray-200 rounded-xl shadow border border-gray-100 bg-white">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-100 whitespace-nowrap truncate">VENDEDOR</th>
+              <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-100 whitespace-nowrap truncate">MATRICULA</th>
+              <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-100 whitespace-nowrap truncate">PROGRESSO DIÁRIO (%)</th>
+              <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-100 whitespace-nowrap truncate">VENDAS MENSAIS</th>
+              <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-100 whitespace-nowrap truncate">META MENSAL</th>
+              <th class="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r border-gray-100 truncate">Notas(mês)</th>
+              <th class="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r border-gray-100 truncate">Notas(dia)</th>
+              <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r border-gray-100 truncate">Ticket Médio</th>
+              <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase border-r border-gray-100 truncate">Devoluções</th>
+              <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase truncate">Falta para a Meta</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            <%= for s <- @supervisor_data do %>
+              <tr class="hover:bg-gray-50 transition">
+                <td class="px-2 py-2 border-r border-gray-100 font-medium text-gray-900 whitespace-nowrap truncate"><%= s["sellerName"] %></td>
+                <td class="px-2 py-2 border-r border-gray-100 text-gray-700 whitespace-nowrap truncate"><%= s["sellerId"] %></td>
+                <td class="px-2 py-2 border-r border-gray-100 text-right text-blue-700 font-mono whitespace-nowrap truncate">
+                  <%= :erlang.float_to_binary((s["percentualObjective"] || 0) * 1.0, decimals: 1) %>%
+                </td>
+                <td class="px-2 py-2 border-r border-gray-100 text-right text-blue-700 font-mono whitespace-nowrap truncate"><%= format_money(s["saleValue"]) %></td>
+                <td class="px-2 py-2 border-r border-gray-100 text-right text-gray-900 font-mono whitespace-nowrap truncate"><%= format_money(s["objetivo"]) %></td>
+                <td class="px-2 py-2 text-right text-gray-700 border-r border-gray-100 truncate"><%= s["qtdeInvoice"] %></td>
+                <td class="px-2 py-2 text-right text-gray-700 border-r border-gray-100 truncate"><%= s["qtdeInvoiceDay"] %></td>
+                <td class="px-4 py-2 text-right text-gray-700 border-r border-gray-100 truncate"><%= format_money(s["ticket"]) %></td>
+                <td class="px-4 py-2 text-right text-red-700 font-mono border-r border-gray-100 truncate"><%= format_money(s["devolution"]) %></td>
+                <td class="px-4 py-2 text-right text-red-700 font-mono truncate"><%= format_money(abs(s["dif"])) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </.modal>
     """
   end

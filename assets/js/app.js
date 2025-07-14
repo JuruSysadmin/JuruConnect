@@ -31,6 +31,9 @@ import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-gauge';
 Chart.register(annotationPlugin);
+import { Grid } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 
 /**
  * Coleção de hooks do Phoenix LiveView
@@ -1091,6 +1094,11 @@ Hooks.GaugeChartMensalPonteiro = {
     }
   }
 };
+
+import AgGridSupervisores from "./hooks/ag_grid_supervisores";
+let Hooks = {};
+Hooks.AgGridSupervisores = AgGridSupervisores;
+export default Hooks;
 
 // Adicionar todos os hooks ao objeto Hooks
 Hooks.ChatHook = ChatHook

@@ -34,66 +34,20 @@ defmodule AppWeb.DashboardLive do
 
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1">
-          <a
-            href="/dashboard"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Dashboard Principal
-          </a>
-
-          <a
-            href="/buscar-pedido"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Buscar Pedido
-          </a>
-
-          <a
-            href="#"
-            class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg group"
-          >
-            Menu Principal
-          </a>
-
-          <a
-            href="#"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Relatórios
-            <span class="ml-auto bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">12</span>
-          </a>
-
-          <a
-            href="#"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Clientes
-          </a>
-
-          <a
-            href="#"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Produtos
-            <span class="ml-auto bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">+50</span>
-          </a>
-
-          <a
-            href="#"
-            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
-          >
-            Analytics
-          </a>
-
-          <!-- Divider -->
-          <div class="border-t border-gray-200 my-4"></div>
 
           <!-- Admin Section -->
           <a
             href="/admin/security"
             class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
           >
-            Segurança
+            Consulta de Pedidos
+          </a>
+
+                    <a
+            href="/buscar-pedido"
+            class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+          >
+            Comunicação interna
           </a>
 
           <a
@@ -133,7 +87,7 @@ defmodule AppWeb.DashboardLive do
 
       <!-- Content Area - Apenas espaço em branco -->
       <div class="flex-1 ml-64 bg-gray-50">
-        <!-- Área vazia - apenas para ocupar o espaço -->
+        <%= live_render(@socket, AppWeb.DashboardResumoLive, id: :dashboard_resumo) %>
       </div>
     </div>
     """

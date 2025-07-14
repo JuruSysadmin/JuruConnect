@@ -11,7 +11,6 @@ defmodule AppWeb.DashboardStoresTable do
   def stores_table(assigns) do
     ~H"""
     <div class="overflow-x-auto">
-      <!-- Versão Desktop/Tablet da Tabela -->
       <table class="w-full animate-fade-in-scale text-sm hidden sm:table">
         <thead class="bg-gray-100">
           <tr>

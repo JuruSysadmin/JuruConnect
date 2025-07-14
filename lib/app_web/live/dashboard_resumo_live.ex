@@ -118,15 +118,15 @@ defmodule AppWeb.DashboardResumoLive do
 
     notification = %{
       id: celebration_id,
-      store_name: data.store_name,
-      achieved: data.achieved,
-      target: data.target,
+      store_name: data.data.store_name,
+      achieved: data.data.achieved,
+      target: data.data.target,
       percentage: data.percentage,
       timestamp: data.timestamp,
       celebration_id: celebration_id,
       type: data.type,
       level: data.level,
-      message: data.message
+      message: data.data.message
     }
 
     formatted_achieved = format_money(notification.achieved)

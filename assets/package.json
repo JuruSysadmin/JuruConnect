@@ -7,6 +7,8 @@
     },
     "dependencies": {
         "@tailwindcss/forms": "^0.5.10",
+        "ag-grid-community": "^34.0.1",
+        "ag-grid-enterprise": "^34.0.1",
         "chart.js": "^4.5.0",
         "chartjs-gauge": "^0.3.0",
         "chartjs-plugin-annotation": "^3.1.0",
