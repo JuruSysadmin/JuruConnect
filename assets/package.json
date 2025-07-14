@@ -8,7 +8,10 @@
     "dependencies": {
         "@tailwindcss/forms": "^0.5.10",
         "chart.js": "^4.5.0",
+        "chartjs-gauge": "^0.3.0",
+        "chartjs-plugin-annotation": "^3.1.0",
         "esbuild": "^0.17.11",
+        "fusioncharts": "^4.1.2",
         "phoenix": "^1.7.0",
         "phoenix_html": "^3.3.1",
         "phoenix_live_view": "^0.20.0",

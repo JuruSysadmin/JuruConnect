@@ -98,6 +98,37 @@ defmodule App.Sales do
     |> Repo.delete_all()
   end
 
+  def list_daily_sales_history(limit \\ 30) do
+    import Ecto.Query
+    alias App.Schemas.DailySalesHistory
+
+    DailySalesHistory
+    |> order_by([h], desc: h.date)
+    |> limit(^limit)
+    |> select([h], %{date: h.date, total_sales: h.total_sales})
+    |> App.Repo.all()
+    |> Enum.reverse() # do mais antigo para o mais recente
+  end
+
+  @doc """
+  Retorna o faturamento total por hora para um determinado dia.
+  O resultado é uma lista de mapas: [%{hour: 0..23, total_sales: float}]
+  """
+  def list_hourly_sales_history(date \\ Date.utc_today()) do
+    import Ecto.Query
+    from(s in Sale,
+      where: fragment("DATE(?)", s.timestamp) == ^date,
+      group_by: fragment("EXTRACT(HOUR FROM ?)", s.timestamp),
+      select: %{
+        hour: fragment("EXTRACT(HOUR FROM ?)", s.timestamp),
+        total_sales: sum(s.sale_value)
+      }
+    )
+    |> Repo.all()
+    |> Enum.map(fn %{hour: hour, total_sales: total_sales} ->
+      %{hour: trunc(hour), total_sales: Decimal.to_float(total_sales || Decimal.new(0))}
+    end)
+  end
 
 
   defp maybe_filter_by_date_range(query, nil, nil), do: query

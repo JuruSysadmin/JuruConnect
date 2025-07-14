@@ -50,6 +50,7 @@ defmodule AppWeb.ChatLive do
   alias AppWeb.ChatLive.PresenceManager
   alias AppWeb.ChatLive.Components
   alias Phoenix.PubSub
+  alias AppWeb.ChatLive.ThreadManager
 
   @type message_status :: :sent | :delivered | :read | :system
   @type message_type :: :mensagem | :imagem | :documento | :audio | :system_notification

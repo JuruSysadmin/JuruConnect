@@ -25,6 +25,7 @@ defmodule AppWeb.ChatLive.ThreadManager do
   require Logger
   alias App.Chat
   alias Phoenix.PubSub
+  use AppWeb, :live_view
 
   @type thread_action :: :show | :close | :reply | :cancel_reply
   @type thread_result :: {:ok, Phoenix.LiveView.Socket.t()} | {:error, String.t()}
@@ -332,7 +333,7 @@ defmodule AppWeb.ChatLive.ThreadManager do
   defp setup_reply_context(socket, message) do
     updated_socket =
       socket
-      |> Phoenix.LiveView.assign(:replying_to, message)
+      |> assign(:replying_to, message)
       |> Phoenix.LiveView.push_event("focus-message-input", %{})
 
     {:ok, updated_socket}
@@ -353,11 +354,11 @@ defmodule AppWeb.ChatLive.ThreadManager do
   defp apply_thread_state(socket, %ThreadState{} = state) do
     updated_socket =
       socket
-      |> Phoenix.LiveView.assign(:thread_messages, state.messages)
-      |> Phoenix.LiveView.assign(:thread_root_message, state.root_message)
-      |> Phoenix.LiveView.assign(:thread_replies, state.replies)
-      |> Phoenix.LiveView.assign(:show_thread, state.is_open)
-      |> Phoenix.LiveView.assign(:thread_reply_text, state.reply_text)
+      |> assign(:thread_messages, state.messages)
+      |> assign(:thread_root_message, state.root_message)
+      |> assign(:thread_replies, state.replies)
+      |> assign(:show_thread, state.is_open)
+      |> assign(:thread_reply_text, state.reply_text)
 
     {:ok, updated_socket}
   end
@@ -365,11 +366,11 @@ defmodule AppWeb.ChatLive.ThreadManager do
   # Aplicação de estado vazio de thread
   defp apply_empty_thread_state(socket, %ThreadState{} = empty_state) do
     socket
-    |> Phoenix.LiveView.assign(:thread_messages, empty_state.messages)
-    |> Phoenix.LiveView.assign(:thread_root_message, empty_state.root_message)
-    |> Phoenix.LiveView.assign(:thread_replies, empty_state.replies)
-    |> Phoenix.LiveView.assign(:show_thread, empty_state.is_open)
-    |> Phoenix.LiveView.assign(:thread_reply_text, empty_state.reply_text)
+    |> assign(:thread_messages, empty_state.messages)
+    |> assign(:thread_root_message, empty_state.root_message)
+    |> assign(:thread_replies, empty_state.replies)
+    |> assign(:show_thread, empty_state.is_open)
+    |> assign(:thread_reply_text, empty_state.reply_text)
   end
 
   # Validação de requisição de reply
@@ -425,9 +426,9 @@ defmodule AppWeb.ChatLive.ThreadManager do
 
     updated_socket =
       request.socket
-      |> Phoenix.LiveView.assign(:thread_reply_text, "")
-      |> Phoenix.LiveView.assign(:thread_messages, updated_thread)
-      |> Phoenix.LiveView.assign(:thread_replies, replies)
+      |> assign(:thread_reply_text, "")
+      |> assign(:thread_messages, updated_thread)
+      |> assign(:thread_replies, replies)
 
     {:ok, updated_socket}
   end

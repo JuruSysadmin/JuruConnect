@@ -1,4 +1,11 @@
 defmodule AppWeb.DashboardLive do
+  @moduledoc """
+  LiveView principal do dashboard do sistema JuruConnect.
+
+  Responsável por exibir a interface inicial do dashboard, menus de navegação, atalhos para funcionalidades principais e informações do usuário logado.
+
+  Serve como ponto de entrada visual para o ambiente administrativo e operacional do sistema.
+  """
   use AppWeb, :live_view
 
   @impl true

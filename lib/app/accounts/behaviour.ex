@@ -12,7 +12,6 @@ defmodule App.Accounts.Behaviour do
 
   @callback authenticate_user(
               username :: String.t(),
-              password :: String.t(),
               deps :: map() | nil
             ) :: {:ok, App.Accounts.User.t()} | {:error, :unauthorized}
 

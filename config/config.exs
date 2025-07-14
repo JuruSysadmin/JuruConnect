@@ -52,19 +52,6 @@ config :esbuild,
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
-config :app, AppWeb.Auth.Guardian,
-  issuer: "app_web",
-  secret_key:
-    System.get_env("GUARDIAN_SECRET") ||
-      "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
-
-# Configure Guardian.DB
-config :guardian, Guardian.DB,
-  repo: App.Repo,
-  schema_name: "guardian_tokens",
-  token_types: ["access", "refresh"],
-  sweep_interval: 60
-
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "3.4.0",

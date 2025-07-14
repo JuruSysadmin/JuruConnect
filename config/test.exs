@@ -21,11 +21,6 @@ config :app, AppWeb.Endpoint,
   secret_key_base: "jFpSz0RgsEUAO92TDA/5NiHmkrOR4zrSjSe79fvlCfk/PBSRGbsedbFHLwE9xRUV",
   server: false
 
-# Configure Guardian for testing
-config :app, AppWeb.Auth.Guardian,
-  issuer: "app_web",
-  secret_key: "gI8MZ1hy5sB6LnbmV2sbu3IiINqYTPdU8FLFz+bb+3/w9XVza+1adCtIWak1CuHg"
-
 # In test we don't send emails
 config :app, App.Mailer, adapter: Swoosh.Adapters.Test
 

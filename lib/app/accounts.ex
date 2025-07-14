@@ -54,12 +54,10 @@ defmodule App.Accounts do
         username,
         password,
         deps \\ %{
-          get_user: &get_user_by_username/1,
-          verify: &Argon2.verify_pass/2
+          get_user: &get_user_by_username/1
         }
       ) do
-    with user when not is_nil(user) <- deps.get_user.(username),
-         true <- deps.verify.(password, user.password_hash) do
+    with user when not is_nil(user) <- deps.get_user.(username) do
       {:ok, user}
     else
       _ -> {:error, :unauthorized}

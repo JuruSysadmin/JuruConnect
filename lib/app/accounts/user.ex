@@ -12,8 +12,6 @@ defmodule App.Accounts.User do
   * `name` - Nome completo do usuário
   * `role` - Função do usuário no sistema
   * `store_id` - UUID da loja associada
-  * `password` - Campo virtual para entrada de senha
-  * `password_hash` - Senha criptografada armazenada no banco de dados
   * `website` - URL do site do usuário
   * `avatar_url` - URL para a imagem do avatar do usuário
   * `inserted_at` - Carimbo de data/hora da criação do registro
@@ -25,7 +23,6 @@ defmodule App.Accounts.User do
   * Valida Campos obrigatórios (nome de usuário, nome, função)
   * Garante que o nome de usuário tenha no mínimo 3 caracteres
   * Impõe restrição de nome de usuário exclusivo
-  * Faz hash automático de senhas antes do armazenamento
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -37,8 +34,6 @@ defmodule App.Accounts.User do
     field(:name, :string)
     field(:role, :string)
     field(:store_id, Ecto.UUID)
-    field(:password, :string, virtual: true)
-    field(:password_hash, :string)
     field(:website, :string)
     field(:avatar_url, :string)
 
@@ -47,20 +42,9 @@ defmodule App.Accounts.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :name, :role, :store_id, :password, :website, :avatar_url])
+    |> cast(attrs, [:username, :name, :role, :store_id, :website, :avatar_url])
     |> validate_required([:username, :name, :role])
     |> validate_length(:username, min: 3)
     |> unique_constraint(:username)
-    |> hash_password()
-  end
-
-  defp hash_password(changeset) do
-    if changeset.valid? && get_change(changeset, :password) do
-      password = get_change(changeset, :password)
-
-      put_change(changeset, :password_hash, Argon2.hash_pwd_salt(password))
-    else
-      changeset
-    end
   end
 end

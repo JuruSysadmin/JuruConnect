@@ -23,6 +23,10 @@ defmodule AppWeb.ChatLive.UploadHandler do
 
   require Logger
 
+  alias AppWeb.ChatLive.MessageHandler
+  alias AppWeb.ChatLive.Helpers
+  use AppWeb, :live_view
+
   @type upload_type :: :image | :document | :audio
   @type upload_result :: {:ok, String.t()} | {:error, String.t()}
   @type validation_result :: {:ok, Phoenix.LiveView.Socket.t()} | {:error, String.t()}
@@ -71,7 +75,7 @@ defmodule AppWeb.ChatLive.UploadHandler do
   def validate_image_entry(%{valid?: true} = entry, socket) do
     {:ok,
      socket
-     |> Phoenix.LiveView.assign(:message_error, nil)
+     |> assign(:message_error, nil)
      |> Phoenix.LiveView.put_flash(:info, "Imagem selecionada: #{entry.client_name}")
     }
   end
@@ -253,7 +257,7 @@ defmodule AppWeb.ChatLive.UploadHandler do
 
     {:ok,
      socket
-     |> Phoenix.LiveView.assign(:message_error, nil)
+     |> assign(:message_error, nil)
      |> Phoenix.LiveView.put_flash(:info, "#{document_type} selecionado: #{entry.client_name}")
     }
   end
@@ -316,7 +320,7 @@ defmodule AppWeb.ChatLive.UploadHandler do
   # Atribuição de sucesso de áudio
   defp assign_audio_success(socket) do
     socket
-    |> Phoenix.LiveView.assign(:is_recording_audio, false)
+    |> assign(:is_recording_audio, false)
     |> Phoenix.LiveView.put_flash(:info, "Áudio enviado com sucesso!")
   end
 

@@ -25,6 +25,7 @@ defmodule AppWeb.ChatLive.MessageHandler do
   require Logger
   alias App.Chat.RateLimiter
   alias Phoenix.PubSub
+  use AppWeb, :live_view
 
   @type message_type :: :mensagem | :imagem | :documento | :audio | :system_notification
   @type message_status :: :sent | :delivered | :read | :system
@@ -317,9 +318,9 @@ defmodule AppWeb.ChatLive.MessageHandler do
   defp handle_successful_send(socket, _message) do
     {:noreply,
      socket
-     |> Phoenix.LiveView.assign(:message, "")
-     |> Phoenix.LiveView.assign(:replying_to, nil)
-     |> Phoenix.LiveView.assign(:message_error, nil)
+     |> assign(:message, "")
+     |> assign(:replying_to, nil)
+     |> assign(:message_error, nil)
      |> Phoenix.LiveView.put_flash(:info, "Mensagem enviada com sucesso!")}
   end
 
@@ -327,7 +328,7 @@ defmodule AppWeb.ChatLive.MessageHandler do
   defp handle_send_error(socket, error_message) do
     {:noreply,
      socket
-     |> Phoenix.LiveView.assign(:message_error, error_message)
+     |> assign(:message_error, error_message)
      |> Phoenix.LiveView.put_flash(:error, "Erro ao enviar mensagem: #{error_message}")}
   end
 

@@ -11,7 +11,10 @@ defmodule App.Dashboard.Orchestrator do
   use GenServer
   require Logger
 
-  alias App.Dashboard.{DataFetcher, DataStore, CacheManager, EventBroadcaster}
+  alias App.Dashboard.DataFetcher
+  alias App.Dashboard.DataStore
+  alias App.Dashboard.CacheManager
+  alias App.Dashboard.EventBroadcaster
 
   @fetch_interval 30_000
 

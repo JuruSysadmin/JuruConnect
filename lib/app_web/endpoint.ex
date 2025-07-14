@@ -1,4 +1,15 @@
 defmodule AppWeb.Endpoint do
+  @moduledoc """
+  Endpoint principal da aplicação Phoenix.
+
+  Responsável por:
+  - Configurar e expor os sockets (WebSocket/LiveView)
+  - Gerenciar plugs de sessão, parsers, CORS e segurança
+  - Servir arquivos estáticos
+  - Ser o ponto de entrada HTTP/HTTPS para todas as requisições do sistema
+
+  Este módulo centraliza a configuração de rede e middleware da aplicação JuruConnect.
+  """
   use Phoenix.Endpoint, otp_app: :app
 
   # The session will be stored in the cookie and signed,

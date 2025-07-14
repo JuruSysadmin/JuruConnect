@@ -1,6 +1,22 @@
 defmodule App.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
+  @moduledoc """
+Supervisor principal da aplicação JuruConnect.
+
+Este módulo inicializa e supervisiona todos os serviços essenciais do sistema, incluindo:
+- Repositório Ecto (App.Repo)
+- Telemetria (AppWeb.Telemetry)
+- Sistema PubSub (Phoenix.PubSub)
+- Servidor de dados do dashboard (App.DashboardDataServer)
+- Gerenciador de celebrações (App.CelebrationManager)
+- Endpoint HTTP/HTTPS (AppWeb.Endpoint)
+- Gerenciador de jobs em background (Oban)
+
+Segue o padrão OTP supervisionando os processos críticos para garantir alta disponibilidade e resiliência. Utiliza a estratégia `:one_for_one`, reiniciando apenas o processo que falhar.
+
+Responsável também por aplicar mudanças de configuração dinâmica no endpoint durante atualizações.
+"""
   @moduledoc false
 
   use Application

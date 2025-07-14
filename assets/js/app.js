@@ -28,6 +28,9 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto';
+import annotationPlugin from 'chartjs-plugin-annotation';
+import 'chartjs-gauge';
+Chart.register(annotationPlugin);
 
 /**
  * Coleção de hooks do Phoenix LiveView
@@ -156,7 +159,6 @@ Hooks.GaugeChartMonthly = {
   initChart() {
     const ctx = this.el.getContext('2d');
     const value = parseFloat(this.el.dataset.value) || 0;
-
     this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -164,27 +166,39 @@ Hooks.GaugeChartMonthly = {
           data: [value, 100 - value],
           backgroundColor: [
             this.getColor(value),
-            '#F3F4F6'
+            '#EAEAEA'
           ],
           borderWidth: 0,
           borderRadius: 8
         }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        aspectRatio: 2,
+        circumference: 180,
+        rotation: -90,
         cutout: '75%',
         plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            enabled: false
+          legend: { display: false },
+          tooltip: { enabled: false },
+          annotation: {
+            annotations: {
+              label: {
+                type: 'doughnutLabel',
+                content: [
+                  value.toFixed(1) + ' %',
+                  'do objetivo mensal'
+                ],
+                drawTime: 'beforeDraw',
+                position: { y: '-50%' },
+                font: [{ size: 32, weight: 'bold' }, { size: 14 }],
+                color: ['#2563eb', 'grey']
+              }
+            }
           }
         },
         animation: {
           animateRotate: true,
-          duration: 1500, // Animação um pouco mais lenta para efeito suave
+          duration: 1500,
           easing: 'easeOutQuart'
         }
       }
@@ -198,19 +212,16 @@ Hooks.GaugeChartMonthly = {
    */
   updateChart(value) {
     if (this.chart) {
-      // Preserva o valor atual para animação suave
-      const currentValue = this.chart.data.datasets[0].data[0];
-      const targetValue = Math.min(value, 100);
-
-      // Se for uma diferença pequena, anima suavemente
-      if (Math.abs(targetValue - currentValue) < 10) {
-        this.animateToValue(currentValue, targetValue);
-      } else {
-        // Para mudanças grandes, atualiza diretamente
-        this.chart.data.datasets[0].data = [targetValue, 100 - targetValue];
-        this.chart.data.datasets[0].backgroundColor[0] = this.getColor(targetValue);
-        this.chart.update('active');
+      this.chart.data.datasets[0].data = [value, 100 - value];
+      this.chart.data.datasets[0].backgroundColor[0] = this.getColor(value);
+      // Atualiza o label do annotation
+      if (this.chart.options.plugins && this.chart.options.plugins.annotation && this.chart.options.plugins.annotation.annotations && this.chart.options.plugins.annotation.annotations.label) {
+        this.chart.options.plugins.annotation.annotations.label.content = [
+          value.toFixed(1) + ' %',
+          'do objetivo mensal'
+        ];
       }
+      this.chart.update('active');
     }
   },
 
@@ -1025,6 +1036,52 @@ const GaugeChartHook = {
   }
 }
 
+Hooks.GaugeChartMensalPonteiro = {
+  mounted() {
+    this.initChart();
+    this.handleEvent("update-gauge-monthly", (data) => {
+      this.updateChart(data.value);
+    });
+  },
+  initChart() {
+    const ctx = this.el.getContext('2d');
+    const value = parseFloat(this.el.dataset.value) || 0;
+    this.chart = new Chart(ctx, {
+      type: 'gauge',
+      data: {
+        datasets: [{
+          value: value,
+          minValue: 0,
+          data: [100],
+          backgroundColor: ['#2563eb'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        needle: {
+          radiusPercentage: 2,
+          widthPercentage: 3.2,
+          lengthPercentage: 80,
+          color: 'rgba(0, 0, 0, 1)'
+        },
+        valueLabel: {
+          display: true,
+          formatter: (value) => value.toFixed(1) + ' %'
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  },
+  updateChart(value) {
+    if (this.chart) {
+      this.chart.data.datasets[0].value = value;
+      this.chart.update('active');
+    }
+  }
+};
+
 // Adicionar todos os hooks ao objeto Hooks
 Hooks.ChatHook = ChatHook
 Hooks.AudioRecorderHook = AudioRecorderHook
@@ -1032,6 +1089,7 @@ Hooks.GoalCelebration = GoalCelebrationHook
 Hooks.AutoDismissFlash = AutoDismissFlashHook
 Hooks.Chart = ChartHook
 Hooks.GaugeChart = GaugeChartHook
+Hooks.GaugeChartMensalPonteiro = Hooks.GaugeChartMensalPonteiro;
 
 // Inicializar o LiveSocket com todas as configurações
 liveSocket = new LiveSocket("/live", Socket, {
