@@ -17,7 +17,7 @@ defmodule AppWeb.SessionController do
         |> Guardian.Plug.sign_in(user)
         |> redirect(to: "/hello")
 
-      {:error, :unauthorized} ->
+      {:error, :invalid_credentials} ->
         changeset = Accounts.User.changeset(%Accounts.User{}, %{})
 
         conn

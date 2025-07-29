@@ -60,9 +60,8 @@ defmodule App.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:cors_plug, "~> 3.0"},
       {:guardian, "~> 2.3"},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:ex_aws, "~> 2.4"},
-      {:ex_aws_s3, "~> 2.3"},
+      # {:ex_aws, "~> 2.5"},
+      # {:ex_aws_s3, "~> 2.5"},
       {:hackney, "~> 1.9"},
       {:finch, "~> 0.13"},
       {:httpoison, "~> 2.0"},
@@ -72,7 +71,8 @@ defmodule App.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 

@@ -17,7 +17,7 @@ defmodule App.Chat.Message do
   def changeset(message, attrs) do
     message
     |> cast(attrs, [:text, :sender_id, :sender_name, :order_id, :tipo, :image_url])
-    |> validate_required([:text, :sender_id, :sender_name, :order_id])
+    |> validate_required([:text, :sender_name, :order_id])
     |> put_change(:image_url, attrs[:image_url] || nil)
   end
 end

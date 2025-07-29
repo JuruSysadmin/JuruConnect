@@ -83,13 +83,25 @@ defmodule App.Chat do
   end
 
   @doc """
-  Envia uma mensagem para um pedido específico, com suporte a imagem.
+  Envia uma mensagem para um pedido específico, com suporte a imagem e notificações.
   """
   def send_message(order_id, sender_id, text, image_url \\ nil) do
+    # Buscar nome do usuário se sender_id for um ID válido
+    sender_name = case sender_id do
+      nil -> "Usuário Anônimo"
+      id when is_binary(id) ->
+        case App.Accounts.get_user!(id) do
+          %{name: name} when not is_nil(name) -> name
+          %{username: username} when not is_nil(username) -> username
+          _ -> "Usuário"
+        end
+      _ -> "Usuário"
+    end
+
     params = %{
       text: text,
       sender_id: sender_id,
-      sender_name: sender_id,  # Usando sender_id como sender_name por enquanto
+      sender_name: sender_name,
       order_id: order_id,
       tipo: "mensagem",
       image_url: image_url
@@ -100,10 +112,44 @@ defmodule App.Chat do
         # Publicar a mensagem via PubSub
         topic = "order:#{order_id}"
         Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
+
+        # Processar notificações
+        process_message_notifications(message, order_id)
+
         {:ok, message}
       {:error, changeset} ->
         Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}
+    end
+  end
+
+  @doc """
+  Processa notificações para uma nova mensagem.
+  """
+  defp process_message_notifications(message, order_id) do
+    # Buscar todos os usuários que têm acesso ao pedido
+    # Por enquanto, vamos notificar todos os usuários online no chat
+    topic = "order:#{order_id}"
+    presences = AppWeb.Presence.list(topic)
+
+    # Extrair IDs dos usuários online
+    online_user_ids = presences
+    |> Map.values()
+    |> Enum.flat_map(fn %{metas: metas} ->
+      Enum.map(metas, fn %{user_id: user_id} -> user_id end)
+    end)
+    |> Enum.filter(&(&1 != "anonymous" && &1 != nil))
+    |> Enum.uniq()
+
+    # Enviar notificações para usuários online
+    Enum.each(online_user_ids, fn user_id ->
+      App.Notifications.notify_new_message(message, user_id)
+    end)
+
+    # Verificar menções na mensagem
+    mentioned_users = App.Notifications.extract_mentions(message.text)
+    if length(mentioned_users) > 0 do
+      App.Notifications.notify_mention(message, mentioned_users)
     end
   end
 end

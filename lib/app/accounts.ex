@@ -1,87 +1,71 @@
 defmodule App.Accounts do
   @moduledoc """
-  Contexto para gerenciamento de contas de usuários.
-
-  Implementa o comportamento App.Accounts.Behaviour para fornecer
-  funcionalidades de CRUD e autenticação de usuários.
+  The Accounts context.
   """
-
-  @behaviour App.Accounts.Behaviour
 
   import Ecto.Query, warn: false
-  alias App.Accounts.User
   alias App.Repo
+  alias App.Accounts.{User, UserOrderHistory}
 
   @doc """
-  Busca um usuário pelo ID.
+  Returns the list of users.
 
-  ## Parâmetros
-    - `id`: ID do usuário (UUID)
+  ## Examples
 
-  ## Retorna
-    - `%User{}` se encontrado
-    - Levanta `Ecto.QueryError` se não encontrado
+      iex> list_users()
+      [%User{}, ...]
+
   """
-  @impl true
-  def get_user!(id) do
-    Repo.get!(User, id)
+  def list_users do
+    Repo.all(User)
   end
 
   @doc """
-  Busca um usuário pelo username.
+  Gets a single user.
 
-  ## Parâmetros
-    - `username`: Nome de usuário (string)
+  Raises `Ecto.NoResultsError` if the User does not exist.
 
-  ## Retorna
-    - `%User{}` se encontrado
-    - `nil` se não encontrado
+  ## Examples
+
+      iex> get_user!(123)
+      %User{}
+
+      iex> get_user!(456)
+      ** (Ecto.NoResultsError)
+
   """
-  @impl true
+  def get_user!(id), do: Repo.get!(User, id)
+
+  @doc """
+  Gets a single user by username.
+
+  Returns nil if the User does not exist.
+
+  ## Examples
+
+      iex> get_user_by_username("john_doe")
+      %User{}
+
+      iex> get_user_by_username("nonexistent")
+      nil
+
+  """
   def get_user_by_username(username) do
     Repo.get_by(User, username: username)
   end
 
   @doc """
-  Autentica um usuário pelo username e senha.
+  Creates a user.
 
-  ## Parâmetros
-    - `username`: Nome de usuário (string)
-    - `password`: Senha em texto plano (string)
-    - `deps`: Dependências opcionais para injeção de dependência
+  ## Examples
 
-  ## Retorna
-    - `{:ok, user}` se autenticação for bem-sucedida
-    - `{:error, :unauthorized}` se autenticação falhar
+      iex> create_user(%{field: value})
+      {:ok, %User{}}
+
+      iex> create_user(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
   """
-  @impl true
-  def authenticate_user(
-        username,
-        password,
-        deps \\ %{
-          get_user: &get_user_by_username/1,
-          verify: &Pbkdf2.verify_pass/2
-        }
-      ) do
-    with user when not is_nil(user) <- deps.get_user.(username),
-         true <- deps.verify.(password, user.password_hash) do
-      {:ok, user}
-    else
-      _ -> {:error, :unauthorized}
-    end
-  end
-
-  @doc """
-  Cria um novo usuário.
-
-  ## Parâmetros
-    - `attrs`: Atributos do usuário (map)
-
-  ## Retorna
-    - `{:ok, user}` se criação for bem-sucedida
-    - `{:error, changeset}` se houver erros de validação
-  """
-  @impl true
   def create_user(attrs \\ %{}) do
     %User{}
     |> User.changeset(attrs)
@@ -89,17 +73,17 @@ defmodule App.Accounts do
   end
 
   @doc """
-  Atualiza um usuário existente.
+  Updates a user.
 
-  ## Parâmetros
-    - `user`: Usuário a ser atualizado (%User{})
-    - `attrs`: Novos atributos (map)
+  ## Examples
 
-  ## Retorna
-    - `{:ok, user}` se atualização for bem-sucedida
-    - `{:error, changeset}` se houver erros de validação
+      iex> update_user(user, %{field: new_value})
+      {:ok, %User{}}
+
+      iex> update_user(user, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
   """
-  @impl true
   def update_user(%User{} = user, attrs) do
     user
     |> User.changeset(attrs)
@@ -107,74 +91,118 @@ defmodule App.Accounts do
   end
 
   @doc """
-  Deleta um usuário.
+  Deletes a user.
 
-  ## Parâmetros
-    - `user`: Usuário a ser deletado (%User{})
+  ## Examples
 
-  ## Retorna
-    - `{:ok, user}` se deleção for bem-sucedida
-    - `{:error, changeset}` se houver erros
+      iex> delete_user(user)
+      {:ok, %User{}}
+
+      iex> delete_user(user)
+      {:error, %Ecto.Changeset{}}
+
   """
-  @impl true
   def delete_user(%User{} = user) do
     Repo.delete(user)
   end
 
   @doc """
-  Lista todos os usuários.
+  Returns an `%Ecto.Changeset{}` for tracking user changes.
 
-  ## Parâmetros
-    - `opts`: Opções opcionais (keyword list)
+  ## Examples
 
-  ## Retorna
-    - Lista de usuários
+      iex> change_user(user)
+      %Ecto.Changeset{data: %User{}}
+
   """
-  @impl true
-  def list_users(opts \\ []) do
-    limit = Keyword.get(opts, :limit)
-    offset = Keyword.get(opts, :offset, 0)
+  def change_user(%User{} = user, attrs \\ %{}) do
+    User.changeset(user, attrs)
+  end
 
-    User
-    |> maybe_limit(limit)
-    |> offset(^offset)
+  @doc """
+  Authenticates a user by username and password.
+  """
+  def authenticate_user(username, password, _opts \\ []) do
+    require Logger
+    Logger.info("Authenticating user: #{username}")
+
+    user = Repo.get_by(User, username: username)
+    case user do
+      nil ->
+        Logger.warning("User not found: #{username}")
+        Argon2.no_user_verify()
+        {:error, :invalid_credentials}
+      user ->
+        Logger.info("User found: #{user.username}, verifying password")
+        if Argon2.verify_pass(password, user.password_hash) do
+          Logger.info("Password verified successfully for user: #{user.username}")
+          {:ok, user}
+        else
+          Logger.warning("Invalid password for user: #{username}")
+          {:error, :invalid_credentials}
+        end
+    end
+  end
+
+  @doc """
+  Registra o acesso de um usuário a um pedido.
+  """
+  def record_order_access(user_id, order_id) do
+    now = DateTime.utc_now()
+
+    case Repo.get_by(UserOrderHistory, user_id: user_id, order_id: order_id) do
+      nil ->
+        # Primeiro acesso
+        %UserOrderHistory{}
+        |> UserOrderHistory.changeset(%{
+          user_id: user_id,
+          order_id: order_id,
+          last_accessed_at: now,
+          access_count: 1
+        })
+        |> Repo.insert()
+
+      history ->
+        # Acesso subsequente - atualizar contador e timestamp
+        history
+        |> UserOrderHistory.changeset(%{
+          last_accessed_at: now,
+          access_count: history.access_count + 1
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Obtém o histórico de pedidos de um usuário, ordenado por último acesso.
+  """
+  def get_user_order_history(user_id, limit \\ 10) do
+    UserOrderHistory
+    |> where(user_id: ^user_id)
+    |> order_by([h], desc: h.last_accessed_at)
+    |> limit(^limit)
     |> Repo.all()
   end
 
   @doc """
-  Busca usuários por loja.
-
-  ## Parâmetros
-    - `store_id`: ID da loja (UUID)
-
-  ## Retorna
-    - Lista de usuários da loja
+  Obtém estatísticas do histórico de pedidos de um usuário.
   """
-  @impl true
-  def get_users_by_store(store_id) do
-    User
-    |> where(store_id: ^store_id)
-    |> Repo.all()
+  def get_user_order_stats(user_id) do
+    query = from h in UserOrderHistory,
+      where: h.user_id == ^user_id,
+      select: %{
+        total_orders: count(h.order_id),
+        total_accesses: sum(h.access_count)
+      }
+
+    case Repo.one(query) do
+      %{total_orders: total_orders, total_accesses: total_accesses} ->
+        %{
+          total_orders: total_orders || 0,
+          total_accesses: total_accesses || 0
+        }
+      _ ->
+        %{total_orders: 0, total_accesses: 0}
+    end
   end
-
-  @doc """
-  Busca usuários por função (role).
-
-  ## Parâmetros
-    - `role`: Função do usuário ("admin", "manager", "clerk")
-
-  ## Retorna
-    - Lista de usuários com a função especificada
-  """
-  @impl true
-  def get_users_by_role(role) do
-    User
-    |> where(role: ^role)
-    |> Repo.all()
-  end
-
-  # Funções auxiliares privadas
-
-  defp maybe_limit(query, nil), do: query
-  defp maybe_limit(query, limit), do: limit(query, ^limit)
 end

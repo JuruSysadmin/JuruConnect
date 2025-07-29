@@ -4,37 +4,102 @@ defmodule AppWeb.ChatLive do
   alias App.ChatConfig
   require Logger
 
-  @impl true
-  def mount(%{"order_id" => order_id}, _session, socket) do
+  # Hook para autenticação no LiveView
+  def on_mount(:default, _params, session, socket) do
+    # Verificar se há um token na sessão
+    Logger.info("on_mount: session user_token = #{inspect(session["user_token"])}")
+
+    case session["user_token"] do
+      nil ->
+        Logger.info("on_mount: Nenhum token encontrado")
+        {:cont, socket}
+
+      token ->
+        case AppWeb.Auth.Guardian.resource_from_token(token) do
+          {:ok, user, _claims} ->
+            Logger.info("on_mount: Usuário autenticado: #{user.name || user.username}")
+            {:cont, assign(socket, :current_user, user)}
+
+          {:error, reason} ->
+            Logger.error("on_mount: Erro ao decodificar token: #{inspect(reason)}")
+            {:cont, socket}
+        end
+    end
+  end
+
+    @impl true
+  def mount(%{"order_id" => order_id} = params, session, socket) do
     topic = "order:#{order_id}"
+
+        # SEGURANÇA MELHORADA: Usar apenas token da sessão, não da URL
+    # Isso evita exposição do token em logs, histórico do navegador, etc.
+    Logger.info("Socket assigns current_user: #{inspect(socket.assigns[:current_user])}")
+    Logger.info("Session user_token: #{inspect(session["user_token"])}")
+
+    {current_user, user_object} = case socket.assigns[:current_user] do
+      nil ->
+        # Usar apenas o token da sessão (mais seguro)
+        token = session["user_token"]
+        case token do
+          nil ->
+            Logger.info("Nenhum token encontrado na sessão")
+            {ChatConfig.default_username(), nil}
+          token ->
+            case AppWeb.Auth.Guardian.resource_from_token(token) do
+              {:ok, user, _claims} ->
+                Logger.info("Usuário encontrado via token: #{user.name || user.username}")
+                {user.name || user.username || ChatConfig.default_username(), user}
+              {:error, reason} ->
+                Logger.error("Erro ao decodificar token: #{inspect(reason)}")
+                {ChatConfig.default_username(), nil}
+            end
+        end
+      user ->
+        # Usuário já foi autenticado via on_mount
+        user_name = user.name || user.username || ChatConfig.default_username()
+        Logger.info("Usuário autenticado via on_mount: #{user_name} (ID: #{user.id})")
+        {user_name, user}
+    end
 
     if connected?(socket) do
       # Inscrever no tópico do PubSub para receber mensagens
       Phoenix.PubSub.subscribe(App.PubSub, topic)
 
+      # Inscrever no tópico de notificações do usuário (se autenticado)
+      if user_object do
+        Phoenix.PubSub.subscribe(App.PubSub, "user:#{user_object.id}")
+      end
+
       # Track presence do usuário com dados mais completos
       user_data = %{
-        user_id: socket.assigns[:user_id] || "anonymous",
-        name: socket.assigns[:name] || ChatConfig.default_username(),
+        user_id: case user_object do
+          nil -> "anonymous"
+          user -> user.id
+        end,
+        name: current_user,
         joined_at: DateTime.utc_now() |> DateTime.to_iso8601(),
         user_agent: get_connect_info(socket, :user_agent) || "Unknown"
       }
 
       case Presence.track(self(), topic, socket.id, user_data) do
-        {:ok, _} -> Logger.info("User #{user_data.name} joined chat for order #{order_id}")
+        {:ok, _} -> Logger.info("User #{current_user} joined chat for order #{order_id}")
         {:error, reason} -> Logger.error("Failed to track presence: #{inspect(reason)}")
       end
+    end
+
+    # Agendar atualização periódica do status de conexão
+    if connected?(socket) do
+      Process.send_after(self(), :update_connection_status, 5000)
     end
 
     # Buscar dados do pedido com tratamento de erro
     order = case App.Orders.get_order(order_id) do
       nil ->
-        Logger.warning("Order #{order_id} not found")
         %{"orderId" => order_id, "status" => "Não encontrado", "customerName" => "N/A", "amount" => "0", "deliveryType" => "N/A", "deliveryDate" => ""}
       order -> order
     end
 
-    # Carregar histórico de mensagens
+    # Carregar histórico de mensagens com lazy loading
     {messages, has_more} = case App.Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit()) do
       {:ok, msgs, more} -> {msgs, more}
     end
@@ -42,6 +107,11 @@ defmodule AppWeb.ChatLive do
     # Buscar presences atuais
     presences = Presence.list(topic)
     users_online = extract_users_from_presences(presences)
+
+    # Registrar acesso do usuário ao pedido (se autenticado)
+    if user_object do
+      App.Accounts.record_order_access(user_object.id, order_id)
+    end
 
     socket =
       socket
@@ -52,13 +122,19 @@ defmodule AppWeb.ChatLive do
       |> assign(:presences, presences)
       |> assign(:message, "")
       |> assign(:users_online, users_online)
-      |> assign(:current_user, socket.assigns[:name] || ChatConfig.default_username())
+      |> assign(:current_user, current_user)
+      |> assign(:user_object, user_object)
+      |> assign(:token, session["user_token"])
       |> assign(:connected, connected?(socket))
       |> assign(:connection_status, if(connected?(socket), do: "Conectado", else: "Desconectado"))
       |> assign(:topic, topic)
       |> assign(:loading_messages, false)
       |> assign(:message_error, nil)
       |> assign(:modal_image_url, nil)
+      |> assign(:typing_users, [])
+      |> assign(:show_typing_indicator, false)
+      |> assign(:show_search, false)
+      |> assign(:message_count, length(messages))
       |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000)
 
     {:ok, socket}
@@ -68,13 +144,17 @@ defmodule AppWeb.ChatLive do
   def handle_event("send_message", %{"message" => text}, socket) do
     trimmed_text = String.trim(text)
 
-    Logger.info("DEBUG: Evento send_message recebido. Texto: #{inspect(text)}. Uploads: #{inspect(socket.assigns.uploads.image.entries)}")
+
+
     cond do
-      trimmed_text == "" and length(socket.assigns.uploads.image.entries) == 0 ->
+      trimmed_text == "" && length(socket.assigns.uploads.image.entries) == 0 ->
         {:noreply, put_flash(socket, :error, "Mensagem não pode estar vazia")}
 
       String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
         {:noreply, put_flash(socket, :error, "Mensagem muito longa")}
+
+      not connected?(socket) ->
+        {:noreply, assign(socket, :message_error, "Conexão perdida. Tente recarregar a página.")}
 
       true ->
         # Consome upload de imagem (se houver)
@@ -88,11 +168,20 @@ defmodule AppWeb.ChatLive do
           end)
           |> List.first()
 
-        Logger.info("DEBUG: image_url gerada: #{inspect(image_url)}")
 
-        case App.Chat.send_message(socket.assigns.order_id, socket.assigns.current_user, trimmed_text, image_url) do
+
+                                # Obter usuário atual
+        {user_id, user_name} = case socket.assigns[:user_object] do
+          nil ->
+            # Fallback para usuário anônimo - usar nil para user_id
+            {nil, socket.assigns.current_user}
+          user ->
+            {user.id, user.name || user.username}
+        end
+
+        case App.Chat.send_message(socket.assigns.order_id, user_id, trimmed_text, image_url) do
           {:ok, _message} ->
-            Logger.info("Message sent by #{socket.assigns.current_user} in order #{socket.assigns.order_id}")
+            Logger.info("Message sent by #{user_name} in order #{socket.assigns.order_id}")
             {:noreply,
               socket
               |> assign(:message, "")
@@ -125,8 +214,64 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("update_message", %{"message" => message}, socket) do
+    # Enviar evento de digitação
+    if connected?(socket) && String.length(message) > 0 do
+      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_start, socket.assigns.current_user})
+    end
+
     {:noreply, assign(socket, :message, message)}
   end
+
+    @impl true
+  def handle_event("stop_typing", _params, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_stop, socket.assigns.current_user})
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_search", _params, socket) do
+    {:noreply, assign(socket, :show_search, !socket.assigns[:show_search])}
+  end
+
+  # Eventos que podem vir do order_search_live (ignorar)
+  def handle_event("focus_search", _params, socket), do: {:noreply, socket}
+  def handle_event("blur_search", _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("search_messages", %{"query" => query}, socket) do
+    filtered_messages = socket.assigns.messages
+    |> Enum.filter(fn msg ->
+      String.contains?(String.downcase(msg.text), String.downcase(query))
+    end)
+
+    {:noreply, assign(socket, :filtered_messages, filtered_messages)}
+  end
+
+  @impl true
+  def handle_event("search_users", %{"query" => query}, socket) do
+    # Buscar usuários online que correspondem à query
+    matching_users = socket.assigns.users_online
+    |> Enum.filter(fn username ->
+      String.contains?(String.downcase(username), String.downcase(query))
+    end)
+    |> Enum.take(5) # Limitar a 5 resultados
+
+    Logger.info("Search users query: '#{query}', found: #{inspect(matching_users)}")
+    Logger.info("All users online: #{inspect(socket.assigns.users_online)}")
+
+    {:noreply,
+      socket
+      |> push_event("show-user-suggestions", %{
+        users: matching_users,
+        query: query
+      })
+    }
+  end
+
+
 
   @impl true
   def handle_event("cancel_upload", %{"ref" => ref}, socket) do
@@ -147,15 +292,98 @@ defmodule AppWeb.ChatLive do
   def handle_info({:new_message, msg}, socket) do
     # Verificar se a mensagem é para este pedido
     if msg.order_id == socket.assigns.order_id do
+      # Verificar se a mensagem não é do usuário atual
+      is_own_message = case socket.assigns[:user_object] do
+        nil -> false
+        user -> user.id == msg.sender_id
+      end
+
+      socket = socket
+      |> update(:messages, fn msgs -> msgs ++ [msg] end)
+      |> update(:message_count, fn count -> count + 1 end)
+      |> push_event("scroll-to-bottom", %{})
+
+      # Enviar notificação apenas se não for mensagem própria
+      if not is_own_message do
+        socket = socket
+        |> push_event("play-notification-sound", %{})
+        |> push_event("show-notification", %{
+          title: "Nova mensagem",
+          body: "#{msg.sender_name}: #{String.slice(msg.text, 0, 50)}",
+          icon: "/images/notification-icon.svg"
+        })
+      end
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:notification, :new_message, notification_data}, socket) do
+    # Notificação de nova mensagem (para usuários online em outros chats)
+    {:noreply,
+      socket
+      |> push_event("show-notification", %{
+        title: "Nova mensagem",
+        body: "#{notification_data.sender_name}: #{String.slice(notification_data.text, 0, 50)}",
+        icon: "/images/notification-icon.svg",
+        data: %{
+          order_id: notification_data.order_id,
+          message_id: notification_data.message.id
+        }
+      })
+    }
+  end
+
+  @impl true
+  def handle_info({:notification, :mention, notification_data}, socket) do
+    # Notificação de menção
+    {:noreply,
+      socket
+      |> push_event("show-notification", %{
+        title: "Você foi mencionado!",
+        body: "#{notification_data.sender_name} mencionou você: #{String.slice(notification_data.text, 0, 50)}",
+        icon: "/images/notification-icon.svg",
+        data: %{
+          order_id: notification_data.order_id,
+          message_id: notification_data.message.id
+        }
+      })
+      |> push_event("play-notification-sound", %{})
+    }
+  end
+
+  @impl true
+  def handle_info({:desktop_notification, notification_data}, socket) do
+    # Notificação desktop
+    {:noreply,
+      socket
+      |> push_event("show-desktop-notification", notification_data)
+    }
+  end
+
+  @impl true
+  def handle_info({:typing_start, user}, socket) do
+    if user != socket.assigns.current_user do
       {:noreply,
         socket
-        |> update(:messages, fn msgs -> msgs ++ [msg] end)
-        |> push_event("scroll-to-bottom", %{})
-        |> push_event("play-notification-sound", %{})
+        |> update(:typing_users, fn users -> [user | users] |> Enum.uniq() end)
+        |> assign(:show_typing_indicator, true)
       }
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:typing_stop, user}, socket) do
+    {:noreply,
+      socket
+      |> update(:typing_users, fn users -> List.delete(users, user) end)
+      |> assign(:show_typing_indicator, length(socket.assigns.typing_users) > 1)
+    }
   end
 
   @impl true
@@ -173,14 +401,7 @@ defmodule AppWeb.ChatLive do
     presences = Presence.list(socket.assigns.topic)
     users_online = extract_users_from_presences(presences)
 
-    # Log presence changes
-    if Map.has_key?(diff, :joins) and map_size(diff.joins) > 0 do
-      Logger.info("Users joined chat: #{inspect(Map.keys(diff.joins))}")
-    end
 
-    if Map.has_key?(diff, :leaves) and map_size(diff.leaves) > 0 do
-      Logger.info("Users left chat: #{inspect(Map.keys(diff.leaves))}")
-    end
 
     {:noreply,
       socket
@@ -190,25 +411,45 @@ defmodule AppWeb.ChatLive do
   end
 
   @impl true
+  def handle_info(:update_connection_status, socket) do
+    is_connected = connected?(socket)
+    connection_status = if(is_connected, do: "Conectado", else: "Desconectado")
+
+
+
+    # Agendar próxima atualização se ainda conectado
+    if is_connected do
+      Process.send_after(self(), :update_connection_status, 5000)
+    end
+
+    {:noreply,
+      socket
+      |> assign(:connected, is_connected)
+      |> assign(:connection_status, connection_status)
+      |> push_event("connection-status", %{connected: is_connected, status: connection_status})
+    }
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
-    <div id="chat-container" class="h-screen w-screen bg-gray-50 font-sans antialiased flex" phx-hook="ChatHook" role="main">
+    <div id="chat-container" class="h-screen w-screen bg-slate-50 font-sans antialiased flex overflow-hidden m-0 p-0" phx-hook="ChatHook" role="main">
       <!-- Sidebar -->
-      <aside class="w-80 lg:w-96 bg-white border-r border-gray-200 flex flex-col shadow-xl z-20 flex-shrink-0"
+      <aside class="w-96 bg-white border-r border-slate-200 flex flex-col shadow-2xl z-20 flex-shrink-0 m-0 p-0"
              role="complementary"
              aria-label="Informações do pedido e usuários online">
 
         <!-- Header com logo/nome -->
-        <header class="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+        <header class="p-6 border-b border-slate-100 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-xl">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
               </svg>
             </div>
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 tracking-tight">JuruConnect</h1>
-              <p class="text-sm text-gray-600 mt-0.5 font-medium">Chat por Pedido</p>
+              <h1 class="text-2xl font-bold text-white tracking-tight">JuruConnect</h1>
+              <p class="text-sm text-slate-300 mt-1 font-medium">Enterprise Chat System</p>
             </div>
           </div>
         </header>
@@ -216,13 +457,13 @@ defmodule AppWeb.ChatLive do
         <!-- Pedido Info Card -->
         <section class="p-6" aria-labelledby="order-info-title">
           <h2 id="order-info-title" class="sr-only">Informações do Pedido</h2>
-          <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div class="bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center space-x-2">
-                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3 class="text-lg font-bold text-gray-900">
+                <h3 class="text-xl font-bold text-gray-900">
                   Pedido #<%= @order["orderId"] %>
                 </h3>
               </div>
@@ -231,44 +472,44 @@ defmodule AppWeb.ChatLive do
               </span>
             </div>
 
-            <dl class="space-y-3 text-sm">
-              <div class="flex justify-between items-center py-1">
-                <dt class="text-gray-600 font-medium flex items-center">
-                  <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <dl class="space-y-4 text-sm">
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <dt class="text-slate-600 font-semibold flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                   </svg>
                   Cliente:
                 </dt>
-                <dd class="font-semibold text-gray-900 truncate ml-2 max-w-32" title={@order["customerName"]}>
+                <dd class="font-bold text-slate-900 truncate ml-2 max-w-32" title={@order["customerName"]}>
                   <%= @order["customerName"] %>
                 </dd>
               </div>
-              <div class="flex justify-between items-center py-1">
-                <dt class="text-gray-600 font-medium flex items-center">
-                  <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <dt class="text-slate-600 font-semibold flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                   </svg>
                   Valor:
                 </dt>
-                <dd class="font-bold text-green-700 text-base">R$ <%= format_currency(@order["amount"]) %></dd>
+                <dd class="font-bold text-emerald-700 text-lg">R$ <%= format_currency(@order["amount"]) %></dd>
               </div>
-              <div class="flex justify-between items-center py-1">
-                <dt class="text-gray-600 font-medium flex items-center">
-                  <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <dt class="text-slate-600 font-semibold flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                   </svg>
                   Entrega:
                 </dt>
-                <dd class="font-semibold text-gray-900"><%= @order["deliveryType"] %></dd>
+                <dd class="font-bold text-slate-900"><%= @order["deliveryType"] %></dd>
               </div>
-              <div class="flex justify-between items-center py-1">
-                <dt class="text-gray-600 font-medium flex items-center">
-                  <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex justify-between items-center py-2">
+                <dt class="text-slate-600 font-semibold flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6"></path>
                   </svg>
                   Data:
                 </dt>
-                <dd class="font-semibold text-gray-900"><%= format_date(@order["deliveryDate"]) %></dd>
+                <dd class="font-bold text-slate-900"><%= format_date(@order["deliveryDate"]) %></dd>
               </div>
             </dl>
           </div>
@@ -276,9 +517,9 @@ defmodule AppWeb.ChatLive do
 
         <!-- Usuários Online -->
         <section class="px-6 mb-6 flex-1" aria-labelledby="users-online-title">
-          <h2 id="users-online-title" class="text-sm font-bold text-gray-800 mb-4 flex items-center">
-            <div class="w-2.5 h-2.5 bg-green-500 rounded-full mr-3 animate-pulse shadow-sm" aria-hidden="true"></div>
-            <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h2 id="users-online-title" class="text-sm font-bold text-slate-800 mb-4 flex items-center">
+            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-3 animate-pulse shadow-sm" aria-hidden="true"></div>
+            <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
             Usuários Online (<%= length(@users_online) %>)
@@ -287,24 +528,24 @@ defmodule AppWeb.ChatLive do
           <div class="space-y-2 max-h-64 overflow-y-auto" role="list">
             <%= if Enum.empty?(@users_online) do %>
               <div class="text-center py-8">
-                <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                 </svg>
-                <p class="text-sm text-gray-500 italic">Nenhum usuário online</p>
+                <p class="text-sm text-slate-500 italic">Nenhum usuário online</p>
               </div>
             <% else %>
               <%= for user <- @users_online do %>
-                <div class="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 border border-transparent hover:border-gray-200 hover:shadow-sm group" role="listitem">
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200" aria-hidden="true">
+                <div class="flex items-center p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-200 hover:shadow-sm group" role="listitem">
+                  <div class="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200" aria-hidden="true">
                     <span class="text-white text-sm font-bold"><%= get_user_initial(user) %></span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <span class="text-sm font-semibold text-gray-800 truncate block"><%= user %></span>
+                    <span class="text-sm font-semibold text-slate-800 truncate block"><%= user %></span>
                     <%= if user == @current_user do %>
-                      <span class="text-xs text-blue-600 font-medium">(Você)</span>
+                      <span class="text-xs text-slate-700 font-medium">(Você)</span>
                     <% end %>
                   </div>
-                  <div class="w-2 h-2 bg-green-400 rounded-full flex-shrink-0 animate-pulse" aria-label="Online" title="Online"></div>
+                  <div class="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0 animate-pulse" aria-label="Online" title="Online"></div>
                 </div>
               <% end %>
             <% end %>
@@ -312,21 +553,21 @@ defmodule AppWeb.ChatLive do
         </section>
 
         <!-- Footer com informações do usuário atual -->
-        <footer class="p-6 border-t border-gray-100 bg-gray-50/50">
+        <footer class="p-6 border-t border-slate-100 bg-slate-50/50">
           <div class="flex items-center justify-between">
             <div class="flex items-center flex-1 min-w-0">
-              <div class="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-700 rounded-full flex items-center justify-center mr-3 shadow-md" aria-hidden="true">
+              <div class="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-3 shadow-md" aria-hidden="true">
                 <span class="text-white text-sm font-bold"><%= get_user_initial(@current_user) %></span>
               </div>
               <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-gray-900 truncate"><%= @current_user %></p>
+                <p class="text-sm font-semibold text-slate-900 truncate"><%= @current_user %></p>
                 <p class="text-xs font-medium flex items-center">
                   <span class={get_connection_indicator_class(@connected)} aria-hidden="true"></span>
                   <span class={get_connection_text_class(@connected)}><%= @connection_status %></span>
                 </p>
               </div>
             </div>
-            <button class="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 rounded-lg hover:shadow-sm"
+            <button class="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 rounded-lg hover:shadow-sm"
                     aria-label="Configurações"
                     title="Configurações">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -339,35 +580,56 @@ defmodule AppWeb.ChatLive do
       </aside>
 
       <!-- Área principal do chat - colada na sidebar -->
-      <main class="flex-1 h-screen flex flex-col bg-white min-w-0 border-l border-gray-100" role="main" aria-label="Área de chat">
+      <main class="flex-1 h-screen flex flex-col bg-white min-w-0 border-l border-slate-200 max-w-none m-0 p-0" role="main" aria-label="Área de chat">
         <!-- Header do Chat -->
-        <header class="flex items-center justify-between p-6 border-b border-gray-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-sm">
+        <header class="flex items-center justify-between p-6 border-b border-slate-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
           <div class="flex items-center">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div class="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-xl">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
               </div>
               <div>
-                <h1 class="text-xl font-bold text-gray-900">Chat do Pedido</h1>
-                <div class="flex items-center mt-1">
-                  <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
-                  <span class="text-sm text-gray-600 font-medium"><%= @connection_status %></span>
+                <h1 class="text-2xl font-bold text-slate-900">Enterprise Chat</h1>
+                <div class="flex items-center mt-1 space-x-4">
+                  <div class="flex items-center">
+                    <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
+                    <span class="text-sm text-slate-600 font-medium"><%= @connection_status %></span>
+                  </div>
+                  <div class="flex items-center text-xs text-slate-500">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <%= @message_count %> mensagens
+                  </div>
+                  <div class="flex items-center text-xs text-slate-500">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <%= length(@users_online) %> online
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="flex items-center space-x-2">
-            <button class="p-2.5 text-gray-500 hover:text-gray-700 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:shadow-sm"
+            <button phx-click="toggle_search" class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
+                    aria-label="Buscar mensagens"
+                    title="Buscar mensagens">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+            <button class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
                     aria-label="Exportar conversa"
                     title="Exportar conversa">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
             </button>
-            <button class="p-2.5 text-gray-500 hover:text-gray-700 transition-all duration-200 rounded-lg hover:bg-gray-100 hover:shadow-sm"
+            <button class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
                     aria-label="Mais opções"
                     title="Mais opções">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -394,16 +656,39 @@ defmodule AppWeb.ChatLive do
           </div>
         <% end %>
 
+        <!-- Search Bar -->
+        <%= if @show_search do %>
+          <div class="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center space-x-2">
+              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar nas mensagens..."
+                class="flex-1 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                phx-keyup="search_messages"
+                phx-debounce="300"
+              />
+              <button phx-click="toggle_search" class="text-blue-500 hover:text-blue-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Messages Container -->
         <div id="messages"
-             class="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50/30 to-white scroll-smooth min-h-0"
+             class="flex-1 overflow-y-auto px-12 py-8 bg-gradient-to-b from-slate-50/30 to-white scroll-smooth min-h-0"
              role="log"
              aria-live="polite"
              aria-label="Mensagens do chat">
 
           <!-- Load More Button -->
           <%= if @has_more_messages do %>
-            <div class="flex justify-center pb-4">
+            <div class="flex justify-center pb-6">
               <button
                 phx-click="load_older_messages"
                 disabled={@loading_messages}
@@ -434,20 +719,35 @@ defmodule AppWeb.ChatLive do
               <p class="text-gray-600 max-w-md">Seja o primeiro a enviar uma mensagem neste chat do pedido!</p>
             </div>
           <% else %>
-            <%= for msg <- @messages do %>
-              <div class={"flex mb-2 " <> if(msg.sender_id == @current_user, do: "justify-end", else: "justify-start")}
+                        <%= for msg <- @messages do %>
+              <%
+                # Determinar se a mensagem é do usuário atual
+                is_current_user = case @user_object do
+                  nil -> false
+                  user -> user.id == msg.sender_id
+                end
+              %>
+              <div class={"flex mb-4 " <> if(is_current_user, do: "justify-end", else: "justify-start")}
                    role="article"
-                   aria-label={"Mensagem de " <> msg.sender_id}>
+                   aria-label={"Mensagem de " <> msg.sender_name}>
+
+                <%= if not is_current_user do %>
+                  <!-- Avatar do remetente -->
+                  <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-2 flex-shrink-0 shadow-sm">
+                    <span class="text-white text-xs font-bold"><%= get_user_initial(msg.sender_name) %></span>
+                  </div>
+                <% end %>
+
                 <div class={
-                  "relative max-w-xs md:max-w-md px-4 py-2 rounded-2xl shadow transition-all duration-200 " <>
-                  if(msg.sender_id == @current_user,
-                    do: "bg-gradient-to-br from-green-400 to-green-500 text-white rounded-br-sm",
-                    else: "bg-gray-100 text-gray-900 rounded-bl-sm")
+                  "relative max-w-md lg:max-w-lg xl:max-w-xl px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 " <>
+                  if(is_current_user,
+                    do: "bg-gradient-to-br from-green-500 to-green-600 text-white rounded-br-md",
+                    else: "bg-white text-gray-900 rounded-bl-md border border-gray-200")
                 }>
-                  <%= if msg.sender_id != @current_user do %>
-                    <div class="text-xs font-semibold text-gray-600 mb-1"><%= msg.sender_id %></div>
+                  <%= if not is_current_user do %>
+                    <div class="text-xs font-semibold text-gray-600 mb-1 opacity-75"><%= msg.sender_name %></div>
                   <% end %>
-                  <div class="text-sm break-words"><%= msg.text %></div>
+                  <div class="text-sm break-words leading-relaxed"><%= msg.text %></div>
                   <%= if msg.image_url do %>
                     <img src={msg.image_url}
                          class="w-32 h-32 object-cover rounded-lg cursor-pointer hover:scale-105 transition mt-2"
@@ -455,23 +755,59 @@ defmodule AppWeb.ChatLive do
                          phx-value-url={msg.image_url}
                          alt="Imagem enviada" />
                   <% end %>
-                  <div class="flex items-center justify-end mt-1 space-x-1">
-                    <span class="text-xs text-gray-300"><%= format_time(msg.inserted_at) %></span>
-                    <%= if msg.sender_id == @current_user do %>
-                      <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="flex items-center justify-end mt-2 space-x-1">
+                    <span class={"text-xs " <> if(is_current_user, do: "text-white/70", else: "text-gray-400")}><%= format_time(msg.inserted_at) %></span>
+                    <%= if is_current_user do %>
+                      <svg class="w-3 h-3 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                       </svg>
                     <% end %>
                   </div>
                 </div>
+
+                <%= if is_current_user do %>
+                  <!-- Avatar do usuário atual -->
+                  <div class="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-700 rounded-full flex items-center justify-center ml-2 flex-shrink-0 shadow-sm">
+                    <span class="text-white text-xs font-bold"><%= get_user_initial(@current_user) %></span>
+                  </div>
+                <% end %>
               </div>
             <% end %>
           <% end %>
         </div>
 
+        <!-- Typing Indicator -->
+        <%= if @show_typing_indicator && @typing_users && length(@typing_users) > 0 do %>
+          <div class="px-6 py-2 bg-gray-50/50 border-t border-gray-100">
+            <div class="flex items-center space-x-2">
+              <div class="flex space-x-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+              </div>
+              <span class="text-xs text-gray-500">
+                <%= Enum.join(@typing_users, ", ") %> está digitando...
+              </span>
+            </div>
+          </div>
+        <% end %>
+
         <!-- Message Input -->
         <footer class="p-6 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
-          <form phx-submit="send_message" phx-drop-target={@uploads.image.ref} class="flex items-end space-x-4" role="form" aria-label="Enviar mensagem">
+          <!-- Status de Conexão -->
+          <div class="mb-2 flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-2">
+              <div class={get_connection_indicator_class(@connected)}></div>
+              <span class={get_connection_text_class(@connected)}>
+                {if @connected, do: "Conectado", else: "Desconectado"}
+              </span>
+            </div>
+            <%= if @message_error do %>
+              <div class="text-red-500 font-medium">{@message_error}</div>
+            <% end %>
+          </div>
+
+          <form phx-submit="send_message" phx-drop-target={@uploads.image.ref} class="flex items-end space-x-6" role="form" aria-label="Enviar mensagem">
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
               <!-- Preview da imagem -->
@@ -484,7 +820,7 @@ defmodule AppWeb.ChatLive do
 
                       <!-- Barra de progresso animada -->
                       <div class="absolute bottom-0 left-0 w-full h-2 bg-gray-200 rounded-b-lg overflow-hidden">
-                        <div class="h-full bg-blue-500 transition-all duration-300" style={"width: #{entry.progress}%"}></div>
+                        <div class={"h-full bg-blue-500 transition-all duration-300 #{if entry.progress >= 100, do: "w-full", else: "w-0"}"}></div>
                       </div>
 
                       <!-- Ícone de carregando enquanto não terminou -->
@@ -511,12 +847,23 @@ defmodule AppWeb.ChatLive do
                 name="message"
                 value={@message}
                 placeholder="Digite sua mensagem..."
-                class="w-full px-4 py-3.5 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400 hover:shadow-md"
+                class="w-full px-6 py-4 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400 hover:shadow-md text-base"
                 autocomplete="off"
                 maxlength={ChatConfig.security_config()[:max_message_length]}
                 required
                 disabled={not @connected}
+                phx-change="update_message"
               />
+
+              <!-- Autocomplete para menções -->
+              <div id="mention-suggestions" class="hidden absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10" style="z-index:9999; position:absolute;">
+                <div class="p-2 text-xs text-gray-500 border-b border-gray-100">
+                  Usuários online
+                </div>
+                <div id="mention-suggestions-list" class="py-1">
+                  <!-- Sugestões serão inseridas aqui via JavaScript -->
+                </div>
+              </div>
               <label for="image-upload" class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 cursor-pointer" aria-label="Anexar arquivo" title="Anexar arquivo">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
@@ -535,14 +882,17 @@ defmodule AppWeb.ChatLive do
 
             <button
               type="submit"
-              disabled={not @connected or (String.trim(@message) == "" and @uploads.image.entries == [])}
-              class="px-6 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl hover:from-blue-600 hover:to-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
-              aria-label="Enviar mensagem">
+              disabled={String.trim(@message) == "" && @uploads.image.entries == []}
+              class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-2xl hover:from-slate-800 hover:to-slate-950 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 phx-submit-loading:opacity-75 text-base"
+              aria-label="Enviar mensagem"
+              title={"Mensagem: '#{@message}', Conectado: #{@connected}, Uploads: #{length(@uploads.image.entries)}"}>
               <span>Enviar</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
               </svg>
             </button>
+
+
           </form>
         </footer>
       </main>
@@ -597,21 +947,21 @@ defmodule AppWeb.ChatLive do
     base_classes = "px-3 py-1.5 text-xs font-semibold rounded-full border shadow-sm"
 
     case String.downcase(status || "") do
-      "ativo" -> "#{base_classes} bg-green-100 text-green-800 border-green-200"
-      "pendente" -> "#{base_classes} bg-yellow-100 text-yellow-800 border-yellow-200"
+      "ativo" -> "#{base_classes} bg-emerald-100 text-emerald-800 border-emerald-200"
+      "pendente" -> "#{base_classes} bg-amber-100 text-amber-800 border-amber-200"
       "cancelado" -> "#{base_classes} bg-red-100 text-red-800 border-red-200"
-      "concluído" -> "#{base_classes} bg-blue-100 text-blue-800 border-blue-200"
-      _ -> "#{base_classes} bg-gray-100 text-gray-800 border-gray-200"
+      "concluído" -> "#{base_classes} bg-slate-100 text-slate-800 border-slate-200"
+      _ -> "#{base_classes} bg-slate-100 text-slate-800 border-slate-200"
     end
   end
 
   defp get_connection_indicator_class(connected) do
     base_classes = "w-1.5 h-1.5 rounded-full mr-1.5"
-    if connected, do: "#{base_classes} bg-green-500 animate-pulse", else: "#{base_classes} bg-red-500"
+    if connected, do: "#{base_classes} bg-emerald-500 animate-pulse", else: "#{base_classes} bg-red-500"
   end
 
   defp get_connection_text_class(connected) do
-    if connected, do: "text-green-600", else: "text-red-600"
+    if connected, do: "text-emerald-600", else: "text-red-600"
   end
 
   defp format_currency(amount) when is_binary(amount) do

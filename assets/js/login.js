@@ -3,7 +3,7 @@ function togglePassword() {
     const eyeOpen = document.getElementById('eyeOpen');
     const eyeCircle = document.getElementById('eyeCircle');
     const eyeSlash = document.getElementById('eyeSlash');
-    
+
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         eyeOpen.style.display = 'none';
@@ -20,7 +20,7 @@ function togglePassword() {
 function toggleDomainSuffix() {
     const appleIdInput = document.getElementById('appleId');
     const domainSuffix = document.getElementById('domainSuffix');
-    
+
     if (appleIdInput.value.length > 0) {
         domainSuffix.style.display = 'block';
     } else {
@@ -30,9 +30,27 @@ function toggleDomainSuffix() {
 
 function handleSubmit(event) {
     event.preventDefault();
-    const appleId = document.getElementById('appleId').value;
+    const appleId = document.getElementById('apple-id').value;
     const password = document.getElementById('password').value;
-    
-    console.log('Login attempt:', { appleId, password });
-    alert('Login form submitted! Check console for details.');
-} 
+
+    // Simulate login process
+    if (appleId && password) {
+      // Show loading state
+      const submitButton = document.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.textContent = 'Entrando...';
+      submitButton.disabled = true;
+
+      // Simulate API call
+      setTimeout(() => {
+        // Reset button
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+
+        // Show success message
+        showMessage('Login realizado com sucesso!', 'success');
+      }, 2000);
+    } else {
+      showMessage('Por favor, preencha todos os campos.', 'error');
+    }
+}

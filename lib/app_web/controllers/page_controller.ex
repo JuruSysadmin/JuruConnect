@@ -10,4 +10,10 @@ defmodule AppWeb.PageController do
   def hello(conn, _params) do
     text(conn, "Hello world")
   end
+
+  def set_token(conn, %{"token" => token}) do
+    conn
+    |> put_session(:user_token, token)
+    |> redirect(to: "/buscar-pedido")
+  end
 end

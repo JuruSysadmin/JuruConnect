@@ -39,7 +39,7 @@ defmodule App.Chat.Room do
     }
 
     # Log dos parâmetros para debug
-    Logger.debug("Tentando criar mensagem com parâmetros: #{inspect(complete_params)}")
+
 
     # Persist the message to the database with the generated ID
     case Chat.create_message(complete_params) do
@@ -81,7 +81,7 @@ defmodule App.Chat.Room do
   def handle_cast({:start_typing, user_id}, state) do
     typing_users = MapSet.put(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
-    Logger.debug("Broadcasted start_typing for user #{user_id} in order #{state.order_id}")
+
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
   end
 
@@ -89,7 +89,7 @@ defmodule App.Chat.Room do
   def handle_cast({:stop_typing, user_id}, state) do
     typing_users = MapSet.delete(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
-    Logger.debug("Broadcasted stop_typing for user #{user_id} in order #{state.order_id}")
+
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
   end
 
@@ -141,7 +141,7 @@ defmodule App.Chat.Room do
 
   # Helper para obter o nome do usuário pelo ID (você precisará implementar isso)
   defp get_username_by_id(user_id) do
-    case App.Accounts.get_user_by_username(user_id) do
+    case App.Accounts.get_user!(user_id) do
       nil -> ChatConfig.default_username()
       user -> user.username || ChatConfig.default_username()
     end

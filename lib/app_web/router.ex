@@ -1,7 +1,7 @@
 defmodule AppWeb.Router do
   use AppWeb, :router
 
-  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007;"
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -16,13 +16,21 @@ defmodule AppWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :auth do
+    plug AppWeb.Auth.Plugs.AuthenticateUser
+  end
+
   scope "/", AppWeb do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/hello", DashboardLive
-    live "/dashboard", DashboardResumoLive
     live "/login", UserSessionLive.Index, :new
+    get "/auth/set-token", PageController, :set_token
+  end
+
+  scope "/", AppWeb do
+    pipe_through [:browser, :auth]
+
     live "/chat/:order_id", ChatLive
     live "/buscar-pedido", OrderSearchLive
   end

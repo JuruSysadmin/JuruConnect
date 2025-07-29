@@ -35,14 +35,28 @@ defmodule AppWeb.UserSessionLive.Index do
   end
 
   def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket) do
+    require Logger
+    Logger.info("Login attempt for username: #{username}")
+
     case App.Accounts.authenticate_user(username, password) do
       {:ok, user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Bem-vindo, #{user.username}!")
-         |> push_navigate(to: "/hello")}
+        Logger.info("User authenticated successfully: #{user.username}")
+        # Gerar token JWT
+        case AppWeb.Auth.Guardian.encode_and_sign(user) do
+          {:ok, token, _claims} ->
+            Logger.info("Token generated successfully for user: #{user.username}")
+            {:noreply,
+             socket
+             |> put_flash(:info, "Bem-vindo, #{user.username}!")
+             |> push_navigate(to: "/auth/set-token?token=#{token}")}
 
-      {:error, :unauthorized} ->
+          {:error, reason} ->
+            Logger.error("Failed to generate token: #{inspect(reason)}")
+            {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
+        end
+
+      {:error, :invalid_credentials} ->
+        Logger.warning("Invalid credentials for username: #{username}")
         {:noreply, put_flash(socket, :error, "Usuário ou senha inválidos.")}
     end
   end
@@ -92,6 +106,13 @@ defmodule AppWeb.UserSessionLive.Index do
 
   def handle_event("toggle_password", _params, socket) do
     {:noreply, update(socket, :show_password, &(!&1))}
+  end
+
+  # Handler genérico para capturar todos os eventos
+  def handle_event(event, params, socket) do
+    require Logger
+    Logger.info("Unhandled event: #{event} with params: #{inspect(params)}")
+    {:noreply, socket}
   end
 
   defp login_changeset do

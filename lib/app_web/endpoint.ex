@@ -8,7 +8,9 @@ defmodule AppWeb.Endpoint do
     store: :cookie,
     key: "_app_key",
     signing_salt: "tdnofqF8",
-    same_site: "Lax"
+    http_only: true,
+    secure: Mix.env() == :prod,
+    same_site: "Strict"
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
