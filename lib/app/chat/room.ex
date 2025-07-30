@@ -4,6 +4,7 @@ defmodule App.Chat.Room do
   alias App.Chat
   alias App.ChatConfig
   alias App.PubSub
+  alias App.DateTimeHelper
 
   # Client API
   def start_link(order_id) do
@@ -20,7 +21,7 @@ defmodule App.Chat.Room do
     # Load messages when the room starts, using the configured limit
     {:ok, messages, _has_more} = Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
     # The state includes the order_id, the list of messages, and users who are currently typing.
-    {:ok, %{order_id: order_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTime.utc_now()}}
+    {:ok, %{order_id: order_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTimeHelper.now()}}
   end
 
   @impl true
@@ -35,7 +36,7 @@ defmodule App.Chat.Room do
       sender_name: sender_name,
       order_id: order_id,
       tipo: Map.get(message_params, :tipo, "mensagem"),
-      timestamp: Map.get(message_params, :timestamp, DateTime.utc_now())
+      timestamp: Map.get(message_params, :timestamp, DateTimeHelper.now())
     }
 
     # Log dos parâmetros para debug
@@ -51,7 +52,7 @@ defmodule App.Chat.Room do
 
         # Add the new message to the local state (optional, but good for consistency)
         new_messages = state.messages ++ [message]
-        new_state = %{state | messages: new_messages, last_activity: DateTime.utc_now()}
+        new_state = %{state | messages: new_messages, last_activity: DateTimeHelper.now()}
         {:noreply, new_state}
 
       {:error, changeset} ->
@@ -68,12 +69,12 @@ defmodule App.Chat.Room do
           sender_name: sender_name,
           order_id: order_id,
           tipo: "mensagem",
-          inserted_at: DateTime.utc_now()
+          inserted_at: DateTimeHelper.now()
         }
 
         broadcast_message(state.order_id, temp_message)
 
-        {:noreply, %{state | last_activity: DateTime.utc_now()}}
+        {:noreply, %{state | last_activity: DateTimeHelper.now()}}
     end
   end
 
@@ -82,7 +83,7 @@ defmodule App.Chat.Room do
     typing_users = MapSet.put(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
 
-    {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
+    {:noreply, %{state | typing_users: typing_users, last_activity: DateTimeHelper.now()}}
   end
 
   @impl true
@@ -90,7 +91,7 @@ defmodule App.Chat.Room do
     typing_users = MapSet.delete(state.typing_users, user_id)
     broadcast_typing_users(state.order_id, typing_users)
 
-    {:noreply, %{state | typing_users: typing_users, last_activity: DateTime.utc_now()}}
+    {:noreply, %{state | typing_users: typing_users, last_activity: DateTimeHelper.now()}}
   end
 
   @impl true
@@ -98,14 +99,14 @@ defmodule App.Chat.Room do
     # Quando um usuário entra, podemos querer enviar o estado atual de digitação
     # para ele, ou apenas registrar a entrada.
     Logger.info("User #{user_data.name} joined Room GenServer for order #{state.order_id}")
-    {:noreply, %{state | last_activity: DateTime.utc_now()}}
+    {:noreply, %{state | last_activity: DateTimeHelper.now()}}
   end
 
   # Adicionar função para verificar inatividade
   @impl true
   def handle_info(:check_inactivity, state) do
     timeout_minutes = ChatConfig.room_inactivity_timeout()
-    now = DateTime.utc_now()
+    now = DateTimeHelper.now()
     diff = DateTime.diff(now, state.last_activity, :second) / 60
 
     if diff > timeout_minutes do

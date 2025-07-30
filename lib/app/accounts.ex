@@ -148,7 +148,7 @@ defmodule App.Accounts do
   Registra o acesso de um usuário a um pedido.
   """
   def record_order_access(user_id, order_id) do
-    now = DateTime.utc_now()
+    now = App.DateTimeHelper.now()
 
     case Repo.get_by(UserOrderHistory, user_id: user_id, order_id: order_id) do
       nil ->

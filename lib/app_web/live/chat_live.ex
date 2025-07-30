@@ -2,6 +2,8 @@ defmodule AppWeb.ChatLive do
   use AppWeb, :live_view
   alias AppWeb.Presence
   alias App.ChatConfig
+  alias App.Tags
+  alias App.DateTimeHelper
   require Logger
 
   # Hook para autenticação no LiveView
@@ -27,82 +29,30 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-    @impl true
-  def mount(%{"order_id" => order_id} = params, session, socket) do
+  @impl true
+  def mount(%{"order_id" => order_id} = _params, session, socket) do
     topic = "order:#{order_id}"
 
-        # SEGURANÇA MELHORADA: Usar apenas token da sessão, não da URL
-    # Isso evita exposição do token em logs, histórico do navegador, etc.
+    # SEGURANÇA MELHORADA: Usar apenas token da sessão, não da URL
     Logger.info("Socket assigns current_user: #{inspect(socket.assigns[:current_user])}")
     Logger.info("Session user_token: #{inspect(session["user_token"])}")
 
-    {current_user, user_object} = case socket.assigns[:current_user] do
-      nil ->
-        # Usar apenas o token da sessão (mais seguro)
-        token = session["user_token"]
-        case token do
-          nil ->
-            Logger.info("Nenhum token encontrado na sessão")
-            {ChatConfig.default_username(), nil}
-          token ->
-            case AppWeb.Auth.Guardian.resource_from_token(token) do
-              {:ok, user, _claims} ->
-                Logger.info("Usuário encontrado via token: #{user.name || user.username}")
-                {user.name || user.username || ChatConfig.default_username(), user}
-              {:error, reason} ->
-                Logger.error("Erro ao decodificar token: #{inspect(reason)}")
-                {ChatConfig.default_username(), nil}
-            end
-        end
-      user ->
-        # Usuário já foi autenticado via on_mount
-        user_name = user.name || user.username || ChatConfig.default_username()
-        Logger.info("Usuário autenticado via on_mount: #{user_name} (ID: #{user.id})")
-        {user_name, user}
-    end
+    {current_user, user_object} = get_user_from_session_or_socket(socket, session)
 
     if connected?(socket) do
-      # Inscrever no tópico do PubSub para receber mensagens
-      Phoenix.PubSub.subscribe(App.PubSub, topic)
-
-      # Inscrever no tópico de notificações do usuário (se autenticado)
-      if user_object do
-        Phoenix.PubSub.subscribe(App.PubSub, "user:#{user_object.id}")
-      end
-
-      # Track presence do usuário com dados mais completos
-      user_data = %{
-        user_id: case user_object do
-          nil -> "anonymous"
-          user -> user.id
-        end,
-        name: current_user,
-        joined_at: DateTime.utc_now() |> DateTime.to_iso8601(),
-        user_agent: get_connect_info(socket, :user_agent) || "Unknown"
-      }
-
-      case Presence.track(self(), topic, socket.id, user_data) do
-        {:ok, _} -> Logger.info("User #{current_user} joined chat for order #{order_id}")
-        {:error, reason} -> Logger.error("Failed to track presence: #{inspect(reason)}")
-      end
-    end
-
-    # Agendar atualização periódica do status de conexão
-    if connected?(socket) do
-      Process.send_after(self(), :update_connection_status, 5000)
+      setup_pubsub_subscriptions(topic, user_object)
+      setup_presence_tracking(topic, socket, current_user, user_object, order_id)
+      schedule_connection_status_update()
     end
 
     # Buscar dados do pedido com tratamento de erro
-    order = case App.Orders.get_order(order_id) do
-      nil ->
-        %{"orderId" => order_id, "status" => "Não encontrado", "customerName" => "N/A", "amount" => "0", "deliveryType" => "N/A", "deliveryDate" => ""}
-      order -> order
-    end
+    order = get_order_data(order_id)
 
     # Carregar histórico de mensagens com lazy loading
-    {messages, has_more} = case App.Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit()) do
-      {:ok, msgs, more} -> {msgs, more}
-    end
+    {messages, has_more} = load_messages_for_order(order_id)
+
+    # Carregar tags associadas ao pedido
+    order_tags = Tags.get_order_tags(order_id)
 
     # Buscar presences atuais
     presences = Presence.list(topic)
@@ -113,84 +63,195 @@ defmodule AppWeb.ChatLive do
       App.Accounts.record_order_access(user_object.id, order_id)
     end
 
-    socket =
-      socket
-      |> assign(:order_id, order_id)
-      |> assign(:order, order)
-      |> assign(:messages, messages)
-      |> assign(:has_more_messages, has_more)
-      |> assign(:presences, presences)
-      |> assign(:message, "")
-      |> assign(:users_online, users_online)
-      |> assign(:current_user, current_user)
-      |> assign(:user_object, user_object)
-      |> assign(:token, session["user_token"])
-      |> assign(:connected, connected?(socket))
-      |> assign(:connection_status, if(connected?(socket), do: "Conectado", else: "Desconectado"))
-      |> assign(:topic, topic)
-      |> assign(:loading_messages, false)
-      |> assign(:message_error, nil)
-      |> assign(:modal_image_url, nil)
-      |> assign(:typing_users, [])
-      |> assign(:show_typing_indicator, false)
-      |> assign(:show_search, false)
-      |> assign(:message_count, length(messages))
-      |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000)
+    socket = assign_initial_socket_data(socket, %{
+      order_id: order_id,
+      order: order,
+      messages: messages,
+      has_more_messages: has_more,
+      order_tags: order_tags,
+      presences: presences,
+      users_online: users_online,
+      current_user: current_user,
+      user_object: user_object,
+      token: session["user_token"],
+      topic: topic
+    })
 
     {:ok, socket}
+  end
+
+  # Funções auxiliares para mount
+  defp get_user_from_session_or_socket(socket, session) do
+    case socket.assigns[:current_user] do
+      nil -> get_user_from_session_token(session)
+      user -> get_user_from_socket_assigns(user)
+    end
+  end
+
+  defp get_user_from_session_token(session) do
+    token = session["user_token"]
+    case token do
+      nil ->
+        Logger.info("Nenhum token encontrado na sessão")
+        {ChatConfig.default_username(), nil}
+      token ->
+        case AppWeb.Auth.Guardian.resource_from_token(token) do
+          {:ok, user, _claims} ->
+            Logger.info("Usuário encontrado via token: #{user.name || user.username}")
+            {user.name || user.username || ChatConfig.default_username(), user}
+          {:error, reason} ->
+            Logger.error("Erro ao decodificar token: #{inspect(reason)}")
+            {ChatConfig.default_username(), nil}
+        end
+    end
+  end
+
+  defp get_user_from_socket_assigns(user) do
+    user_name = user.name || user.username || ChatConfig.default_username()
+    Logger.info("Usuário autenticado via on_mount: #{user_name} (ID: #{user.id})")
+    {user_name, user}
+  end
+
+  defp setup_pubsub_subscriptions(topic, user_object) do
+    # Inscrever no tópico do PubSub para receber mensagens
+    Phoenix.PubSub.subscribe(App.PubSub, topic)
+
+    # Inscrever no tópico de notificações do usuário (se autenticado)
+    if user_object do
+      Phoenix.PubSub.subscribe(App.PubSub, "user:#{user_object.id}")
+    end
+  end
+
+  defp setup_presence_tracking(topic, socket, current_user, user_object, order_id) do
+    user_data = %{
+      user_id: case user_object do
+        nil -> "anonymous"
+        user -> user.id
+      end,
+      name: current_user,
+      joined_at: DateTimeHelper.now() |> DateTime.to_iso8601(),
+      user_agent: get_connect_info(socket, :user_agent) || "Unknown"
+    }
+
+    case Presence.track(self(), topic, socket.id, user_data) do
+      {:ok, _} -> Logger.info("User #{current_user} joined chat for order #{order_id}")
+      {:error, reason} -> Logger.error("Failed to track presence: #{inspect(reason)}")
+    end
+  end
+
+  defp schedule_connection_status_update do
+    Process.send_after(self(), :update_connection_status, 5000)
+  end
+
+  defp get_order_data(order_id) do
+    case App.Orders.get_order(order_id) do
+      nil ->
+        %{"orderId" => order_id, "status" => "Não encontrado", "customerName" => "N/A", "amount" => "0", "deliveryType" => "N/A", "deliveryDate" => ""}
+      order -> order
+    end
+  end
+
+  defp load_messages_for_order(order_id) do
+    case App.Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit()) do
+      {:ok, msgs, more} -> {msgs, more}
+    end
+  end
+
+  defp assign_initial_socket_data(socket, data) do
+    socket
+    |> assign(:order_id, data.order_id)
+    |> assign(:order, data.order)
+    |> assign(:messages, data.messages)
+    |> assign(:has_more_messages, data.has_more_messages)
+    |> assign(:order_tags, data.order_tags)
+    |> assign(:presences, data.presences)
+    |> assign(:message, "")
+    |> assign(:users_online, data.users_online)
+    |> assign(:current_user, data.current_user)
+    |> assign(:user_object, data.user_object)
+    |> assign(:token, data.token)
+    |> assign(:connected, connected?(socket))
+    |> assign(:connection_status, if(connected?(socket), do: "Conectado", else: "Desconectado"))
+    |> assign(:topic, data.topic)
+    |> assign(:loading_messages, false)
+    |> assign(:message_error, nil)
+    |> assign(:modal_image_url, nil)
+    |> assign(:typing_users, [])
+    |> assign(:show_typing_indicator, false)
+    |> assign(:show_search, false)
+    |> assign(:message_count, length(data.messages))
+    |> assign(:show_tag_modal, false)
+    |> assign(:tag_search_query, "")
+    |> assign(:tag_search_results, [])
+    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000)
   end
 
   @impl true
   def handle_event("send_message", %{"message" => text}, socket) do
     trimmed_text = String.trim(text)
 
+    case validate_message_input(socket, trimmed_text) do
+      {:error, error_msg} ->
+        {:noreply, put_flash(socket, :error, error_msg)}
 
+      {:ok, _} ->
+        process_message_send(socket, trimmed_text)
+    end
+  end
 
+  # Funções auxiliares para handle_event("send_message")
+  defp validate_message_input(socket, trimmed_text) do
     cond do
-      trimmed_text == "" && length(socket.assigns.uploads.image.entries) == 0 ->
-        {:noreply, put_flash(socket, :error, "Mensagem não pode estar vazia")}
+      trimmed_text == "" && Enum.empty?(socket.assigns.uploads.image.entries) ->
+        {:error, "Mensagem não pode estar vazia"}
 
       String.length(trimmed_text) > ChatConfig.security_config()[:max_message_length] ->
-        {:noreply, put_flash(socket, :error, "Mensagem muito longa")}
+        {:error, "Mensagem muito longa"}
 
       not connected?(socket) ->
-        {:noreply, assign(socket, :message_error, "Conexão perdida. Tente recarregar a página.")}
+        {:error, "Conexão perdida. Tente recarregar a página."}
 
       true ->
-        # Consome upload de imagem (se houver)
-        image_url =
-          consume_uploaded_entries(socket, :image, fn %{path: path, client_name: name}, _entry ->
-            filename = "#{UUID.uuid4()}_#{name}"
-            case App.Minio.upload_file(path, filename) do
-              {:ok, url} -> url
-              _ -> nil
-            end
-          end)
-          |> List.first()
+        {:ok, :valid}
+    end
+  end
 
+  defp process_message_send(socket, trimmed_text) do
+    image_url = process_image_upload(socket)
+    {user_id, user_name} = get_current_user_info(socket)
 
+    case App.Chat.send_message(socket.assigns.order_id, user_id, trimmed_text, image_url) do
+      {:ok, _message} ->
+        Logger.info("Message sent by #{user_name} in order #{socket.assigns.order_id}")
+        {:noreply,
+          socket
+          |> assign(:message, "")
+          |> assign(:message_error, nil)
+        }
+      {:error, changeset} ->
+        Logger.error("Failed to send message: #{inspect(changeset.errors)}")
+        {:noreply, assign(socket, :message_error, "Erro ao enviar mensagem")}
+    end
+  end
 
-                                # Obter usuário atual
-        {user_id, user_name} = case socket.assigns[:user_object] do
-          nil ->
-            # Fallback para usuário anônimo - usar nil para user_id
-            {nil, socket.assigns.current_user}
-          user ->
-            {user.id, user.name || user.username}
-        end
+  defp process_image_upload(socket) do
+    consume_uploaded_entries(socket, :image, fn %{path: path, client_name: name}, _entry ->
+      filename = "#{UUID.uuid4()}_#{name}"
+      case App.Minio.upload_file(path, filename) do
+        {:ok, url} -> url
+        _ -> nil
+      end
+    end)
+    |> List.first()
+  end
 
-        case App.Chat.send_message(socket.assigns.order_id, user_id, trimmed_text, image_url) do
-          {:ok, _message} ->
-            Logger.info("Message sent by #{user_name} in order #{socket.assigns.order_id}")
-            {:noreply,
-              socket
-              |> assign(:message, "")
-              |> assign(:message_error, nil)
-            }
-          {:error, changeset} ->
-            Logger.error("Failed to send message: #{inspect(changeset.errors)}")
-            {:noreply, assign(socket, :message_error, "Erro ao enviar mensagem")}
-        end
+  defp get_current_user_info(socket) do
+    case socket.assigns[:user_object] do
+      nil ->
+        # Fallback para usuário anônimo - usar nil para user_id
+        {nil, socket.assigns.current_user}
+      user ->
+        {user.id, user.name || user.username}
     end
   end
 
@@ -239,6 +300,7 @@ defmodule AppWeb.ChatLive do
   # Eventos que podem vir do order_search_live (ignorar)
   def handle_event("focus_search", _params, socket), do: {:noreply, socket}
   def handle_event("blur_search", _params, socket), do: {:noreply, socket}
+  def handle_event("stopPropagation", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_event("search_messages", %{"query" => query}, socket) do
@@ -288,6 +350,105 @@ defmodule AppWeb.ChatLive do
     {:noreply, assign(socket, :modal_image_url, nil)}
   end
 
+  # Eventos para gerenciar tags
+  @impl true
+  def handle_event("show_tag_modal", _params, socket) do
+    # Carregar todas as tags disponíveis quando abrir o modal
+    all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
+    {:noreply,
+      socket
+      |> assign(:show_tag_modal, true)
+      |> assign(:tag_search_results, all_tags)
+      |> assign(:tag_search_query, "")
+    }
+  end
+
+  @impl true
+  def handle_event("hide_tag_modal", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_tag_modal, false)
+      |> assign(:tag_search_query, "")
+      |> assign(:tag_search_results, [])
+    }
+  end
+
+    @impl true
+  def handle_event("search_tags", %{"query" => query}, socket) do
+    if String.length(query) >= 2 do
+      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, results)
+      }
+    else
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, [])
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("search_tags", %{"value" => query}, socket) do
+    if String.length(query) >= 2 do
+      # Buscar tags que correspondem à query
+      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, results)
+      }
+    else
+      # Se a query estiver vazia ou tiver menos de 2 caracteres, mostrar todas as tags
+      all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, all_tags)
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("add_tag_to_order", %{"tag_id" => tag_id}, socket) do
+    user_id = socket.assigns.user_object.id
+
+          case Tags.add_tag_to_order(socket.assigns.order_id, tag_id, user_id) do
+        {:ok, _order_tag} ->
+          # Recarregar tags do pedido
+          order_tags = Tags.get_order_tags(socket.assigns.order_id)
+          {:noreply,
+            socket
+            |> assign(:order_tags, order_tags)
+            |> assign(:show_tag_modal, false)
+            |> assign(:tag_search_query, "")
+            |> assign(:tag_search_results, [])
+            |> put_flash(:info, "Tag adicionada com sucesso!")
+          }
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Erro ao adicionar tag")}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_tag_from_order", %{"tag_id" => tag_id}, socket) do
+    case Tags.remove_tag_from_order(socket.assigns.order_id, tag_id) do
+      {count, nil} when count > 0 ->
+        # Recarregar tags do pedido
+        order_tags = Tags.get_order_tags(socket.assigns.order_id)
+        {:noreply,
+          socket
+          |> assign(:order_tags, order_tags)
+          |> put_flash(:info, "Tag removida com sucesso!")
+        }
+      _ ->
+        {:noreply, put_flash(socket, :error, "Erro ao remover tag")}
+    end
+  end
+
   @impl true
   def handle_info({:new_message, msg}, socket) do
     # Verificar se a mensagem é para este pedido
@@ -304,8 +465,10 @@ defmodule AppWeb.ChatLive do
       |> push_event("scroll-to-bottom", %{})
 
       # Enviar notificação apenas se não for mensagem própria
-      if not is_own_message do
-        socket = socket
+      socket = if is_own_message do
+        socket
+      else
+        socket
         |> push_event("play-notification-sound", %{})
         |> push_event("show-notification", %{
           title: "Nova mensagem",
@@ -379,10 +542,12 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:typing_stop, user}, socket) do
+    updated_socket = socket
+    |> update(:typing_users, fn users -> List.delete(users, user) end)
+
     {:noreply,
-      socket
-      |> update(:typing_users, fn users -> List.delete(users, user) end)
-      |> assign(:show_typing_indicator, length(socket.assigns.typing_users) > 1)
+      updated_socket
+      |> assign(:show_typing_indicator, length(updated_socket.assigns.typing_users) > 1)
     }
   end
 
@@ -397,7 +562,7 @@ defmodule AppWeb.ChatLive do
   end
 
   @impl true
-  def handle_info(%{event: "presence_diff", payload: diff}, socket) do
+  def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
     presences = Presence.list(socket.assigns.topic)
     users_online = extract_users_from_presences(presences)
 
@@ -449,7 +614,6 @@ defmodule AppWeb.ChatLive do
             </div>
             <div>
               <h1 class="text-2xl font-bold text-white tracking-tight">JuruConnect</h1>
-              <p class="text-sm text-slate-300 mt-1 font-medium">Enterprise Chat System</p>
             </div>
           </div>
         </header>
@@ -502,6 +666,15 @@ defmodule AppWeb.ChatLive do
                 </dt>
                 <dd class="font-bold text-slate-900"><%= @order["deliveryType"] %></dd>
               </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <dt class="text-slate-600 font-semibold flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c1.1 0 2 .9 2 2v5.293l2.646-2.647a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0L7 10.207V7z"></path>
+                  </svg>
+                  Tipo:
+                </dt>
+                <dd class="font-bold text-slate-900"><%= @order["orderType"] || "N/A" %></dd>
+              </div>
               <div class="flex justify-between items-center py-2">
                 <dt class="text-slate-600 font-semibold flex items-center">
                   <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,6 +685,46 @@ defmodule AppWeb.ChatLive do
                 <dd class="font-bold text-slate-900"><%= format_date(@order["deliveryDate"]) %></dd>
               </div>
             </dl>
+          </div>
+
+          <!-- Seção de Tags -->
+          <div class="mt-6">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-semibold text-slate-700 flex items-center">
+                <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="7 7h.01M7 3h5c1.1 0 2 .9 2 2v5.293l2.646-2.647a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0L7 10.207V7z"></path>
+                </svg>
+                Tags
+              </h4>
+              <button phx-click="show_tag_modal"
+                      class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                      title="Adicionar tag">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <%= if Enum.empty?(@order_tags) do %>
+                <span class="text-xs text-slate-500 italic">Nenhuma tag associada</span>
+              <% else %>
+                <%= for tag <- @order_tags do %>
+                  <div class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm hover:shadow-md transition-all duration-200 group">
+                    <div class="w-2 h-2 rounded-full mr-2" style={"background-color: #{tag.color}"}></div>
+                    <span class="text-xs font-medium text-slate-700"><%= tag.name %></span>
+                    <button phx-click="remove_tag_from_order"
+                            phx-value-tag_id={tag.id}
+                            class="ml-2 p-0.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all duration-200 opacity-0 group-hover:opacity-100"
+                            title="Remover tag">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
           </div>
         </section>
 
@@ -590,8 +803,8 @@ defmodule AppWeb.ChatLive do
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
               </div>
-              <div>
-                <h1 class="text-2xl font-bold text-slate-900">Enterprise Chat</h1>
+                              <div>
+                  <h1 class="text-2xl font-bold text-slate-900">Tratativa do Pedido #<%= @order["orderId"] %></h1>
                 <div class="flex items-center mt-1 space-x-4">
                   <div class="flex items-center">
                     <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
@@ -910,6 +1123,68 @@ defmodule AppWeb.ChatLive do
         </div>
       </div>
     <% end %>
+
+    <!-- Modal para adicionar tags -->
+    <%= if @show_tag_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" phx-click="hide_tag_modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+          <!-- Header do modal -->
+          <div class="flex items-center justify-between p-6 border-b border-slate-200">
+            <h3 class="text-xl font-bold text-slate-900">Adicionar Tag</h3>
+            <button phx-click="hide_tag_modal" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Conteúdo do modal -->
+          <div class="p-6">
+            <!-- Campo de busca -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-slate-700 mb-2">Filtrar tags</label>
+              <div class="relative">
+                <input type="text"
+                       phx-keyup="search_tags"
+                       phx-debounce="300"
+                       value={@tag_search_query}
+                       placeholder="Digite para filtrar tags..."
+                       class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all duration-200 text-sm" />
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de resultados -->
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              <%= if Enum.empty?(@tag_search_results) do %>
+                <p class="text-sm text-slate-500 text-center py-4">Nenhuma tag disponível</p>
+              <% else %>
+                <%= for tag <- @tag_search_results do %>
+                  <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-all duration-200">
+                    <div class="flex items-center">
+                      <div class="w-3 h-3 rounded-full mr-3" style={"background-color: #{tag.color}"}></div>
+                      <span class="text-sm font-medium text-slate-700"><%= tag.name %></span>
+                      <%= if tag.description do %>
+                        <span class="text-xs text-slate-500 ml-2">(<%= tag.description %>)</span>
+                      <% end %>
+                    </div>
+                    <button phx-click="add_tag_to_order"
+                            phx-value-tag_id={tag.id}
+                            class="px-3 py-1.5 bg-slate-600 text-white text-xs font-medium rounded-lg hover:bg-slate-700 transition-all duration-200">
+                      Adicionar
+                    </button>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 
@@ -976,9 +1251,9 @@ defmodule AppWeb.ChatLive do
   defp format_currency(_), do: "0.00"
 
   defp format_date(date_string) when is_binary(date_string) and date_string != "" do
-    case DateTime.from_iso8601(date_string) do
-      {:ok, datetime, _} ->
-        "#{String.pad_leading("#{datetime.day}", 2, "0")}/#{String.pad_leading("#{datetime.month}", 2, "0")}/#{datetime.year}"
+    case DateTimeHelper.parse_date_string(date_string) do
+      %DateTime{} = datetime ->
+        DateTimeHelper.format_date_br(datetime)
       _ ->
         date_string
     end
@@ -986,11 +1261,6 @@ defmodule AppWeb.ChatLive do
   defp format_date(_), do: "Data não disponível"
 
   defp format_time(datetime) do
-    case datetime do
-      %DateTime{} ->
-        "#{String.pad_leading("#{datetime.hour}", 2, "0")}:#{String.pad_leading("#{datetime.minute}", 2, "0")}"
-      _ ->
-        "Hora não disponível"
-    end
+    DateTimeHelper.format_time_br(datetime)
   end
 end

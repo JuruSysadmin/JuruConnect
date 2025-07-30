@@ -213,7 +213,7 @@ defmodule AppWeb.OrderSearchLive do
   end
 
   defp format_relative_time(datetime) do
-    now = DateTime.utc_now()
+    now = App.DateTimeHelper.now()
     diff = DateTime.diff(now, datetime, :second)
 
     cond do
