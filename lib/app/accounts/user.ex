@@ -36,15 +36,24 @@ defmodule App.Accounts.User do
     field(:store_id, Ecto.UUID)
     field(:website, :string)
     field(:avatar_url, :string)
+    field(:password_hash, :string)
+    field(:password, :string, virtual: true)
 
     timestamps()
   end
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :name, :role, :store_id, :website, :avatar_url])
+    |> cast(attrs, [:username, :name, :role, :store_id, :website, :avatar_url, :password])
     |> validate_required([:username, :name, :role])
     |> validate_length(:username, min: 3)
     |> unique_constraint(:username)
+    |> hash_password()
   end
+
+  defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
+    change(changeset, password_hash: Pbkdf2.hash_pwd_salt(password))
+  end
+
+  defp hash_password(changeset), do: changeset
 end

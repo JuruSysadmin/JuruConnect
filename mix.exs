@@ -53,7 +53,6 @@ defmodule App.MixProject do
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:sweet_xml, "~> 0.6"},
       {:comeonin, "~> 5.3"},
-      {:argon2_elixir, "~> 3.0"},
       {:pbkdf2_elixir, "~> 2.0"},
       {:live_debugger, "~> 0.3", only: [:dev]},
       {:fuse, "~> 2.5.0"},
@@ -75,7 +74,6 @@ defmodule App.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
-      {:bcrypt_elixir, "~> 3.0"},
       {:timex, "~> 3.7"},
       {:tzdata, "~> 1.1"},
 

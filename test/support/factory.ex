@@ -21,7 +21,7 @@ defmodule App.Factory do
       name: Map.get(attrs, :name, "Test User"),
       role: Map.get(attrs, :role, "user"),
       store_id: Map.get(attrs, :store_id, Ecto.UUID.generate()),
-      password_hash: Map.get(attrs, :password_hash, Argon2.hash_pwd_salt("password123"))
+      password_hash: Map.get(attrs, :password_hash, Pbkdf2.hash_pwd_salt("password123"))
     }
   end
 

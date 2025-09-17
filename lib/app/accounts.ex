@@ -52,12 +52,14 @@ defmodule App.Accounts do
   @impl true
   def authenticate_user(
         username,
-        _password,
+
+        password,
         deps \\ %{
           get_user: &get_user_by_username/1
         }
       ) do
-    with user when not is_nil(user) <- deps.get_user.(username) do
+    with user when not is_nil(user) <- deps.get_user.(username),
+         true <- Pbkdf2.verify_pass(password, user.password_hash) do
       {:ok, user}
     else
       _ -> {:error, :unauthorized}
