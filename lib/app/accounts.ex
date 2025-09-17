@@ -130,11 +130,11 @@ defmodule App.Accounts do
     case user do
       nil ->
         Logger.warning("User not found: #{username}")
-        Argon2.no_user_verify()
+        Pbkdf2.no_user_verify()
         {:error, :invalid_credentials}
       user ->
         Logger.info("User found: #{user.username}, verifying password")
-        if Argon2.verify_pass(password, user.password_hash) do
+        if Pbkdf2.verify_pass(password, user.password_hash) do
           Logger.info("Password verified successfully for user: #{user.username}")
           {:ok, user}
         else

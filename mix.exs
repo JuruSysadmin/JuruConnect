@@ -52,7 +52,7 @@ defmodule App.MixProject do
        depth: 1},
       {:sweet_xml, "~> 0.6"},
       {:comeonin, "~> 5.3"},
-      {:argon2_elixir, "~> 3.0"},
+      {:pbkdf2_elixir, "~> 2.0"},
       {:live_debugger, "~> 0.3", only: [:dev]},
       {:fuse, "~> 2.5.0"},
       {:uuid, "~> 1.1"},
