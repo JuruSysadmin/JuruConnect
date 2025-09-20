@@ -64,6 +64,10 @@ defmodule AppWeb.ChatLive do
 
     if authenticated_user do
       App.Accounts.record_order_access(authenticated_user.id, order_id)
+      # Marcar mensagens não lidas como lidas automaticamente
+      Task.start(fn ->
+        App.Chat.mark_all_messages_read_for_user(order_id, authenticated_user.id)
+      end)
     end
 
     socket = assign_initial_socket_data(socket, %{
@@ -156,8 +160,6 @@ defmodule AppWeb.ChatLive do
         build_fallback_order_data(order_id, "Erro de dados")
       {:error, :invalid_response_format} ->
         build_fallback_order_data(order_id, "Formato inválido")
-      {:error, _unknown_error_reason} ->
-        build_fallback_order_data(order_id, "Erro desconhecido")
     end
   end
 
@@ -299,6 +301,35 @@ defmodule AppWeb.ChatLive do
   @impl true
   def handle_event("close_mobile_sidebar", _params, socket) do
     {:noreply, assign(socket, :mobile_sidebar_open, false)}
+  end
+
+  @impl true
+  def handle_event("mark_message_read", %{"message_id" => message_id}, socket) do
+    case socket.assigns[:user_object] do
+      nil -> {:noreply, socket}
+      user ->
+        case App.Chat.mark_message_read(message_id, user.id) do
+          {:ok, _updated_message} -> {:noreply, socket}
+          {:error, _reason} -> {:noreply, socket}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("mark_all_messages_read", _params, socket) do
+    case socket.assigns[:user_object] do
+      nil -> {:noreply, socket}
+      user ->
+        case App.Chat.mark_all_messages_read_for_user(socket.assigns.order_id, user.id) do
+          {:ok, count} ->
+            {:noreply,
+              socket
+              |> put_flash(:info, "#{count} mensagens marcadas como lidas")
+            }
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Erro ao marcar mensagens como lidas: #{reason}")}
+        end
+    end
   end
 
   @impl true
@@ -486,7 +517,7 @@ defmodule AppWeb.ChatLive do
 
   defp process_message_send(socket, message_text) do
     uploaded_image_url = process_image_upload(socket)
-    {user_id, user_name} = get_current_user_info(socket)
+    {user_id, _user_name} = get_current_user_info(socket)
 
     # Show sending state
     socket = socket
@@ -641,6 +672,33 @@ defmodule AppWeb.ChatLive do
       |> assign(:has_more_messages, has_more)
       |> assign(:loading_messages, false)
     }
+  end
+
+  @impl true
+  def handle_info({:message_status_update, updated_message}, socket) do
+    if updated_message.order_id == socket.assigns.order_id do
+      # Atualizar a mensagem específica na lista
+      updated_messages = Enum.map(socket.assigns.messages, fn message ->
+        if message.id == updated_message.id do
+          updated_message
+        else
+          message
+        end
+      end)
+
+      # Notificar o frontend sobre a atualização de status
+      socket = push_event(socket, "message-status-updated", %{
+        message_id: updated_message.id,
+        delivery_status: updated_message.delivery_status,
+        read_status: updated_message.read_status,
+        read_at: updated_message.read_at,
+        viewed_by: updated_message.viewed_by
+      })
+
+      {:noreply, assign(socket, :messages, updated_messages)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -1095,13 +1153,24 @@ defmodule AppWeb.ChatLive do
                     <%= if is_current_user do %>
                       <div class="flex items-center space-x-1">
                         <!-- Status de entrega -->
-                        <svg class="w-3 h-3 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Enviado">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <!-- Indicador de leitura (se implementado) -->
-                        <svg class="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Lido">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <%= case msg.delivery_status do
+                          "sent" -> raw("<svg class=\"w-3 h-3 text-white/70\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Enviado\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\" /></svg>")
+                          "delivered" -> raw("<svg class=\"w-3 h-3 text-white/80\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Entregue\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\" /></svg>")
+                          "failed" -> raw("<svg class=\"w-3 h-3 text-red-400\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Falha na entrega\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\" /></svg>")
+                          _ -> raw("<svg class=\"w-3 h-3 text-white/50\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Status desconhecido\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\" /></svg>")
+                        end %>
+                        <!-- Indicador de leitura -->
+                        <%= case msg.read_status do
+                          "read" ->
+                            viewed_count = parse_viewed_by_count(msg.viewed_by)
+                            if viewed_count > 0 do
+                              raw("<svg class=\"w-3 h-3 text-blue-400\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Lido por #{viewed_count} usuário(s)\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\" /></svg>")
+                            else
+                              raw("<svg class=\"w-3 h-3 text-white/50\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Lido\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\" /></svg>")
+                            end
+                          "unread" -> raw("<svg class=\"w-3 h-3 text-white/30\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Não lido\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\" /></svg>")
+                          _ -> raw("<svg class=\"w-3 h-3 text-white/30\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" title=\"Status desconhecido\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\" /></svg>")
+                        end %>
                       </div>
                     <% end %>
                   </div>
@@ -1505,6 +1574,16 @@ defmodule AppWeb.ChatLive do
       sending_message -> "#{base_classes} opacity-75 cursor-wait"
       message_empty && uploads_empty -> "#{base_classes} opacity-50 cursor-not-allowed"
       true -> base_classes
+    end
+  end
+
+
+  defp parse_viewed_by_count(nil), do: 0
+  defp parse_viewed_by_count(""), do: 0
+  defp parse_viewed_by_count(viewed_by_json) do
+    case Jason.decode(viewed_by_json) do
+      {:ok, list} when is_list(list) -> length(list)
+      _ -> 0
     end
   end
 end
