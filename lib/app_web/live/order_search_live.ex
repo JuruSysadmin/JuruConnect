@@ -1,12 +1,24 @@
 defmodule AppWeb.OrderSearchLive do
+  @moduledoc """
+  LiveView for order search and navigation to chat.
+
+  Provides a search interface for finding orders by ID and displays
+  recent order history for authenticated users. Handles authentication
+  and navigation to the appropriate chat room.
+  """
+
   use AppWeb, :live_view
 
-  def mount(_params, session, socket) do
-    # Obter token da sessão
-    token = session["user_token"]
+  @doc """
+  Mounts the order search LiveView.
 
-    # Obter usuário atual e seu histórico
-    {user_object, order_history} = case token do
+  Loads user authentication and recent order history for display.
+  Handles both authenticated and anonymous users.
+  """
+  def mount(_params, session, socket) do
+    user_token = session["user_token"]
+
+    {authenticated_user, recent_order_history} = case user_token do
       nil -> {nil, []}
       token ->
         case AppWeb.Auth.Guardian.resource_from_token(token) do
@@ -20,27 +32,30 @@ defmodule AppWeb.OrderSearchLive do
     {:ok, assign(socket,
       order_id: "",
       error: nil,
-      token: token,
-      user_object: user_object,
-      order_history: order_history,
+      token: user_token,
+      user_object: authenticated_user,
+      order_history: recent_order_history,
       search_focused: false,
       loading: false
     )}
   end
 
+  @doc """
+  Handles order search requests.
+
+  Validates the order exists and navigates to the chat room.
+  Shows error message if order is not found.
+  """
   def handle_event("search", %{"order_id" => order_id}, socket) do
     socket = assign(socket, :loading, true)
 
     case App.Orders.get_order(order_id) do
-      nil ->
-        {:noreply, assign(socket, error: "Pedido não encontrado", order_id: order_id, loading: false)}
-      _order ->
-        # Navegar para o chat sem expor o token na URL
+      {:ok, _order_data} ->
         {:noreply, push_navigate(socket, to: "/chat/#{order_id}")}
+      {:error, _reason} ->
+        {:noreply, assign(socket, error: "Pedido não encontrado", order_id: order_id, loading: false)}
     end
   end
-
-
 
   def handle_event("clear_error", _params, socket) do
     {:noreply, assign(socket, :error, nil)}
@@ -49,8 +64,7 @@ defmodule AppWeb.OrderSearchLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <!-- Header com gradiente -->
-              <div class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white">
+      <div class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div class="text-center">
             <h1 class="text-4xl font-bold mb-2">JuruConnect</h1>
@@ -62,11 +76,9 @@ defmodule AppWeb.OrderSearchLive do
         </div>
       </div>
 
-      <!-- Conteúdo Principal -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          <!-- Seção de Busca (2/3 da largura) -->
           <div class="lg:col-span-2">
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
               <div class="text-center mb-8">
@@ -140,7 +152,6 @@ defmodule AppWeb.OrderSearchLive do
             </div>
           </div>
 
-          <!-- Seção de Histórico (1/3 da largura) -->
           <div class="lg:col-span-1">
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 h-fit">
               <div class="flex items-center mb-6">
@@ -203,8 +214,7 @@ defmodule AppWeb.OrderSearchLive do
           </div>
         </div>
 
-          <!-- Informações adicionais -->
-          <div class="mt-8 text-center">
+        <div class="mt-8 text-center">
 
         </div>
       </div>
@@ -212,15 +222,16 @@ defmodule AppWeb.OrderSearchLive do
     """
   end
 
+  # Private helper functions
   defp format_relative_time(datetime) do
-    now = App.DateTimeHelper.now()
-    diff = DateTime.diff(now, datetime, :second)
+    current_time = App.DateTimeHelper.now()
+    seconds_ago = DateTime.diff(current_time, datetime, :second)
 
     cond do
-      diff < 60 -> "há alguns segundos"
-      diff < 3600 -> "há #{div(diff, 60)} minuto#{if div(diff, 60) > 1, do: "s", else: ""}"
-      diff < 86400 -> "há #{div(diff, 3600)} hora#{if div(diff, 3600) > 1, do: "s", else: ""}"
-      diff < 2592000 -> "há #{div(diff, 86400)} dia#{if div(diff, 86400) > 1, do: "s", else: ""}"
+      seconds_ago < 60 -> "há alguns segundos"
+      seconds_ago < 3600 -> "há #{div(seconds_ago, 60)} minuto#{if div(seconds_ago, 60) > 1, do: "s", else: ""}"
+      seconds_ago < 86400 -> "há #{div(seconds_ago, 3600)} hora#{if div(seconds_ago, 3600) > 1, do: "s", else: ""}"
+      seconds_ago < 2592000 -> "há #{div(seconds_ago, 86400)} dia#{if div(seconds_ago, 86400) > 1, do: "s", else: ""}"
       true -> "há mais de um mês"
     end
   end

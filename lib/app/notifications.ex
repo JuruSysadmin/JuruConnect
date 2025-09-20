@@ -4,7 +4,6 @@ defmodule App.Notifications do
   """
 
   alias App.Accounts
-  alias App.Chat
   require Logger
 
   @doc """
@@ -88,7 +87,7 @@ defmodule App.Notifications do
   @doc """
   Busca notificações não lidas de um usuário.
   """
-  def get_unread_notifications(user_id) do
+  def get_unread_notifications(_user_id) do
     # Implementar busca de notificações não lidas
     # Por enquanto, retorna lista vazia
     []
@@ -97,7 +96,7 @@ defmodule App.Notifications do
   @doc """
   Marca notificações como lidas.
   """
-  def mark_notifications_as_read(user_id, notification_ids) do
+  def mark_notifications_as_read(_user_id, _notification_ids) do
     # Implementar marcação de notificações como lidas
     :ok
   end
@@ -163,10 +162,7 @@ defmodule App.Notifications do
     end
   end
 
-  @doc """
-  Salva notificação para usuário offline.
-  """
-  defp save_offline_notification(user_id, message) do
+  defp save_offline_notification(user_id, _message) do
     # Implementar salvamento de notificação para usuário offline
     # Pode ser armazenado no banco de dados ou cache
     Logger.info("Salvando notificação offline para usuário #{user_id}")

@@ -14,7 +14,13 @@ config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: App.Finch
 config :swoosh, local: false
 
 # Do not print debug messages in production
-config :logger, level: :info
+config :logger, level: :warning
+
+# Configure structured logging for production
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id, :user_id, :order_id],
+  level: :warning
 
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

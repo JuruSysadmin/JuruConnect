@@ -1,113 +1,149 @@
 defmodule App.ChatConfig do
   @moduledoc """
-  Configurações centralizadas para o sistema de chat.
+  Centralized configuration for the chat system.
 
-  Este módulo contém todas as configurações relacionadas ao chat,
-  incluindo limites de mensagens, timeouts, circuit breakers e valores padrão.
+  Provides type-safe access to all chat-related settings including message limits,
+  timeouts, circuit breakers, and performance tuning parameters. This module
+  ensures consistent configuration across the entire chat system.
   """
 
   @doc """
-  Retorna o limite padrão de mensagens carregadas ao entrar em uma sala.
+  Default number of messages to load when entering a chat room.
+
+  Balances performance with user experience by providing recent context
+  without overwhelming the client with too much data.
   """
   def default_message_limit, do: 50
 
   @doc """
-  Retorna o limite máximo de mensagens que podem ser carregadas de uma vez.
+  Maximum number of messages that can be loaded in a single request.
+
+  Prevents abuse and ensures system stability by limiting the amount
+  of data transferred in a single operation.
   """
   def max_message_limit, do: 100
 
   @doc """
-  Retorna o nome de usuário padrão quando não é possível determinar o nome real.
+  Fallback username when the real user name cannot be determined.
+
+  Used to maintain a consistent user experience even when user data
+  is temporarily unavailable or incomplete.
   """
   def default_username, do: "Usuário"
 
   @doc """
-  Retorna o timeout de inatividade para salas de chat (em minutos).
-  Após este período, a sala será automaticamente encerrada.
+  Room inactivity timeout in minutes before automatic cleanup.
+
+  Prevents resource leaks by automatically closing unused chat rooms
+  and freeing up system resources for active conversations.
   """
   def room_inactivity_timeout, do: 30
 
   @doc """
-  Retorna a configuração do circuit breaker para o serviço de preview de links.
+  Circuit breaker configuration for link preview service.
+
+  Protects the system from cascading failures when external link preview
+  services are unavailable or responding slowly.
   """
   def link_preview_circuit_breaker do
     %{
-      max_failures: 5,           # Número máximo de falhas antes de abrir o circuito
-      failure_period_s: 60,      # Período de tempo para contar falhas (segundos)
-      reset_period_s: 300        # Tempo para tentar fechar o circuito novamente (segundos)
+      max_failures: 5,
+      failure_period_s: 60,
+      reset_period_s: 300
     }
   end
 
   @doc """
-  Retorna a configuração de paginação para carregamento de mensagens antigas.
+  Pagination configuration for loading historical messages.
+
+  Controls how messages are loaded in batches to optimize performance
+  and prevent excessive database queries for very old conversations.
   """
   def pagination_config do
     %{
-      default_limit: 20,         # Número padrão de mensagens por página
-      max_limit: 50,             # Limite máximo de mensagens por página
-      max_offset: 1000           # Offset máximo para evitar consultas muito antigas
+      default_limit: 20,
+      max_limit: 50,
+      max_offset: 1000
     }
   end
 
   @doc """
-  Retorna configurações de performance para o chat.
+  Performance tuning configuration for chat operations.
+
+  Optimizes system performance through caching strategies and
+  controlled update intervals to balance responsiveness with resource usage.
   """
   def performance_config do
     %{
-      message_cache_size: 1000,  # Tamanho do cache de mensagens em memória
-      presence_update_interval: 30_000,  # Intervalo de atualização de presença (ms)
-      typing_timeout: 5000       # Timeout para indicador de digitação (ms)
+      message_cache_size: 1000,
+      presence_update_interval: 30_000,
+      typing_timeout: 5000
     }
   end
 
   @doc """
-  Retorna configurações de segurança para o chat.
+  Security configuration for chat message handling.
+
+  Implements rate limiting and content validation to prevent abuse
+  and ensure system stability under high load conditions.
   """
   def security_config do
     %{
-      max_message_length: 1000,  # Comprimento máximo de uma mensagem
-      rate_limit_messages: 10,   # Máximo de mensagens por minuto por usuário
-      rate_limit_window: 60      # Janela de tempo para rate limiting (segundos)
+      max_message_length: 1000,
+      rate_limit_messages: 10,
+      rate_limit_window: 60
     }
   end
 
   @doc """
-  Retorna configurações de notificação para o chat.
+  Notification preferences for chat interactions.
+
+  Controls user notification behavior including sound alerts and
+  desktop notifications to enhance user engagement.
   """
   def notification_config do
     %{
-      enable_sound: true,        # Habilitar som para novas mensagens
-      enable_desktop_notifications: true,  # Habilitar notificações desktop
-      notification_timeout: 5000  # Tempo de exibição da notificação (ms)
+      enable_sound: true,
+      enable_desktop_notifications: true,
+      notification_timeout: 5000
     }
   end
 
   @doc """
-  Retorna configurações de UI/UX para o chat.
+  User interface and experience configuration.
+
+  Defines visual behavior and interaction patterns to create
+  an intuitive and responsive chat interface.
   """
   def ui_config do
     %{
-      auto_scroll_enabled: true,  # Habilitar scroll automático para novas mensagens
-      show_timestamps: true,      # Mostrar timestamps nas mensagens
-      show_user_avatars: true,    # Mostrar avatares dos usuários
-      message_grouping_timeout: 300_000  # Agrupar mensagens do mesmo usuário (5 min)
+      auto_scroll_enabled: true,
+      show_timestamps: true,
+      show_user_avatars: true,
+      message_grouping_timeout: 300_000
     }
   end
 
   @doc """
-  Retorna configurações de desenvolvimento/debug.
+  Development and debugging configuration.
+
+  Controls logging verbosity and diagnostic features to aid
+  development and troubleshooting without impacting production performance.
   """
   def debug_config do
     %{
-      enable_debug_logs: false,   # Habilitar logs de debug
-      log_message_events: false,  # Logar eventos de mensagens
-      log_presence_events: false, # Logar eventos de presença
-      log_performance_metrics: false  # Logar métricas de performance
+      enable_debug_logs: false,
+      log_message_events: false,
+      log_presence_events: false,
+      log_performance_metrics: false
     }
   end
 
   @doc """
-  Retorna todas as configurações como um mapa.
+  Returns all configuration settings as a structured map.
+
+  Provides a complete view of all chat system settings for
+  administrative interfaces and system monitoring tools.
   """
   def all_configs do
     %{

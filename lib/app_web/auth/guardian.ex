@@ -1,38 +1,59 @@
 defmodule AppWeb.Auth.Guardian do
+  @moduledoc """
+  Guardian authentication module for JWT token management.
+
+  Handles JWT token creation and validation for user authentication.
+  Provides secure token-based authentication with user session management.
+  """
+
   use Guardian, otp_app: :app
 
-  alias App.Accounts
+  require Logger
 
-  def subject_for_token(%{id: id}, _claims) do
-    sub = to_string(id)
-    {:ok, sub}
+  @doc """
+  Creates a subject identifier for JWT token from user data.
+
+  Converts user ID to string format for token subject claim.
+  """
+  def subject_for_token(%{id: user_id}, _claims) do
+    subject_id = to_string(user_id)
+    {:ok, subject_id}
   end
 
   def subject_for_token(_, _) do
-    {:error, :reason_for_error}
+    {:error, :invalid_user_data}
   end
 
-    def resource_from_claims(%{"sub" => id}) do
-    require Logger
-    Logger.info("Guardian: Tentando buscar usuário com ID = #{id}")
+  @doc """
+  Retrieves user resource from JWT token claims.
 
-    # Converter string para UUID se necessário
-    user_id = case Ecto.UUID.cast(id) do
-      {:ok, uuid} -> uuid
-      :error -> id
-    end
+  Validates token subject and fetches user from database.
+  Handles UUID conversion and user lookup with proper error handling.
+  """
+  def resource_from_claims(%{"sub" => subject_id}) do
+    Logger.info("Guardian: Attempting to fetch user with ID = #{subject_id}")
 
-        case App.Repo.get(App.Accounts.User, user_id) do
+    user_id = normalize_user_id(subject_id)
+
+    case App.Repo.get(App.Accounts.User, user_id) do
       nil ->
-        Logger.error("Guardian: Usuário não encontrado com ID = #{user_id}")
+        Logger.error("Guardian: User not found with ID = #{user_id}")
         {:error, :resource_not_found}
       user ->
-        Logger.info("Guardian: Usuário encontrado = #{user.name || user.username}")
+        Logger.info("Guardian: User found = #{user.name || user.username}")
         {:ok, user}
     end
   end
 
   def resource_from_claims(_claims) do
-    {:error, :reason_for_error}
+    {:error, :invalid_token_claims}
+  end
+
+  # Normalizes user ID format for database lookup
+  defp normalize_user_id(subject_id) do
+    case Ecto.UUID.cast(subject_id) do
+      {:ok, uuid} -> uuid
+      :error -> subject_id
+    end
   end
 end

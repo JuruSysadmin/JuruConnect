@@ -1,28 +1,25 @@
 defmodule AppWeb.UserSessionLive.Index do
   @moduledoc """
-  Módulo LiveView para lidar com a funcionalidade de sessão do usuário (login).
+  LiveView for user authentication and registration.
 
-  Este módulo oferece os seguintes recursos:
-  - Renderiza o formulário de login com os campos de e-mail e senha.
-  - Gerencia o estado do formulário usando um changeset do Ecto.
-  - Manipula tentativas de login por meio do evento `"save"`, registrando os parâmetros enviados.
-  - Permite alternar a visibilidade do campo de senha por meio do evento `"toggle_password``.
-
-  Atribuições de soquete:
-  - `:changeset` - O changeset do Ecto para o formulário de login.
-  - `:show_password` - Booleano que indica se a senha deve ser visível.
-  - `:email` - O valor atual da entrada de e-mail.
-  - `:password` - O valor atual da entrada de senha.
+  Provides login and registration functionality with form validation,
+  password visibility toggle, and JWT token generation for authenticated users.
   """
 
   use AppWeb, :live_view
+  require Logger
 
+  @doc """
+  Mounts the user session LiveView.
+
+  Initializes the login form with empty changeset and default state.
+  """
   def mount(_params, _session, socket) do
-    changeset = login_changeset()
+    login_changeset = create_login_changeset()
 
     {:ok,
      assign(socket,
-       changeset: changeset,
+       changeset: login_changeset,
        show_password: false,
        username: "",
        password: "",
@@ -34,65 +31,41 @@ defmodule AppWeb.UserSessionLive.Index do
     {:noreply, assign(socket, email: email)}
   end
 
+  @doc """
+  Handles user login authentication.
+
+  Validates credentials, generates JWT token on success,
+  and redirects to token setting page.
+  """
   def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket) do
-    require Logger
     Logger.info("Login attempt for username: #{username}")
 
     case App.Accounts.authenticate_user(username, password) do
-      {:ok, user} ->
-        Logger.info("User authenticated successfully: #{user.username}")
-        # Gerar token JWT
-        case AppWeb.Auth.Guardian.encode_and_sign(user) do
-          {:ok, token, _claims} ->
-            Logger.info("Token generated successfully for user: #{user.username}")
-            {:noreply,
-             socket
-             |> put_flash(:info, "Bem-vindo, #{user.username}!")
-             |> push_navigate(to: "/auth/set-token?token=#{token}")}
-
-          {:error, reason} ->
-            Logger.error("Failed to generate token: #{inspect(reason)}")
-            {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
-        end
+      {:ok, authenticated_user} ->
+        handle_successful_authentication(socket, authenticated_user)
 
       {:error, :invalid_credentials} ->
-        Logger.warning("Invalid credentials for username: #{username}")
-        {:noreply, put_flash(socket, :error, "Usuário ou senha inválidos.")}
+        handle_failed_authentication(socket, username)
     end
   end
 
-  def handle_event(
-        "register",
-        %{"user" => %{"username" => username, "password" => password}},
-        socket
-      ) do
-    store = App.Stores.get_store_by!("Loja Padrão")
+  def handle_event("register", %{"user" => %{"username" => username, "password" => password}}, socket) do
+    default_store = App.Stores.get_store_by!("Loja Padrão")
 
-    attrs = %{
+    user_attributes = %{
       "username" => username,
       "password" => password,
       "name" => username,
       "role" => "clerk",
-      "store_id" => store.id
+      "store_id" => default_store.id
     }
 
-    case App.Accounts.create_user(attrs) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Cadastro realizado com sucesso! Faça login.")
-         |> assign(show_register: false)}
+    case App.Accounts.create_user(user_attributes) do
+      {:ok, _new_user} ->
+        handle_successful_registration(socket)
 
       {:error, changeset} ->
-        msg =
-          changeset.errors
-          |> Keyword.get(:username)
-          |> case do
-            {_, [constraint: :unique, constraint_name: _]} -> "Nome de usuário já existe."
-            _ -> "Erro ao cadastrar usuário."
-          end
-
-        {:noreply, put_flash(socket, :error, msg)}
+        handle_failed_registration(socket, changeset)
     end
   end
 
@@ -108,14 +81,55 @@ defmodule AppWeb.UserSessionLive.Index do
     {:noreply, update(socket, :show_password, &(!&1))}
   end
 
-  # Handler genérico para capturar todos os eventos
-  def handle_event(event, params, socket) do
-    require Logger
-    Logger.info("Unhandled event: #{event} with params: #{inspect(params)}")
-    {:noreply, socket}
+  # Handles successful user authentication
+  defp handle_successful_authentication(socket, authenticated_user) do
+    Logger.info("User authenticated successfully: #{authenticated_user.username}")
+
+    case AppWeb.Auth.Guardian.encode_and_sign(authenticated_user) do
+      {:ok, jwt_token, _claims} ->
+        Logger.info("Token generated successfully for user: #{authenticated_user.username}")
+        {:noreply,
+         socket
+         |> put_flash(:info, "Bem-vindo, #{authenticated_user.username}!")
+         |> push_navigate(to: "/auth/set-token?token=#{jwt_token}")}
+
+      {:error, reason} ->
+        Logger.error("Failed to generate token: #{inspect(reason)}")
+        {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
+    end
   end
 
-  defp login_changeset do
+  # Handles failed authentication
+  defp handle_failed_authentication(socket, username) do
+    Logger.warning("Invalid credentials for username: #{username}")
+    {:noreply, put_flash(socket, :error, "Usuário ou senha inválidos.")}
+  end
+
+  # Handles successful user registration
+  defp handle_successful_registration(socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, "Cadastro realizado com sucesso! Faça login.")
+     |> assign(show_register: false)}
+  end
+
+  # Handles failed user registration
+  defp handle_failed_registration(socket, changeset) do
+    error_message = extract_registration_error(changeset)
+
+    {:noreply, put_flash(socket, :error, error_message)}
+  end
+
+  # Extracts specific error message from registration changeset
+  defp extract_registration_error(changeset) do
+    case Keyword.get(changeset.errors, :username) do
+      {_, [constraint: :unique, constraint_name: _]} -> "Nome de usuário já existe."
+      _ -> "Erro ao cadastrar usuário."
+    end
+  end
+
+  # Creates an empty changeset for the login form
+  defp create_login_changeset do
     types = %{email: :string, password: :string}
 
     {%{}, types}
