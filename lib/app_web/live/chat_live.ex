@@ -148,7 +148,23 @@ defmodule AppWeb.ChatLive do
     }
 
     case Presence.track(self(), topic, socket.id, user_data) do
-      {:ok, _} -> Logger.info("User #{user_name} joined chat for order #{order_id}")
+      {:ok, _} ->
+        Logger.info("User #{user_name} joined chat for order #{order_id}")
+        # Also track in active rooms system
+        if authenticated_user do
+          case Process.whereis(App.ActiveRooms) do
+            nil ->
+              Logger.warning("ActiveRooms GenServer not available")
+            _pid ->
+              try do
+                App.ActiveRooms.join_room(order_id, authenticated_user.id, user_name)
+              rescue
+                e -> Logger.error("Failed to join active room: #{inspect(e)}")
+              catch
+                :exit, reason -> Logger.error("ActiveRooms process not available: #{inspect(reason)}")
+              end
+          end
+        end
       {:error, reason} -> Logger.error("Failed to track presence: #{inspect(reason)}")
     end
   end
@@ -215,6 +231,7 @@ defmodule AppWeb.ChatLive do
     |> assign(:show_tag_modal, false)
     |> assign(:tag_search_query, "")
     |> assign(:tag_search_results, [])
+    |> assign(:show_sidebar, false)
     |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000)
   end
 
@@ -338,6 +355,11 @@ defmodule AppWeb.ChatLive do
     {:noreply, assign(socket, :show_search, !socket.assigns[:show_search])}
   end
 
+  @impl true
+  def handle_event("toggle_sidebar", _params, socket) do
+    {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
+  end
+
   # These events may come from order_search_live component - we ignore them here to prevent conflicts
   def handle_event("focus_search", _params, socket), do: {:noreply, socket}
   def handle_event("blur_search", _params, socket), do: {:noreply, socket}
@@ -398,7 +420,14 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("show_tag_modal", _params, socket) do
+    require Logger
+    Logger.info("show_tag_modal event triggered")
+    Logger.info("User object: #{inspect(socket.assigns.user_object)}")
+    Logger.info("Store ID: #{inspect(socket.assigns.user_object.store_id)}")
+
     all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
+    Logger.info("Tags found: #{length(all_tags)}")
+
     {:noreply,
       socket
       |> assign(:show_tag_modal, true)
@@ -610,7 +639,20 @@ defmodule AppWeb.ChatLive do
     is_connected = connected?(socket)
     connection_status = if(is_connected, do: "Conectado", else: "Desconectado")
 
-
+    # Remove user from active rooms when disconnected
+    if not is_connected and socket.assigns.user_object do
+      case Process.whereis(App.ActiveRooms) do
+        nil -> :ok
+        _pid ->
+          try do
+            App.ActiveRooms.leave_room(socket.assigns.order_id, socket.assigns.user_object.id)
+          rescue
+            _ -> :ok
+          catch
+            :exit, _ -> :ok
+          end
+      end
+    end
 
     # Continue monitoring while connected to provide real-time status updates
     if is_connected do
@@ -626,38 +668,66 @@ defmodule AppWeb.ChatLive do
   end
 
   @impl true
+  def terminate(_reason, socket) do
+    # Remove user from active rooms when LiveView terminates
+    if socket.assigns.user_object do
+      case Process.whereis(App.ActiveRooms) do
+        nil -> :ok
+        _pid ->
+          try do
+            App.ActiveRooms.leave_room(socket.assigns.order_id, socket.assigns.user_object.id)
+          rescue
+            _ -> :ok
+          catch
+            :exit, _ -> :ok
+          end
+      end
+    end
+    :ok
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
-    <div id="chat-container" class="h-screen w-screen bg-slate-50 font-sans antialiased flex overflow-hidden m-0 p-0" phx-hook="ChatHook" role="main">
+    <div id="chat-container"
+         class="min-h-screen w-full bg-slate-50 font-sans antialiased flex flex-col md:flex-row overflow-hidden m-0 p-0 relative"
+         phx-hook="ChatHook"
+         role="main">
+
       <!-- Sidebar -->
-      <aside class="w-96 bg-white border-r border-slate-200 flex flex-col shadow-2xl z-20 flex-shrink-0 m-0 p-0"
+      <aside class={"fixed md:relative inset-y-0 left-0 w-full md:w-96 bg-white border-r border-slate-200 flex flex-col shadow-2xl z-30 flex-shrink-0 m-0 p-0 transition-transform duration-300 ease-in-out " <>
+                   if(@show_sidebar, do: "translate-x-0", else: "-translate-x-full md:translate-x-0")}
              role="complementary"
              aria-label="Informações do pedido e usuários online">
-
-         <!-- Header com logo/nome -->
-         <header class="p-6 border-b border-slate-100 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800">
-           <div class="flex items-center space-x-3">
-             <div class="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-xl">
-               <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+         <header class="p-4 md:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800">
+           <div class="flex items-center justify-between">
+             <div class="flex items-center space-x-2 md:space-x-3">
+               <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-xl">
+                 <svg class="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+               </div>
+               <div>
+                 <h1 class="text-lg md:text-2xl font-bold text-white tracking-tight">JuruConnect</h1>
+               </div>
+             </div>
+             <!-- Botão para fechar sidebar no mobile -->
+             <button phx-click="toggle_sidebar" class="md:hidden p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200" aria-label="Fechar informações do pedido">
+               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                </svg>
-             </div>
-             <div>
-               <h1 class="text-2xl font-bold text-white tracking-tight">JuruConnect</h1>
-             </div>
+             </button>
            </div>
          </header>
 
         <!-- Pedido Info Card -->
-        <section class="p-6" aria-labelledby="order-info-title">
+        <section class="p-4 md:p-6" aria-labelledby="order-info-title">
           <h2 id="order-info-title" class="sr-only">Informações do Pedido</h2>
-                      <div class="bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div class="bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-3 md:p-6 border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center space-x-2">
                 <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3 class="text-xl font-bold text-gray-900">
+                <h3 class="text-lg md:text-xl font-bold text-gray-900">
                   Pedido #<%= @order["orderId"] %>
                 </h3>
               </div>
@@ -666,101 +736,101 @@ defmodule AppWeb.ChatLive do
               </span>
             </div>
 
-            <dl class="space-y-4 text-sm">
+            <dl class="space-y-3 md:space-y-4 text-sm">
               <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <dt class="text-slate-600 font-semibold flex items-center">
-                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <dt class="text-slate-600 font-semibold flex items-center text-xs md:text-sm">
+                  <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                   </svg>
                   Cliente:
                 </dt>
-                <dd class="font-bold text-slate-900 truncate ml-2 max-w-32" title={@order["customerName"]}>
+                <dd class="font-bold text-slate-900 truncate ml-2 max-w-24 md:max-w-32 text-xs md:text-sm" title={@order["customerName"]}>
                   <%= @order["customerName"] %>
                 </dd>
               </div>
               <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <dt class="text-slate-600 font-semibold flex items-center">
-                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <dt class="text-slate-600 font-semibold flex items-center text-xs md:text-sm">
+                  <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                   </svg>
                   Valor:
                 </dt>
-                <dd class="font-bold text-emerald-700 text-lg">R$ <%= format_currency(@order["amount"]) %></dd>
+                <dd class="font-bold text-emerald-700 text-sm md:text-lg">R$ <%= format_currency(@order["amount"]) %></dd>
               </div>
               <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <dt class="text-slate-600 font-semibold flex items-center">
-                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <dt class="text-slate-600 font-semibold flex items-center text-xs md:text-sm">
+                  <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                   </svg>
                   Entrega:
                 </dt>
-                <dd class="font-bold text-slate-900"><%= @order["deliveryType"] %></dd>
+                <dd class="font-bold text-slate-900 text-xs md:text-sm"><%= @order["deliveryType"] %></dd>
               </div>
               <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <dt class="text-slate-600 font-semibold flex items-center">
-                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <dt class="text-slate-600 font-semibold flex items-center text-xs md:text-sm">
+                  <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c1.1 0 2 .9 2 2v5.293l2.646-2.647a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0L7 10.207V7z"></path>
                   </svg>
                   Tipo:
                 </dt>
-                <dd class="font-bold text-slate-900"><%= @order["orderType"] || "N/A" %></dd>
+                <dd class="font-bold text-slate-900 text-xs md:text-sm"><%= @order["orderType"] || "N/A" %></dd>
               </div>
               <div class="flex justify-between items-center py-2">
-                <dt class="text-slate-600 font-semibold flex items-center">
-                  <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <dt class="text-slate-600 font-semibold flex items-center text-xs md:text-sm">
+                  <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6"></path>
                   </svg>
                   Data:
                 </dt>
-                <dd class="font-bold text-slate-900"><%= format_date(@order["deliveryDate"]) %></dd>
+                <dd class="font-bold text-slate-900 text-xs md:text-sm"><%= format_date(@order["deliveryDate"]) %></dd>
               </div>
             </dl>
           </div>
 
           <!-- Seção de Tags - Melhorada para maior visibilidade -->
-          <div class="mt-6">
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="text-sm font-bold text-slate-800 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="mt-4 md:mt-6">
+            <div class="flex items-center justify-between mb-3 md:mb-4">
+              <h4 class="text-xs md:text-sm font-bold text-slate-800 flex items-center">
+                <svg class="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="7 7h.01M7 3h5c1.1 0 2 .9 2 2v5.293l2.646-2.647a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0L7 10.207V7z"></path>
                 </svg>
                 Status do Pedido
               </h4>
               <button phx-click="show_tag_modal"
-                      class="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-200 border border-slate-200 hover:border-slate-300"
+                      class="p-1.5 md:p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-200 border border-slate-200 hover:border-slate-300"
                       title="Gerenciar status">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>
               </button>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-2 md:space-y-3">
               <%= if Enum.empty?(@order_tags) do %>
-                <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-4 text-center">
-                  <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg p-3 md:p-4 text-center">
+                  <svg class="w-6 h-6 md:w-8 md:h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="7 7h.01M7 3h5c1.1 0 2 .9 2 2v5.293l2.646-2.647a.5.5 0 01.708.708l-3.5 3.5a.5.5 0 01-.708 0L7 10.207V7z"></path>
                   </svg>
-                  <p class="text-sm text-slate-500 font-medium">Nenhum status definido</p>
+                  <p class="text-xs md:text-sm text-slate-500 font-medium">Nenhum status definido</p>
                   <p class="text-xs text-slate-400 mt-1">Clique no botão + para adicionar um status</p>
                 </div>
               <% else %>
                 <%= for tag <- @order_tags do %>
-                  <div class="flex items-center justify-between bg-white border-2 border-slate-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200 group">
+                  <div class="flex items-center justify-between bg-white border-2 border-slate-200 rounded-xl px-3 md:px-4 py-2 md:py-3 shadow-sm hover:shadow-md transition-all duration-200 group">
                     <div class="flex items-center">
-                      <div class="w-4 h-4 rounded-full mr-3 shadow-sm" style={"background-color: #{tag.color}"}></div>
+                      <div class="w-3 h-3 md:w-4 md:h-4 rounded-full mr-2 md:mr-3 shadow-sm" style={"background-color: #{tag.color}"}></div>
                       <div>
-                        <span class="text-sm font-bold text-slate-800"><%= tag.name %></span>
+                        <span class="text-xs md:text-sm font-bold text-slate-800"><%= tag.name %></span>
                         <%= if tag.description do %>
-                          <p class="text-xs text-slate-500 mt-0.5"><%= tag.description %></p>
+                          <p class="text-xs text-slate-500 mt-0.5 hidden md:block"><%= tag.description %></p>
                         <% end %>
                       </div>
                     </div>
                     <button phx-click="remove_tag_from_order"
                             phx-value-tag_id={tag.id}
-                            class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                            class="p-1 md:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
                             title="Remover status">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
@@ -772,36 +842,36 @@ defmodule AppWeb.ChatLive do
         </section>
 
         <!-- Usuários Online -->
-        <section class="px-6 mb-6 flex-1" aria-labelledby="users-online-title">
-          <h2 id="users-online-title" class="text-sm font-bold text-slate-800 mb-4 flex items-center">
-            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-3 animate-pulse shadow-sm" aria-hidden="true"></div>
-            <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <section class="px-4 md:px-6 mb-4 md:mb-6 flex-1" aria-labelledby="users-online-title">
+          <h2 id="users-online-title" class="text-xs md:text-sm font-bold text-slate-800 mb-3 md:mb-4 flex items-center">
+            <div class="w-2 h-2 md:w-2.5 md:h-2.5 bg-emerald-500 rounded-full mr-2 md:mr-3 animate-pulse shadow-sm" aria-hidden="true"></div>
+            <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
             Usuários Online (<%= length(@users_online) %>)
           </h2>
 
-          <div class="space-y-2 max-h-64 overflow-y-auto" role="list">
+          <div class="space-y-1 md:space-y-2 max-h-48 md:max-h-64 overflow-y-auto" role="list">
             <%= if Enum.empty?(@users_online) do %>
-              <div class="text-center py-8">
-                <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="text-center py-6 md:py-8">
+                <svg class="w-8 h-8 md:w-12 md:h-12 text-slate-300 mx-auto mb-2 md:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                 </svg>
-                <p class="text-sm text-slate-500 italic">Nenhum usuário online</p>
+                <p class="text-xs md:text-sm text-slate-500 italic">Nenhum usuário online</p>
               </div>
             <% else %>
               <%= for user <- @users_online do %>
-                <div class="flex items-center p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-200 hover:shadow-sm group" role="listitem">
-                  <div class="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200" aria-hidden="true">
-                    <span class="text-white text-sm font-bold"><%= get_user_initial(user) %></span>
+                <div class="flex items-center p-2 md:p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-200 hover:shadow-sm group" role="listitem">
+                  <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-2 md:mr-3 shadow-md group-hover:shadow-lg transition-shadow duration-200" aria-hidden="true">
+                    <span class="text-white text-xs md:text-sm font-bold"><%= get_user_initial(user) %></span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <span class="text-sm font-semibold text-slate-800 truncate block"><%= user %></span>
+                    <span class="text-xs md:text-sm font-semibold text-slate-800 truncate block"><%= user %></span>
                     <%= if user == @current_user do %>
                       <span class="text-xs text-slate-700 font-medium">(Você)</span>
                     <% end %>
                   </div>
-                  <div class="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0 animate-pulse" aria-label="Online" title="Online"></div>
+                  <div class="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full flex-shrink-0 animate-pulse" aria-label="Online" title="Online"></div>
                 </div>
               <% end %>
             <% end %>
@@ -809,36 +879,36 @@ defmodule AppWeb.ChatLive do
         </section>
 
          <!-- Footer com informações do usuário atual -->
-         <footer class="p-6 border-t border-slate-100 bg-slate-50/50">
+         <footer class="p-3 md:p-6 border-t border-slate-100 bg-slate-50/50">
            <div class="flex items-center justify-between">
              <div class="flex items-center flex-1 min-w-0">
-               <div class="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-3 shadow-md" aria-hidden="true">
-                 <span class="text-white text-sm font-bold"><%= get_user_initial(@current_user) %></span>
+               <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-full flex items-center justify-center mr-2 md:mr-3 shadow-md" aria-hidden="true">
+                 <span class="text-white text-xs md:text-sm font-bold"><%= get_user_initial(@current_user) %></span>
                </div>
                <div class="min-w-0 flex-1">
-                 <p class="text-sm font-semibold text-slate-900 truncate"><%= @current_user %></p>
+                 <p class="text-xs md:text-sm font-semibold text-slate-900 truncate"><%= @current_user %></p>
                  <p class="text-xs font-medium flex items-center">
                    <span class={get_connection_indicator_class(@connected)} aria-hidden="true"></span>
                    <span class={get_connection_text_class(@connected)}><%= @connection_status %></span>
                  </p>
                </div>
              </div>
-             <div class="flex items-center space-x-2">
-               <button class="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 rounded-lg hover:shadow-sm"
+             <div class="flex items-center space-x-1 md:space-x-2">
+               <button class="p-1.5 md:p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200 rounded-lg hover:shadow-sm"
                        aria-label="Configurações"
                        title="Configurações">
-                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                  </svg>
                </button>
                <button
                  phx-click="exit_chat"
-                 class="p-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm"
+                 class="p-1.5 md:p-2.5 text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm"
                  title="Sair do chat e voltar para busca de pedidos"
                  aria-label="Sair do chat"
                >
-                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                  </svg>
                </button>
@@ -848,44 +918,50 @@ defmodule AppWeb.ChatLive do
       </aside>
 
       <!-- Área principal do chat - colada na sidebar -->
-      <main class="flex-1 h-screen flex flex-col bg-white min-w-0 border-l border-slate-200 max-w-none m-0 p-0" role="main" aria-label="Área de chat">
+      <main class="flex-1 h-full md:h-screen flex flex-col bg-white min-w-0 border-t md:border-l border-slate-200 max-w-none m-0 p-0 md:ml-0" role="main" aria-label="Área de chat">
         <!-- Header do Chat -->
-        <header class="flex items-center justify-between p-6 border-b border-slate-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
-          <div class="flex items-center">
-            <div class="flex items-center space-x-3">
-                              <div class="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-xl">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <header class="flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-6 border-b border-slate-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
+          <div class="flex items-center w-full">
+            <!-- Botão para abrir sidebar no mobile -->
+            <button phx-click="toggle_sidebar" class="md:hidden p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-200 mr-2 flex-shrink-0" aria-label="Abrir informações do pedido">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+            <div class="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+              <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-xl">
+                <svg class="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
               </div>
-                              <div>
-                  <div class="flex items-center space-x-3">
-                    <h1 class="text-2xl font-bold text-slate-900">Tratativa do Pedido #<%= @order["orderId"] %></h1>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-col space-y-1">
+                  <h1 class="text-sm md:text-2xl font-bold text-slate-900 truncate">Tratativa do Pedido #<%= @order["orderId"] %></h1>
                     <!-- Status Tags no Header para máxima visibilidade -->
                     <%= if not Enum.empty?(@order_tags) do %>
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center space-x-1 flex-wrap">
                         <%= for tag <- @order_tags do %>
-                          <div class="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
-                            <div class="w-2 h-2 rounded-full mr-2" style={"background-color: #{tag.color}"}></div>
+                          <div class="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                            <div class="w-1.5 h-1.5 rounded-full mr-1.5" style={"background-color: #{tag.color}"}></div>
                             <span class="text-xs font-bold text-slate-700"><%= tag.name %></span>
                           </div>
                         <% end %>
                       </div>
                     <% end %>
                   </div>
-                <div class="flex items-center mt-1 space-x-4">
+                <div class="flex flex-wrap items-center mt-1 space-x-2 md:space-x-4">
                   <div class="flex items-center">
                     <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
-                    <span class="text-sm text-slate-600 font-medium"><%= @connection_status %></span>
+                    <span class="text-xs text-slate-600 font-medium"><%= @connection_status %></span>
                   </div>
                   <div class="flex items-center text-xs text-slate-500">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                     </svg>
-                    <%= @message_count %> mensagens
+                    <%= @message_count %> msgs
                   </div>
                   <div class="flex items-center text-xs text-slate-500">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                     <%= length(@users_online) %> online
@@ -895,25 +971,25 @@ defmodule AppWeb.ChatLive do
             </div>
           </div>
 
-          <div class="flex items-center space-x-2">
-            <button phx-click="toggle_search" class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
+          <div class="flex items-center space-x-1 mt-2 md:mt-0">
+            <button phx-click="toggle_search" class="p-1.5 md:p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
                     aria-label="Buscar mensagens"
                     title="Buscar mensagens">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </button>
-            <button class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
+            <button class="p-1.5 md:p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
                     aria-label="Exportar conversa"
                     title="Exportar conversa">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
             </button>
-            <button class="p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
+            <button class="p-1.5 md:p-2.5 text-slate-500 hover:text-slate-700 transition-all duration-200 rounded-lg hover:bg-slate-100 hover:shadow-sm"
                     aria-label="Mais opções"
                     title="Mais opções">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
               </svg>
             </button>
@@ -922,7 +998,7 @@ defmodule AppWeb.ChatLive do
 
         <!-- Error Message -->
         <%= if @message_error do %>
-          <div class="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between animate-pulse">
+          <div class="mx-4 md:mx-6 mt-4 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between animate-pulse">
             <div class="flex items-center">
               <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -939,7 +1015,7 @@ defmodule AppWeb.ChatLive do
 
         <!-- Search Bar -->
         <%= if @show_search do %>
-          <div class="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="mx-4 md:mx-6 mt-4 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div class="flex items-center space-x-2">
               <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -962,7 +1038,7 @@ defmodule AppWeb.ChatLive do
 
         <!-- Messages Container -->
         <div id="messages"
-             class="flex-1 overflow-y-auto px-12 py-8 bg-gradient-to-b from-slate-50/30 to-white scroll-smooth min-h-0"
+             class="flex-1 overflow-y-auto px-3 py-3 md:px-12 md:py-8 bg-gradient-to-b from-slate-50/30 to-white scroll-smooth min-h-0"
              role="log"
              aria-live="polite"
              aria-label="Mensagens do chat">
@@ -1031,7 +1107,7 @@ defmodule AppWeb.ChatLive do
                 <% end %>
 
                 <div class={
-                  "relative max-w-md lg:max-w-lg xl:max-w-xl px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 " <>
+                  "relative max-w-[85%] sm:max-w-md lg:max-w-lg xl:max-w-xl px-3 md:px-4 py-2 md:py-3 rounded-2xl shadow-sm transition-all duration-200 " <>
                   if(is_current_user,
                     do: "bg-gradient-to-br from-green-500 to-green-600 text-white rounded-br-md",
                     else: "bg-white text-gray-900 rounded-bl-md border border-gray-200")
@@ -1070,7 +1146,7 @@ defmodule AppWeb.ChatLive do
 
         <!-- Typing Indicator -->
         <%= if @show_typing_indicator && @typing_users && length(@typing_users) > 0 do %>
-          <div class="px-6 py-2 bg-gray-50/50 border-t border-gray-100">
+          <div class="px-4 md:px-6 py-2 bg-gray-50/50 border-t border-gray-100">
             <div class="flex items-center space-x-2">
               <div class="flex space-x-1">
                 <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -1085,7 +1161,7 @@ defmodule AppWeb.ChatLive do
         <% end %>
 
         <!-- Message Input -->
-        <footer class="p-6 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
+        <footer class="p-3 md:p-6 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg">
           <!-- Status de Conexão -->
           <div class="mb-2 flex items-center justify-between text-xs">
             <div class="flex items-center space-x-2">
@@ -1099,7 +1175,7 @@ defmodule AppWeb.ChatLive do
             <% end %>
           </div>
 
-          <form phx-submit="send_message" phx-drop-target={@uploads.image.ref} class="flex items-end space-x-6" role="form" aria-label="Enviar mensagem">
+          <form phx-submit="send_message" phx-drop-target={@uploads.image.ref} class="flex items-end space-x-2 md:space-x-6" role="form" aria-label="Enviar mensagem">
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
               <!-- Preview da imagem -->
@@ -1139,7 +1215,7 @@ defmodule AppWeb.ChatLive do
                 name="message"
                 value={@message}
                 placeholder="Digite sua mensagem..."
-                class="w-full px-6 py-4 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400 hover:shadow-md text-base"
+                class="w-full px-3 md:px-6 py-2.5 md:py-4 pr-8 md:pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400 hover:shadow-md text-sm md:text-base"
                 autocomplete="off"
                 maxlength={ChatConfig.security_config()[:max_message_length]}
                 required
@@ -1156,8 +1232,8 @@ defmodule AppWeb.ChatLive do
                   <!-- Sugestões serão inseridas aqui via JavaScript -->
                 </div>
               </div>
-              <label for="image-upload" class="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 cursor-pointer" aria-label="Anexar arquivo" title="Anexar arquivo">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <label for="image-upload" class="absolute right-1.5 md:right-3 top-1/2 transform -translate-y-1/2 p-1 md:p-1.5 text-gray-400 hover:text-gray-600 transition-all duration-200 rounded-lg hover:bg-gray-100 cursor-pointer" aria-label="Anexar arquivo" title="Anexar arquivo">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
                 <input
@@ -1175,11 +1251,12 @@ defmodule AppWeb.ChatLive do
             <button
               type="submit"
               disabled={String.trim(@message) == "" && @uploads.image.entries == []}
-              class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-2xl hover:from-slate-800 hover:to-slate-950 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 phx-submit-loading:opacity-75 text-base"
+              class="px-3 md:px-8 py-2.5 md:py-4 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-2xl hover:from-slate-800 hover:to-slate-950 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-1 md:space-x-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 phx-submit-loading:opacity-75 text-sm md:text-base"
               aria-label="Enviar mensagem"
               title={"Mensagem: '#{@message}', Conectado: #{@connected}, Uploads: #{length(@uploads.image.entries)}"}>
-              <span>Enviar</span>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <span class="hidden sm:inline">Enviar</span>
+              <span class="sm:hidden">→</span>
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
               </svg>
             </button>
@@ -1189,6 +1266,11 @@ defmodule AppWeb.ChatLive do
         </footer>
       </main>
     </div>
+
+    <!-- Overlay para mobile quando sidebar está aberta -->
+    <%= if @show_sidebar do %>
+      <div class="fixed inset-0 bg-black/50 z-20 md:hidden" phx-click="toggle_sidebar" aria-hidden="true"></div>
+    <% end %>
 
     <%= if @modal_image_url do %>
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" phx-click="close_image_modal">
@@ -1205,8 +1287,8 @@ defmodule AppWeb.ChatLive do
 
     <!-- Modal para adicionar tags -->
     <%= if @show_tag_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" phx-click="hide_tag_modal">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_tag_modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
           <!-- Header do modal -->
           <div class="flex items-center justify-between p-6 border-b border-slate-200">
             <h3 class="text-xl font-bold text-slate-900">Adicionar Tag</h3>

@@ -27,6 +27,10 @@ defmodule AppWeb.Endpoint do
     gzip: false,
     only: AppWeb.static_paths()
 
+  if Code.ensure_loaded?(Tidewave) do
+    plug Tidewave
+  end
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
@@ -35,6 +39,7 @@ defmodule AppWeb.Endpoint do
     plug Phoenix.CodeReloader
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :app
   end
+
 
   plug Phoenix.LiveDashboard.RequestLogger,
     param_key: "request_logger",

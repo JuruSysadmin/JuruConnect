@@ -5,11 +5,12 @@ defmodule AppWeb.SessionController do
   alias AppWeb.Auth.Guardian
 
   def new(conn, _params) do
-    changeset = Accounts.User.changeset(%Accounts.User{}, %{})
+    changeset = create_empty_changeset()
     render(conn, "new.html", changeset: changeset)
   end
 
-  def create(conn, %{"user" => %{"username" => username, "password" => password}}) do
+  def create(conn, %{"user" => %{"username" => username, "password" => password}})
+      when is_binary(username) and is_binary(password) and byte_size(username) > 0 and byte_size(password) > 0 do
     case Accounts.authenticate_user(username, password) do
       {:ok, user} ->
         conn
@@ -18,11 +19,14 @@ defmodule AppWeb.SessionController do
         |> redirect(to: "/hello")
 
       {:error, :invalid_credentials} ->
-        changeset = Accounts.User.changeset(%Accounts.User{}, %{})
-
         conn
         |> put_flash(:error, "Usuário ou senha inválidos.")
-        |> render("new.html", changeset: changeset)
+        |> render_login_form()
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(:error, "Erro interno. Tente novamente.")
+        |> render_login_form()
     end
   end
 
@@ -31,5 +35,16 @@ defmodule AppWeb.SessionController do
     |> Guardian.Plug.sign_out()
     |> put_flash(:info, "Você saiu com sucesso.")
     |> redirect(to: "/")
+  end
+
+  # --- Private Functions ---
+
+  defp create_empty_changeset do
+    Accounts.User.changeset(%Accounts.User{}, %{})
+  end
+
+  defp render_login_form(conn) do
+    changeset = create_empty_changeset()
+    render(conn, "new.html", changeset: changeset)
   end
 end

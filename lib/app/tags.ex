@@ -129,14 +129,18 @@ defmodule App.Tags do
   """
   def create_default_tags(store_id, created_by) do
     default_tags = [
-      %{name: "Urgente", color: "#ef4444", description: "Pedidos que precisam de atenção imediata"},
-      %{name: "Pendente", color: "#f59e0b", description: "Pedidos aguardando resposta"},
-      %{name: "Resolvido", color: "#10b981", description: "Pedidos com problema resolvido"},
-      %{name: "Cancelado", color: "#6b7280", description: "Pedidos cancelados"},
-      %{name: "Em Análise", color: "#3b82f6", description: "Pedidos sendo analisados"},
-      %{name: "Aprovado", color: "#8b5cf6", description: "Pedidos aprovados"},
-      %{name: "Rejeitado", color: "#dc2626", description: "Pedidos rejeitados"},
-      %{name: "Vip", color: "#fbbf24", description: "Clientes VIP"}
+      %{name: "EM ANÁLISE", color: "#3b82f6", description: "Pedido sendo analisado pela equipe"},
+      %{name: "AGUARDANDO CLIENTE", color: "#f59e0b", description: "Aguardando resposta do cliente"},
+      %{name: "RESOLVIDO", color: "#10b981", description: "Problema resolvido com sucesso"},
+      %{name: "URGENTE", color: "#ef4444", description: "Pedidos que precisam de atenção imediata"},
+      %{name: "PENDENTE", color: "#f59e0b", description: "Pedidos aguardando resposta"},
+      %{name: "CANCELADO", color: "#6b7280", description: "Pedidos cancelados"},
+      %{name: "APROVADO", color: "#8b5cf6", description: "Pedidos aprovados"},
+      %{name: "REJEITADO", color: "#dc2626", description: "Pedidos rejeitados"},
+      %{name: "VIP", color: "#fbbf24", description: "Clientes VIP"},
+      %{name: "EM PRODUÇÃO", color: "#06b6d4", description: "Pedido em processo de produção"},
+      %{name: "ENTREGUE", color: "#059669", description: "Pedido entregue com sucesso"},
+      %{name: "DEVOLVIDO", color: "#dc2626", description: "Pedido devolvido pelo cliente"}
     ]
 
     Enum.each(default_tags, fn tag_attrs ->

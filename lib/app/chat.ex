@@ -34,22 +34,21 @@ defmodule App.Chat do
   @doc """
   Lists messages for a given chat, with pagination.
   """
-  def list_messages(chat_id, opts \\ []) do
+  def list_messages(chat_id, opts \\ []) when is_binary(chat_id) do
     offset = Keyword.get(opts, :offset, 0)
     limit = Keyword.get(opts, :limit, 50)
 
-    query =
-      from(m in Message,
-        where: m.chat_id == ^chat_id,
-        order_by: [desc: m.inserted_at],
-        offset: ^offset,
-        limit: ^limit
-      )
-
-    messages = Repo.all(query) |> Enum.reverse()
-
-    has_more_messages = length(messages) == limit
-    {:ok, messages, has_more_messages}
+    Message
+    |> where([m], m.chat_id == ^chat_id)
+    |> order_by([m], desc: m.inserted_at)
+    |> offset(^offset)
+    |> limit(^limit)
+    |> Repo.all()
+    |> Enum.reverse()
+    |> then(fn messages ->
+      has_more_messages = length(messages) == limit
+      {:ok, messages, has_more_messages}
+    end)
   end
 
   @doc """
@@ -62,41 +61,32 @@ defmodule App.Chat do
   end
 
   def get_messages(chat_id) do
-    ChatSession.get_messages(chat_id)
+    list_recent_messages(chat_id)
   end
 
   @doc """
   Lista mensagens para um pedido (order_id), com limite e offset opcional.
   """
-  def list_messages_for_order(order_id, limit \\ 50, offset \\ 0) do
-    query =
-      from(m in Message,
-        where: m.order_id == ^order_id,
-        order_by: [asc: m.inserted_at],
-        offset: ^offset,
-        limit: ^limit
-      )
-
-    messages = Repo.all(query)
-    has_more_messages = length(messages) == limit
-    {:ok, messages, has_more_messages}
+  def list_messages_for_order(order_id, limit \\ 50, offset \\ 0)
+      when is_binary(order_id) and is_integer(limit) and is_integer(offset) do
+    Message
+    |> where([m], m.order_id == ^order_id)
+    |> order_by([m], asc: m.timestamp)
+    |> offset(^offset)
+    |> limit(^limit)
+    |> Repo.all()
+    |> then(fn messages ->
+      has_more_messages = length(messages) == limit
+      {:ok, messages, has_more_messages}
+    end)
   end
 
   @doc """
   Envia uma mensagem para um pedido específico, com suporte a imagem e notificações.
   """
-  def send_message(order_id, sender_id, text, image_url \\ nil) do
-    # Buscar nome do usuário se sender_id for um ID válido
-    sender_name = case sender_id do
-      nil -> "Usuário Anônimo"
-      id when is_binary(id) ->
-        case App.Accounts.get_user!(id) do
-          %{name: name} when not is_nil(name) -> name
-          %{username: username} when not is_nil(username) -> username
-          _ -> "Usuário"
-        end
-      _ -> "Usuário"
-    end
+  def send_message(order_id, sender_id, text, image_url \\ nil)
+      when is_binary(order_id) and is_binary(text) and byte_size(text) > 0 do
+    sender_name = get_sender_name(sender_id)
 
     params = %{
       text: text,
@@ -104,7 +94,8 @@ defmodule App.Chat do
       sender_name: sender_name,
       order_id: order_id,
       tipo: "mensagem",
-      image_url: image_url
+      image_url: image_url,
+      timestamp: DateTime.utc_now()
     }
 
     case create_message(params) do
@@ -123,9 +114,16 @@ defmodule App.Chat do
     end
   end
 
-  @doc """
-  Processa notificações para uma nova mensagem.
-  """
+  defp get_sender_name(nil), do: "Usuário Anônimo"
+  defp get_sender_name(sender_id) when is_binary(sender_id) do
+    case App.Accounts.get_user!(sender_id) do
+      %{name: name} when not is_nil(name) -> name
+      %{username: username} when not is_nil(username) -> username
+      _ -> "Usuário"
+    end
+  end
+  defp get_sender_name(_), do: "Usuário"
+
   defp process_message_notifications(message, order_id) do
     # Buscar todos os usuários que têm acesso ao pedido
     # Por enquanto, vamos notificar todos os usuários online no chat

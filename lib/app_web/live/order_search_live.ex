@@ -1,51 +1,69 @@
 defmodule AppWeb.OrderSearchLive do
   use AppWeb, :live_view
 
+  @doc """
+  Mounts the LiveView and initializes the order search interface.
+  Loads user authentication state and recent order history with tags.
+  """
+  @impl true
   def mount(_params, session, socket) do
-    # Obter token da sessão
-    token = session["user_token"]
+    user_token = session["user_token"]
+    {current_user, recent_orders} = load_user_and_history(user_token)
+    orders_with_tags = enrich_orders_with_tags(current_user, recent_orders)
 
-    # Obter usuário atual e seu histórico
-    {user_object, order_history} = case token do
-      nil -> {nil, []}
-      token ->
-        case AppWeb.Auth.Guardian.resource_from_token(token) do
-          {:ok, user, _claims} ->
-            history = App.Accounts.get_user_order_history(user.id, 5)
-            {user, history}
-          {:error, _reason} -> {nil, []}
-        end
+    # Safely get active rooms with fallback
+    active_rooms = safely_get_active_rooms()
+
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(App.PubSub, "active_rooms")
     end
 
     {:ok, assign(socket,
       order_id: "",
       error: nil,
-      token: token,
-      user_object: user_object,
-      order_history: order_history,
+      token: user_token,
+      user_object: current_user,
+      order_history: orders_with_tags,
+      active_rooms: active_rooms,
       search_focused: false,
       loading: false
     )}
   end
 
+  @impl true
   def handle_event("search", %{"order_id" => order_id}, socket) do
     socket = assign(socket, :loading, true)
 
     case App.Orders.get_order(order_id) do
-      nil ->
-        {:noreply, assign(socket, error: "Pedido não encontrado", order_id: order_id, loading: false)}
-      _order ->
-        # Navegar para o chat sem expor o token na URL
+      {:ok, _order} ->
         {:noreply, push_navigate(socket, to: "/chat/#{order_id}")}
+      {:error, _reason} ->
+        {:noreply, assign(socket,
+          error: "Pedido não encontrado",
+          order_id: order_id,
+          loading: false
+        )}
     end
   end
 
-
-
+  @impl true
   def handle_event("clear_error", _params, socket) do
     {:noreply, assign(socket, :error, nil)}
   end
 
+  @impl true
+  def handle_info({:room_updated, _room_key, _room_data}, socket) do
+    active_rooms = safely_get_active_rooms()
+    {:noreply, assign(socket, :active_rooms, active_rooms)}
+  end
+
+  @impl true
+  def handle_info({:room_removed, _room_key}, socket) do
+    active_rooms = safely_get_active_rooms()
+    {:noreply, assign(socket, :active_rooms, active_rooms)}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -64,9 +82,9 @@ defmodule AppWeb.OrderSearchLive do
 
       <!-- Conteúdo Principal -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-          <!-- Seção de Busca (2/3 da largura) -->
+          <!-- Seção de Busca (2/4 da largura) -->
           <div class="lg:col-span-2">
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
               <div class="text-center mb-8">
@@ -140,7 +158,74 @@ defmodule AppWeb.OrderSearchLive do
             </div>
           </div>
 
-          <!-- Seção de Histórico (1/3 da largura) -->
+          <!-- Seção de Salas Ativas (1/4 da largura) -->
+          <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 h-fit">
+              <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">Salas Ativas</h3>
+              </div>
+
+              <%= if @active_rooms && length(@active_rooms) > 0 do %>
+                <div class="space-y-3">
+                  <%= for room <- @active_rooms do %>
+                    <div class="group bg-green-50 hover:bg-green-100 p-4 rounded-xl border border-green-200 hover:border-green-300 transition-all duration-300 cursor-pointer">
+                      <a href={"/chat/#{room.order_id}"} class="block">
+                        <div class="flex items-center justify-between">
+                          <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                              <h4 class="font-semibold text-gray-900 group-hover:text-green-800 transition-colors">
+                                Pedido <%= room.order_id %>
+                              </h4>
+                              <div class="ml-2 flex items-center">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></div>
+                                <span class="text-xs text-green-600 font-medium">
+                                  <%= room.user_count %> online
+                                </span>
+                              </div>
+                            </div>
+
+                            <!-- Lista de usuários online -->
+                            <div class="text-xs text-gray-600 mb-1">
+                              <%= for {_user_id, user} <- room.users do %>
+                                <span class="inline-block bg-white px-2 py-1 rounded-md mr-1 mb-1 text-xs">
+                                  <%= user.name %>
+                                </span>
+                              <% end %>
+                            </div>
+
+                            <p class="text-xs text-gray-500">
+                              Ativo <%= format_relative_time(room.last_activity) %>
+                            </p>
+                          </div>
+                          <div class="text-green-600 group-hover:text-green-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="text-center py-8">
+                  <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                  </div>
+                  <p class="text-gray-500 text-sm">Nenhuma sala ativa no momento</p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Seção de Histórico (1/4 da largura) -->
           <div class="lg:col-span-1">
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 h-fit">
               <div class="flex items-center mb-6">
@@ -159,7 +244,7 @@ defmodule AppWeb.OrderSearchLive do
                       <a href={"/chat/#{history_item.order_id}"} class="block">
                         <div class="flex items-center justify-between">
                           <div class="flex-1">
-                            <div class="flex items-center mb-1">
+                            <div class="flex items-center mb-2">
                               <h4 class="font-semibold text-gray-900 group-hover:text-blue-800 transition-colors">
                                 Pedido <%= history_item.order_id %>
                               </h4>
@@ -169,6 +254,19 @@ defmodule AppWeb.OrderSearchLive do
                                 </span>
                               <% end %>
                             </div>
+
+                            <!-- Tags do Pedido -->
+                            <%= if history_item.tags && length(history_item.tags) > 0 do %>
+                              <div class="flex flex-wrap gap-1 mb-2">
+                                <%= for tag <- history_item.tags do %>
+                                  <div class="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                                    <div class="w-2 h-2 rounded-full mr-1.5" style={"background-color: #{tag.color}"}></div>
+                                    <span class="text-xs font-medium text-slate-700"><%= tag.name %></span>
+                                  </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+
                             <p class="text-sm text-gray-600">
                               Acessado <%= format_relative_time(history_item.last_accessed_at) %>
                             </p>
@@ -212,16 +310,75 @@ defmodule AppWeb.OrderSearchLive do
     """
   end
 
+  defp load_user_and_history(nil), do: {nil, []}
+  defp load_user_and_history(user_token) do
+    case AppWeb.Auth.Guardian.resource_from_token(user_token) do
+      {:ok, user, _claims} ->
+        recent_orders = App.Accounts.get_user_order_history(user.id, 5)
+        {user, recent_orders}
+      {:error, _reason} ->
+        {nil, []}
+    end
+  end
+
+  defp enrich_orders_with_tags(nil, _orders), do: []
+  defp enrich_orders_with_tags(_user, []), do: []
+  defp enrich_orders_with_tags(_user, orders) do
+    Enum.map(orders, fn order ->
+      tags = App.Tags.get_order_tags(order.order_id)
+      Map.put(order, :tags, tags)
+    end)
+  end
+
   defp format_relative_time(datetime) do
     now = App.DateTimeHelper.now()
-    diff = DateTime.diff(now, datetime, :second)
+    seconds_ago = DateTime.diff(now, datetime, :second)
 
     cond do
-      diff < 60 -> "há alguns segundos"
-      diff < 3600 -> "há #{div(diff, 60)} minuto#{if div(diff, 60) > 1, do: "s", else: ""}"
-      diff < 86400 -> "há #{div(diff, 3600)} hora#{if div(diff, 3600) > 1, do: "s", else: ""}"
-      diff < 2592000 -> "há #{div(diff, 86400)} dia#{if div(diff, 86400) > 1, do: "s", else: ""}"
+      seconds_ago < 60 -> "há alguns segundos"
+      seconds_ago < 3600 -> format_minutes(seconds_ago)
+      seconds_ago < 86400 -> format_hours(seconds_ago)
+      seconds_ago < 2592000 -> format_days(seconds_ago)
       true -> "há mais de um mês"
+    end
+  end
+
+  defp format_minutes(seconds_ago) do
+    minutes = div(seconds_ago, 60)
+    "há #{minutes} minuto#{pluralize(minutes)}"
+  end
+
+  defp format_hours(seconds_ago) do
+    hours = div(seconds_ago, 3600)
+    "há #{hours} hora#{pluralize(hours)}"
+  end
+
+  defp format_days(seconds_ago) do
+    days = div(seconds_ago, 86400)
+    "há #{days} dia#{pluralize(days)}"
+  end
+
+  defp pluralize(1), do: ""
+  defp pluralize(_), do: "s"
+
+  # Private helper functions
+
+  defp safely_get_active_rooms do
+    case Process.whereis(App.ActiveRooms) do
+      nil ->
+        []
+      _pid ->
+        safely_call_active_rooms()
+    end
+  end
+
+  defp safely_call_active_rooms do
+    try do
+      App.ActiveRooms.list_active_rooms()
+    rescue
+      _ -> []
+    catch
+      :exit, _ -> []
     end
   end
 end

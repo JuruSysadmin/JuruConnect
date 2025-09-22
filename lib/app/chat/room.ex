@@ -3,7 +3,6 @@ defmodule App.Chat.Room do
   require Logger
   alias App.Chat
   alias App.ChatConfig
-  alias App.PubSub
   alias App.DateTimeHelper
 
   # Client API
@@ -25,7 +24,8 @@ defmodule App.Chat.Room do
   end
 
   @impl true
-  def handle_cast({:new_message, %{text: text, user_id: user_id, order_id: order_id} = message_params}, state) do
+  def handle_cast({:new_message, %{text: text, user_id: user_id, order_id: order_id} = message_params}, state)
+      when is_binary(text) and is_binary(user_id) and is_binary(order_id) do
     # Obter o nome do usuário
     sender_name = get_username_by_id(user_id) || ChatConfig.default_username()
 
@@ -51,7 +51,7 @@ defmodule App.Chat.Room do
         broadcast_message(state.order_id, message)
 
         # Add the new message to the local state (optional, but good for consistency)
-        new_messages = state.messages ++ [message]
+        new_messages = [message | state.messages]
         new_state = %{state | messages: new_messages, last_activity: DateTimeHelper.now()}
         {:noreply, new_state}
 
@@ -140,13 +140,16 @@ defmodule App.Chat.Room do
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_users, %{users: MapSet.to_list(typing_users)}})
   end
 
-  # Helper para obter o nome do usuário pelo ID (você precisará implementar isso)
-  defp get_username_by_id(user_id) do
-    case App.Accounts.get_user!(user_id) do
-      nil -> ChatConfig.default_username()
-      user -> user.username || ChatConfig.default_username()
+  # Helper para obter o nome do usuário pelo ID
+  defp get_username_by_id(user_id) when is_binary(user_id) do
+    try do
+      user = App.Accounts.get_user!(user_id)
+      user.username || ChatConfig.default_username()
+    rescue
+      Ecto.NoResultsError -> ChatConfig.default_username()
+      _ -> ChatConfig.default_username()
     end
-  rescue
-    _ -> ChatConfig.default_username()  # Fallback em caso de erro
   end
+
+  defp get_username_by_id(_), do: ChatConfig.default_username()
 end

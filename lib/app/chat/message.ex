@@ -1,8 +1,10 @@
 defmodule App.Chat.Message do
   use Ecto.Schema
-  import Ecto.Changeset, only: [cast: 3, validate_required: 2, put_change: 3]
+  import Ecto.Changeset
 
-  @derive {Jason.Encoder, only: [:id, :text, :sender_id, :sender_name, :order_id, :tipo, :inserted_at, :image_url]}
+  @primary_key {:id, :id, autogenerate: true}
+
+  @derive {Jason.Encoder, only: [:id, :text, :sender_id, :sender_name, :order_id, :tipo, :inserted_at, :image_url, :timestamp]}
   schema "messages" do
     field :text,        :string
     field :sender_id,   :string
@@ -10,14 +12,28 @@ defmodule App.Chat.Message do
     field :order_id,    :string
     field :tipo,        :string, default: "mensagem"
     field :image_url,   :string
+    field :timestamp,   :utc_datetime
     timestamps(type: :utc_datetime_usec)
   end
 
-  @doc false
+  @doc """
+  Creates a changeset for a message.
+  """
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:text, :sender_id, :sender_name, :order_id, :tipo, :image_url])
+    |> cast(attrs, [:text, :sender_id, :sender_name, :order_id, :tipo, :image_url, :timestamp])
     |> validate_required([:text, :sender_name, :order_id])
-    |> put_change(:image_url, attrs[:image_url] || nil)
+    |> validate_length(:text, min: 1, max: 2000)
+    |> validate_length(:sender_name, min: 1, max: 100)
+    |> validate_inclusion(:tipo, ["mensagem", "sistema", "notificacao"])
+    |> put_timestamp()
+  end
+
+  # Helper function to set timestamp if not provided
+  defp put_timestamp(changeset) do
+    case get_change(changeset, :timestamp) do
+      nil -> put_change(changeset, :timestamp, DateTime.utc_now())
+      _ -> changeset
+    end
   end
 end

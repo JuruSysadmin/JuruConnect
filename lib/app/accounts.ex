@@ -3,6 +3,8 @@ defmodule App.Accounts do
   The Accounts context.
   """
 
+  @behaviour App.Accounts.Behaviour
+
   import Ecto.Query, warn: false
   alias App.Repo
   alias App.Accounts.{User, UserOrderHistory}
@@ -16,9 +18,18 @@ defmodule App.Accounts do
       [%User{}, ...]
 
   """
-  def list_users do
-    Repo.all(User)
+  def list_users(opts \\ []) do
+    User
+    |> maybe_limit(opts[:limit])
+    |> maybe_offset(opts[:offset])
+    |> Repo.all()
   end
+
+  defp maybe_limit(query, nil), do: query
+  defp maybe_limit(query, limit), do: from(u in query, limit: ^limit)
+
+  defp maybe_offset(query, nil), do: query
+  defp maybe_offset(query, offset), do: from(u in query, offset: ^offset)
 
   @doc """
   Gets a single user.
@@ -122,25 +133,32 @@ defmodule App.Accounts do
   @doc """
   Authenticates a user by username and password.
   """
-  def authenticate_user(username, password, _opts \\ []) do
+  def authenticate_user(username, password, _deps \\ nil)
+      when is_binary(username) and is_binary(password) and byte_size(username) > 0 do
     require Logger
     Logger.info("Authenticating user: #{username}")
 
-    user = Repo.get_by(User, username: username)
-    case user do
+    case Repo.get_by(User, username: username) do
       nil ->
         Logger.warning("User not found: #{username}")
         Pbkdf2.no_user_verify()
         {:error, :invalid_credentials}
+
       user ->
         Logger.info("User found: #{user.username}, verifying password")
-        if Pbkdf2.verify_pass(password, user.password_hash) do
-          Logger.info("Password verified successfully for user: #{user.username}")
-          {:ok, user}
-        else
-          Logger.warning("Invalid password for user: #{username}")
-          {:error, :invalid_credentials}
-        end
+        verify_user_password(user, password, username)
+    end
+  end
+
+  defp verify_user_password(user, password, username) do
+    require Logger
+
+    if Pbkdf2.verify_pass(password, user.password_hash) do
+      Logger.info("Password verified successfully for user: #{user.username}")
+      {:ok, user}
+    else
+      Logger.warning("Invalid password for user: #{username}")
+      {:error, :invalid_credentials}
     end
   end
 
@@ -204,5 +222,23 @@ defmodule App.Accounts do
       _ ->
         %{total_orders: 0, total_accesses: 0}
     end
+  end
+
+  @doc """
+  Busca usuários por loja.
+  """
+  def get_users_by_store(store_id) do
+    User
+    |> where(store_id: ^store_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Busca usuários por função (role).
+  """
+  def get_users_by_role(role) do
+    User
+    |> where(role: ^role)
+    |> Repo.all()
   end
 end

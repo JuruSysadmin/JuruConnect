@@ -14,12 +14,29 @@ defmodule App.Tags.OrderTag do
     timestamps()
   end
 
-  @doc false
-  def changeset(order_tag, attrs) do
+  @doc """
+  Creates a changeset for an order tag.
+
+  ## Parameters
+    - `order_tag`: The order tag struct or changeset
+    - `attrs`: The attributes to be cast and validated
+
+  ## Returns
+    - `%Ecto.Changeset{}` with the changes and validations
+
+  ## Examples
+      iex> changeset(%OrderTag{}, %{order_id: "123", tag_id: "456"})
+      %Ecto.Changeset{valid?: true, ...}
+
+      iex> changeset(%OrderTag{}, %{})
+      %Ecto.Changeset{valid?: false, errors: [...]}
+  """
+  def changeset(order_tag, attrs) when is_map(attrs) do
     order_tag
     |> cast(attrs, [:order_id, :tag_id, :added_by, :added_at])
     |> validate_required([:order_id, :tag_id, :added_by, :added_at])
     |> validate_length(:order_id, min: 1, max: 50)
+    |> validate_length(:tag_id, min: 1)
     |> foreign_key_constraint(:tag_id)
     |> unique_constraint([:order_id, :tag_id], name: :order_tags_order_id_tag_id_unique_index)
   end

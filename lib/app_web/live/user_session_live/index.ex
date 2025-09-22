@@ -34,30 +34,27 @@ defmodule AppWeb.UserSessionLive.Index do
     {:noreply, assign(socket, email: email)}
   end
 
-  def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket) do
+  def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket)
+      when is_binary(username) and is_binary(password) and byte_size(username) > 0 and byte_size(password) > 0 do
     require Logger
     Logger.info("Login attempt for username: #{username}")
 
-    case App.Accounts.authenticate_user(username, password) do
-      {:ok, user} ->
-        Logger.info("User authenticated successfully: #{user.username}")
-        # Gerar token JWT
-        case AppWeb.Auth.Guardian.encode_and_sign(user) do
-          {:ok, token, _claims} ->
-            Logger.info("Token generated successfully for user: #{user.username}")
-            {:noreply,
-             socket
-             |> put_flash(:info, "Bem-vindo, #{user.username}!")
-             |> push_navigate(to: "/auth/set-token?token=#{token}")}
+    with {:ok, user} <- App.Accounts.authenticate_user(username, password),
+         {:ok, token, _claims} <- AppWeb.Auth.Guardian.encode_and_sign(user) do
+      Logger.info("User authenticated and token generated for: #{user.username}")
 
-          {:error, reason} ->
-            Logger.error("Failed to generate token: #{inspect(reason)}")
-            {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
-        end
-
+      {:noreply,
+       socket
+       |> put_flash(:info, "Bem-vindo, #{user.username}!")
+       |> push_navigate(to: "/auth/set-token?token=#{token}")}
+    else
       {:error, :invalid_credentials} ->
         Logger.warning("Invalid credentials for username: #{username}")
         {:noreply, put_flash(socket, :error, "Usuário ou senha inválidos.")}
+
+      {:error, reason} ->
+        Logger.error("Failed to generate token: #{inspect(reason)}")
+        {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
     end
   end
 
@@ -65,34 +62,31 @@ defmodule AppWeb.UserSessionLive.Index do
         "register",
         %{"user" => %{"username" => username, "password" => password}},
         socket
-      ) do
-    store = App.Stores.get_store_by!("Loja Padrão")
+      ) when is_binary(username) and is_binary(password) and byte_size(username) > 0 and byte_size(password) > 0 do
+    case get_default_store() do
+      {:ok, store} ->
+        attrs = %{
+          "username" => username,
+          "password" => password,
+          "name" => username,
+          "role" => "clerk",
+          "store_id" => store.id
+        }
 
-    attrs = %{
-      "username" => username,
-      "password" => password,
-      "name" => username,
-      "role" => "clerk",
-      "store_id" => store.id
-    }
+        case App.Accounts.create_user(attrs) do
+          {:ok, _user} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Cadastro realizado com sucesso! Faça login.")
+             |> assign(show_register: false)}
 
-    case App.Accounts.create_user(attrs) do
-      {:ok, _user} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Cadastro realizado com sucesso! Faça login.")
-         |> assign(show_register: false)}
+          {:error, changeset} ->
+            msg = get_registration_error_message(changeset)
+            {:noreply, put_flash(socket, :error, msg)}
+        end
 
-      {:error, changeset} ->
-        msg =
-          changeset.errors
-          |> Keyword.get(:username)
-          |> case do
-            {_, [constraint: :unique, constraint_name: _]} -> "Nome de usuário já existe."
-            _ -> "Erro ao cadastrar usuário."
-          end
-
-        {:noreply, put_flash(socket, :error, msg)}
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Erro ao obter loja padrão.")}
     end
   end
 
@@ -120,5 +114,19 @@ defmodule AppWeb.UserSessionLive.Index do
 
     {%{}, types}
     |> Ecto.Changeset.cast(%{}, Map.keys(types))
+  end
+
+  defp get_default_store do
+    case App.Stores.get_store_by!("Loja Padrão") do
+      store when not is_nil(store) -> {:ok, store}
+      _ -> {:error, :store_not_found}
+    end
+  end
+
+  defp get_registration_error_message(changeset) do
+    case Keyword.get(changeset.errors, :username) do
+      {_, [constraint: :unique, constraint_name: _]} -> "Nome de usuário já existe."
+      _ -> "Erro ao cadastrar usuário."
+    end
   end
 end

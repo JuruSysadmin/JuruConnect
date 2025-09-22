@@ -14,13 +14,13 @@ defmodule App.Accounts.Behaviour do
 
   ## Retorna
     - `%User{}` se encontrado
-    - Levanta `Ecto.QueryError` se não encontrado
+    - Levanta `Ecto.NoResultsError` se não encontrado
 
   ## Exemplo
       iex> get_user!("550e8400-e29b-41d4-a716-446655440000")
       %User{id: "550e8400-e29b-41d4-a716-446655440000", username: "joao123", ...}
   """
-  @callback get_user!(id :: String.t()) :: {:ok, App.Accounts.User.t()} | {:error, :not_found}
+  @callback get_user!(id :: String.t()) :: App.Accounts.User.t()
 
   @doc """
   Busca um usuário pelo username.
@@ -51,23 +51,23 @@ defmodule App.Accounts.Behaviour do
 
   ## Retorna
     - `{:ok, user}` se autenticação for bem-sucedida
-    - `{:error, :unauthorized}` se autenticação falhar
+    - `{:error, :invalid_credentials}` se autenticação falhar
 
   ## Exemplo
       iex> authenticate_user("joao123", "senha123")
       {:ok, %User{username: "joao123", ...}}
 
       iex> authenticate_user("joao123", "senha_errada")
-      {:error, :unauthorized}
+      {:error, :invalid_credentials}
 
       iex> authenticate_user("usuario_inexistente", "senha123")
-      {:error, :unauthorized}
+      {:error, :invalid_credentials}
   """
   @callback authenticate_user(
               username :: String.t(),
               password :: String.t(),
               deps :: map() | nil
-            ) :: {:ok, App.Accounts.User.t()} | {:error, :unauthorized}
+            ) :: {:ok, App.Accounts.User.t()} | {:error, :invalid_credentials}
 
   @doc """
   Cria um novo usuário.

@@ -14,6 +14,7 @@ defmodule App.Application do
       {Phoenix.PubSub, name: App.PubSub},
       {Registry, keys: :unique, name: App.ChatRegistry},
       {AppWeb.Presence, []},
+      {App.ActiveRooms, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
 
