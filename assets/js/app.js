@@ -10,6 +10,7 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
+import hooks from "./hooks"
 
 /**
  * Token CSRF obtido do meta tag
@@ -24,7 +25,9 @@ let liveSocket
  * Coleção de hooks do Phoenix LiveView
  * @type {Object}
  */
-let Hooks = {}
+let Hooks = {
+  ...hooks
+}
 
 Hooks.AutoHideFlash = {
   mounted() {

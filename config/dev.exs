@@ -80,14 +80,3 @@ config :phoenix_live_view,
   debug_heex_annotations: true,
   enable_expensive_runtime_checks: true
 config :swoosh, :api_client, false
-
-config :ex_aws,
-  access_key_id: "minio",
-  secret_access_key: "minio123",
-  region: "us-east-1"
-
-config :ex_aws, :s3,
-  scheme: "http://",
-  host: "localhost",
-  port: 9000,
-  region: "us-east-1"

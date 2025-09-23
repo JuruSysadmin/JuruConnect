@@ -1,19 +1,11 @@
 defmodule AppWeb.Router do
   @moduledoc """
-  Roteador principal da aplicação JuruConnect.
-
-  Define pipelines, escopos e rotas para:
-  - Páginas públicas
-  - Áreas protegidas por autenticação
-  - Rotas administrativas e super admin
-  - Integração de LiveViews
-  - Endpoints de API REST e health check
-
-  Centraliza toda a lógica de roteamento HTTP e LiveView do sistema.
+  Centraliza toda a lógica de roteamento HTTP e LiveView do sistema JuruConnect.
   """
   use AppWeb, :router
 
-  @csp "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; img-src 'self' data: http://localhost:9000 http://10.1.1.23:9000;"
+  # Content Security Policy para desenvolvimento local
+  @content_security_policy "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; img-src 'self' data:;"
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -21,76 +13,43 @@ defmodule AppWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {AppWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers, %{"content-security-policy" => @csp}
+    plug :put_secure_browser_headers, %{"content-security-policy" => @content_security_policy}
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  # === ROTAS PÚBLICAS (não autenticadas) ===
   scope "/", AppWeb do
     pipe_through :browser
-
-    # Página inicial pública
     get "/", PageController, :home
-
-    # Rotas de autenticação removidas
   end
 
-  # === ROTAS PROTEGIDAS (usuários autenticados) ===
   scope "/", AppWeb do
     pipe_through :browser
-
-    # Dashboards principais
     live "/hello", DashboardLive
     live "/dashboard", DashboardLive, :dashboard
-    live "/consulta-pedido", DashboardLive, :consulta_pedido
-
-    # Funcionalidades do sistema (mantém protegidas se necessário)
-    live "/chat/:order_id", ChatLive
-    live "/buscar-pedido", OrderSearchLive
   end
 
-  # === ROTAS ADMINISTRATIVAS (apenas admin/manager) ===
   scope "/admin", AppWeb do
     pipe_through :browser
-
-    live "/security", AdminLive.SecurityDashboard, :index
-    live "/health", HealthLive.Dashboard, :index
   end
 
-  # === ROTAS SUPER ADMIN (apenas admin) ===
   scope "/super-admin", AppWeb do
     pipe_through :browser
-
-    # Futuras funcionalidades exclusivas de admin
-    # live "/system-config", AdminLive.SystemConfig, :index
-    # live "/user-management", AdminLive.UserManagement, :index
   end
 
-  # === ROTAS DE API ===
   scope "/api", AppWeb do
     pipe_through :api
-
-    # Health Check endpoints
-    get "/health", HealthController, :index
-    get "/health/detailed", HealthController, :detailed
-    get "/health/api-status", HealthController, :api_status
-    post "/health/check", HealthController, :trigger_check
   end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:app, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
       pipe_through :browser
-
       live_dashboard "/dashboard", metrics: AppWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
-
-      # Monitor Oban personalizado
       live "/oban", AppWeb.ObanMonitorLive, :index
     end
   end

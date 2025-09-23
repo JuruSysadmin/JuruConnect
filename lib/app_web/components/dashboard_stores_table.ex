@@ -10,7 +10,7 @@ defmodule AppWeb.DashboardStoresTable do
   """
   def stores_table(assigns) do
     ~H"""
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" id="stores-table" phx-hook="SalesGrowthAnimation">
       <table class="w-full animate-fade-in-scale text-sm hidden sm:table">
         <thead class="bg-gray-100">
           <tr>

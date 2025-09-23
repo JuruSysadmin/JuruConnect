@@ -12,6 +12,9 @@ defmodule App.Dashboard.Supervisor do
   use Supervisor
   require Logger
 
+  @max_restarts 3
+  @max_seconds 60
+
   def start_link(opts) do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -19,18 +22,18 @@ defmodule App.Dashboard.Supervisor do
   @impl true
   def init(_opts) do
     children = [
-      {App.Dashboard.DataStore, []},
-      {App.Dashboard.CacheManager, []},
-      {App.Dashboard.EventBroadcaster, []},
-      {App.Dashboard.DataFetcher, []},
-      {App.Dashboard.Orchestrator, []}
+      {App.Dashboard.DataStore, [], restart: :permanent},
+      {App.Dashboard.CacheManager, [], restart: :transient},
+      {App.Dashboard.EventBroadcaster, [], restart: :permanent},
+      {App.Dashboard.DataFetcher, [], restart: :transient},
+      {App.Dashboard.Orchestrator, [], restart: :permanent}
     ]
 
     opts = [
       strategy: :rest_for_one,
       name: App.Dashboard.Supervisor,
-      max_restarts: 3,
-      max_seconds: 60
+      max_restarts: @max_restarts,
+      max_seconds: @max_seconds
     ]
 
     Logger.info("Dashboard Supervisor starting with #{length(children)} children")
@@ -45,24 +48,22 @@ defmodule App.Dashboard.Supervisor do
     Supervisor.count_children(__MODULE__)
   end
 
-  def restart_child(child_id) do
-    case Supervisor.terminate_child(__MODULE__, child_id) do
-      :ok ->
-        Supervisor.restart_child(__MODULE__, child_id)
-      error ->
-        error
+  def restart_child(child_id) when is_atom(child_id) do
+    with :ok <- Supervisor.terminate_child(__MODULE__, child_id),
+         {:ok, _pid} <- Supervisor.restart_child(__MODULE__, child_id) do
+      :ok
+    else
+      error -> error
     end
   end
 
-  def get_child_status(child_id) do
+  def get_child_status(child_id) when is_atom(child_id) do
     children = which_children()
+
     case List.keyfind(children, child_id, 0) do
       {^child_id, pid, _type, _modules} when is_pid(pid) ->
-        if Process.alive?(pid) do
-          {:ok, :running, pid}
-        else
-          {:ok, :not_running, nil}
-        end
+        status = if Process.alive?(pid), do: :running, else: :not_running
+        {:ok, status, pid}
       {^child_id, :restarting, _type, _modules} ->
         {:ok, :restarting, nil}
       {^child_id, :undefined, _type, _modules} ->
@@ -75,22 +76,15 @@ defmodule App.Dashboard.Supervisor do
   def health_check do
     children = which_children()
 
-    health_status =
-      Enum.map(children, fn {id, pid, _type, _modules} ->
-        status = if is_pid(pid) and Process.alive?(pid) do
-          :healthy
-        else
-          :unhealthy
-        end
-
-        {id, status}
+    {health_status, all_healthy} =
+      Enum.reduce(children, {[], true}, fn {id, pid, _type, _modules}, {acc, all_healthy} ->
+        status = if is_pid(pid) and Process.alive?(pid), do: :healthy, else: :unhealthy
+        {[{id, status} | acc], all_healthy and status == :healthy}
       end)
-
-    all_healthy = Enum.all?(health_status, fn {_id, status} -> status == :healthy end)
 
     %{
       overall_status: if(all_healthy, do: :healthy, else: :unhealthy),
-      children: health_status,
+      children: Enum.reverse(health_status),
       timestamp: DateTime.utc_now()
     }
   end

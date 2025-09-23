@@ -1,31 +1,26 @@
 defmodule App.Orders do
   @moduledoc """
-  Módulo responsável por buscar pedidos na API externa.
+  Busca pedidos na API externa do portal Jurunense.
   """
 
-  @api_url "https://portalapi.jurunense.com/api/v1/orders/find?orderId="
+  @api_base_url "https://portalapi.jurunense.com/api/v1/orders/find?orderId="
 
+  @doc """
+  Busca um pedido específico pelo ID na API externa.
+  Retorna os dados do pedido ou nil se não encontrado.
+  """
   def get_order(order_id) when is_binary(order_id) do
-    url = @api_url <> order_id
+    request_url = @api_base_url <> order_id
 
-    case HTTPoison.get(url, [], recv_timeout: 5_000) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, %{"data" => [pedido | _]}} -> pedido
+    case HTTPoison.get(request_url, [], recv_timeout: 5_000) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, %{"data" => [order_data | _]}} -> order_data
           _ -> nil
         end
 
       _ ->
         nil
-    end
-  end
-
-  def via_tuple(order_id), do: {:via, Registry, {App.ChatRegistry, order_id}}
-
-  def lookup_room(order_id) do
-    case Registry.lookup(App.ChatRegistry, order_id) do
-      [{pid, _}] -> pid
-      [] -> nil
     end
   end
 end

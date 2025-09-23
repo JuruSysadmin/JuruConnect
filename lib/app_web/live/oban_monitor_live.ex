@@ -11,9 +11,12 @@ defmodule AppWeb.ObanMonitorLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
+    socket = if connected?(socket) do
       # Atualiza a cada 5 segundos
       :timer.send_interval(5000, self(), :refresh)
+      socket
+    else
+      socket
     end
 
     socket =
@@ -41,26 +44,38 @@ defmodule AppWeb.ObanMonitorLive do
 
   @impl true
   def handle_event("pause_queue", %{"queue" => queue}, socket) do
-    queue_name = String.to_atom(queue)
-
-    case Oban.pause_queue(queue: queue_name) do
-      :ok ->
-        {:noreply, put_flash(socket, :info, "Fila #{queue} pausada com sucesso")}
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Erro ao pausar fila: #{inspect(reason)}")}
+    case String.to_existing_atom(queue) do
+      queue_name when is_atom(queue_name) ->
+        case Oban.pause_queue(queue: queue_name) do
+          :ok ->
+            {:noreply, put_flash(socket, :info, "Fila #{queue} pausada com sucesso")}
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Erro ao pausar fila: #{inspect(reason)}")}
+        end
+      _ ->
+        {:noreply, put_flash(socket, :error, "Nome de fila inválido: #{queue}")}
     end
+  rescue
+    ArgumentError ->
+      {:noreply, put_flash(socket, :error, "Nome de fila inválido: #{queue}")}
   end
 
   @impl true
   def handle_event("resume_queue", %{"queue" => queue}, socket) do
-    queue_name = String.to_atom(queue)
-
-    case Oban.resume_queue(queue: queue_name) do
-      :ok ->
-        {:noreply, put_flash(socket, :info, "Fila #{queue} reativada com sucesso")}
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Erro ao reativar fila: #{inspect(reason)}")}
+    case String.to_existing_atom(queue) do
+      queue_name when is_atom(queue_name) ->
+        case Oban.resume_queue(queue: queue_name) do
+          :ok ->
+            {:noreply, put_flash(socket, :info, "Fila #{queue} reativada com sucesso")}
+          {:error, reason} ->
+            {:noreply, put_flash(socket, :error, "Erro ao reativar fila: #{inspect(reason)}")}
+        end
+      _ ->
+        {:noreply, put_flash(socket, :error, "Nome de fila inválido: #{queue}")}
     end
+  rescue
+    ArgumentError ->
+      {:noreply, put_flash(socket, :error, "Nome de fila inválido: #{queue}")}
   end
 
   @impl true

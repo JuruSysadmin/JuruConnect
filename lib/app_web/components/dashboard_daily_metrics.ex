@@ -9,7 +9,7 @@ defmodule AppWeb.DashboardDailyMetrics do
   """
   def daily_metrics(assigns) do
     ~H"""
-    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-5 auto-rows-fr">
       <.card title="Meta Diária" value={@objetivo} subtitle=""></.card>
       <.card title="Vendas Diárias" value={@sale} subtitle=""></.card>
       <.card title="Devoluções Diárias" value={@devolution} subtitle=""></.card>

@@ -5,6 +5,22 @@ defmodule AppWeb.DashboardResumoLive do
 
   use AppWeb, :live_view
 
+  defmodule Notification do
+    @moduledoc "Struct para notificações de metas alcançadas"
+    defstruct [
+      :id,
+      :store_name,
+      :achieved,
+      :target,
+      :percentage,
+      :timestamp,
+      :celebration_id,
+      :type,
+      :level,
+      :message
+    ]
+  end
+
   import AppWeb.DashboardUtils
   import AppWeb.DashboardNotificationPanel
   import AppWeb.DashboardDailyMetrics
@@ -17,10 +33,14 @@ defmodule AppWeb.DashboardResumoLive do
   @impl true
   @spec mount(map, map, Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
-      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
-      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:goals")
+    socket = case connected?(socket) do
+      true ->
+        Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
+        Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
+        Phoenix.PubSub.subscribe(App.PubSub, "dashboard:goals")
+        socket
+      false ->
+        socket
     end
 
     today = Date.utc_today()
@@ -28,7 +48,7 @@ defmodule AppWeb.DashboardResumoLive do
       App.Sales.list_hourly_sales_history(today)
       |> Map.new(fn %{hour: h, total_sales: s} -> {h, s} end)
 
-    sales_per_hour = for hour <- 0..23, do: Map.get(hourly_sales_map, hour, 0.0)
+    sales_per_hour = Enum.map(0..23, &Map.get(hourly_sales_map, &1, 0.0))
 
     socket
     |> assign_loading_state()
@@ -73,6 +93,7 @@ defmodule AppWeb.DashboardResumoLive do
     |> push_event("update-gauge", %{value: socket.assigns.percentual_num})
     |> push_event("update-gauge-monthly", %{value: socket.assigns.percentual_sale})
     |> push_event("update-fusion-gauge", %{value: socket.assigns.percentual_sale})
+    |> push_event("sales-updated", %{lojas_data: get_companies_data(data)})
     |> then(&{:noreply, &1})
   end
 
@@ -81,7 +102,7 @@ defmodule AppWeb.DashboardResumoLive do
   def handle_info({:daily_goal_achieved, %{celebration_id: id} = data}, socket) do
     celebration_id = id || System.unique_integer([:positive])
 
-    notification = %{
+    notification = %Notification{
       id: celebration_id,
       store_name: data.store_name,
       achieved: data.achieved,
@@ -116,7 +137,7 @@ defmodule AppWeb.DashboardResumoLive do
   def handle_info({:goal_achieved_real, data}, socket) do
     celebration_id = data.celebration_id
 
-    notification = %{
+    notification = %Notification{
       id: celebration_id,
       store_name: data.data.store_name,
       achieved: data.data.achieved,
@@ -164,9 +185,9 @@ defmodule AppWeb.DashboardResumoLive do
   @spec handle_info({:hide_specific_notification, any}, Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_info({:hide_specific_notification, id}, socket) do
     updated = Enum.reject(socket.assigns.notifications, &(&1.celebration_id == id))
-    show = updated != []
+    show_celebration = length(updated) > 0
 
-    {:noreply, assign(socket, notifications: updated, show_celebration: show)}
+    {:noreply, assign(socket, notifications: updated, show_celebration: show_celebration)}
   end
 
   # Atualiza supervisor_data em tempo real ao receber evento PubSub
@@ -205,9 +226,14 @@ defmodule AppWeb.DashboardResumoLive do
   Evento para fechar o modal de supervisor. Realiza unsubscribe do tópico PubSub e limpa os assigns relacionados ao supervisor.
   """
   def handle_event("close_drawer", _params, socket) do
-    if topic = socket.assigns[:supervisor_topic] do
-      Phoenix.PubSub.unsubscribe(App.PubSub, topic)
+    socket = case socket.assigns do
+      %{supervisor_topic: nil} -> socket
+      %{supervisor_topic: topic} ->
+        Phoenix.PubSub.unsubscribe(App.PubSub, topic)
+        socket
+      _ -> socket
     end
+
     {:noreply, assign(socket, show_drawer: false, supervisor_data: nil, supervisor_topic: nil, supervisor_id: nil)}
   end
 
@@ -230,27 +256,37 @@ defmodule AppWeb.DashboardResumoLive do
           api_error: nil
         })
         |> push_event("update-fusion-gauge", %{value: Map.get(data, :percentualSale, 0.0)})
+        |> push_event("sales-updated", %{lojas_data: get_companies_data(convert_keys_to_atoms(data))})
 
       {:loading, nil} ->
         assign(socket, %{api_status: :loading, loading: true, api_error: nil, last_update: nil})
 
       {:error, reason} ->
-        assign_error_data(socket, reason, now)
+        socket
+        |> assign_error_data(reason, now)
         |> assign(%{api_status: :error, loading: false, last_update: now})
 
       {:timeout, reason} ->
-        assign_error_data(socket, "Timeout: #{reason}", now)
+        socket
+        |> assign_error_data("Timeout: #{reason}", now)
         |> assign(%{api_status: :timeout, loading: false, last_update: now})
 
       _ ->
-        assign_error_data(socket, "Resposta inesperada do servidor", now)
+        socket
+        |> assign_error_data("Resposta inesperada do servidor", now)
         |> assign(%{api_status: :error, loading: false, last_update: now})
     end
   end
 
   @spec convert_keys_to_atoms(map) :: map
-  defp convert_keys_to_atoms(map) when is_map(map),
-    do: (for {k, v} <- map, into: %{}, do: {String.to_atom(k), v})
+  defp convert_keys_to_atoms(map) when is_map(map) do
+    for {k, v} <- map, into: %{} do
+      case String.to_existing_atom(k) do
+        atom when is_atom(atom) -> {atom, v}
+        _ -> {k, v}  # fallback para string se o atom não existir
+      end
+    end
+  end
 
   @spec convert_keys_to_atoms(any) :: map
   defp convert_keys_to_atoms(_), do: %{}
@@ -319,9 +355,14 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   @spec get_companies_data(map) :: list
-  defp get_companies_data(%{companies: companies}) when is_list(companies), do: companies
+  defp get_companies_data(%{companies: companies}) when is_list(companies) do
+    companies
+  end
+
   @spec get_companies_data(any) :: list
-  defp get_companies_data(_), do: []
+  defp get_companies_data(_) do
+    []
+  end
 
 
 
@@ -427,35 +468,35 @@ defmodule AppWeb.DashboardResumoLive do
                 </div>
 
                 <!-- Cards horizontais -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full justify-center items-center mt-2">
-                  <div class="flex-1 min-w-[120px] bg-gray-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-gray-100">
-                    <div class="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                <div class="flex flex-col sm:flex-row gap-4 w-full justify-center items-center mt-2">
+                  <div class="flex-1 min-w-[180px] bg-gray-50 rounded-lg p-4 flex flex-col items-center shadow-sm border border-gray-100">
+                    <div class="flex items-center gap-1 text-xs text-gray-600 mb-2">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-gray-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
                       Objetivo mensal
                     </div>
-                    <div class="font-mono text-base font-semibold text-gray-900">{@objetivo_mensal}</div>
+                    <div class="font-mono text-xs font-semibold text-gray-900 text-center leading-tight break-all">{@objetivo_mensal}</div>
                   </div>
-                  <div class="flex-1 min-w-[120px] bg-blue-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-blue-100">
-                    <div class="flex items-center gap-1 text-xs text-blue-700 mb-1">
+                  <div class="flex-1 min-w-[180px] bg-blue-50 rounded-lg p-4 flex flex-col items-center shadow-sm border border-blue-100">
+                    <div class="flex items-center gap-1 text-xs text-blue-700 mb-2">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-blue-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 17l6-6 4 4 8-8' /></svg>
                       Vendas Mensais
                     </div>
-                    <div class="font-mono text-base font-semibold text-blue-700">{@sale_mensal}</div>
+                    <div class="font-mono text-xs font-semibold text-blue-700 text-center leading-tight break-all">{@sale_mensal}</div>
                   </div>
-                  <div class="flex-1 min-w-[120px] bg-red-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-red-100">
-                    <div class="flex items-center gap-1 text-xs text-red-700 mb-1">
+                  <div class="flex-1 min-w-[180px] bg-red-50 rounded-lg p-4 flex flex-col items-center shadow-sm border border-red-100">
+                    <div class="flex items-center gap-1 text-xs text-red-700 mb-2">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-red-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12' /></svg>
                       Devoluções
                     </div>
-                    <div class="font-mono text-base font-semibold text-red-700">{@devolution_mensal}</div>
+                    <div class="font-mono text-xs font-semibold text-red-700 text-center leading-tight break-all">{@devolution_mensal}</div>
                   </div>
                   <%= if @show_goal_remaining do %>
-                    <div class="flex-1 min-w-[120px] bg-green-50 rounded-lg p-3 flex flex-col items-center shadow-sm border border-green-100">
-                      <div class="flex items-center gap-1 text-xs text-green-700 mb-1">
+                    <div class="flex-1 min-w-[180px] bg-green-50 rounded-lg p-4 flex flex-col items-center shadow-sm border border-green-100">
+                      <div class="flex items-center gap-1 text-xs text-green-700 mb-2">
                         <svg xmlns='http://www.w3.org/2000/svg' class='h-4 w-4 text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
                         Falta Atingir
                       </div>
-                      <div class="font-mono text-base font-semibold text-green-700">{@goal_remaining_display}</div>
+                      <div class="font-mono text-xs font-semibold text-green-700 text-center leading-tight break-all">{@goal_remaining_display}</div>
                     </div>
                   <% end %>
                 </div>

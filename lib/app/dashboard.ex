@@ -1,32 +1,23 @@
 defmodule App.Dashboard do
   @moduledoc """
   Facade principal para o sistema de Dashboard.
-
-  Fornece uma interface simples que internamente usa a arquitetura separada:
-  - Dashboard.Orchestrator: coordena tudo
-  - Dashboard.DataStore: gerencia estado
-  - Dashboard.CacheManager: gerencia cache
-  - Dashboard.EventBroadcaster: gerencia eventos
-  - Dashboard.DataFetcher: busca dados da API
-
-  Esta arquitetura segue o padrão Single Responsibility Principle,
-  onde cada módulo tem uma responsabilidade específica.
   """
 
   alias App.Dashboard.{Orchestrator, CacheManager, EventBroadcaster}
   alias App.DashboardDataServer
 
-  # === INTERFACE PÚBLICA ===
-
+  @doc """
+  Obtém métricas formatadas do dashboard.
+  """
   def get_metrics(opts \\ []) do
     case Orchestrator.get_data(opts) do
       {:ok, raw_data} ->
         with {:ok, processed_data} <- process_data(raw_data),
-         {:ok, formatted_data} <- format_for_display(processed_data) do
-      {:ok, formatted_data}
-    else
-      {:error, reason} -> {:error, reason}
-      error -> {:error, "Erro inesperado: #{inspect(error)}"}
+             {:ok, formatted_data} <- format_for_display(processed_data) do
+          {:ok, formatted_data}
+        else
+          {:error, reason} -> {:error, reason}
+          error -> {:error, "Erro inesperado: #{inspect(error)}"}
         end
 
       {:loading, nil} ->
@@ -42,8 +33,8 @@ defmodule App.Dashboard do
 
   def get_store_performance(store_ids \\ []) do
     with {:ok, metrics} <- get_metrics(),
-         stores_data <- filter_stores(metrics.stores, store_ids) do
-      performance_data = calculate_store_performance(stores_data)
+         filtered_stores <- filter_stores(metrics.stores, store_ids) do
+      performance_data = calculate_store_performance(filtered_stores)
       {:ok, performance_data}
     end
   end
@@ -60,9 +51,9 @@ defmodule App.Dashboard do
   end
 
   def get_sales_feed(limit \\ nil) do
-    actual_limit = limit || App.Config.sales_feed_limit()
+    sales_limit = limit || App.Config.sales_feed_limit()
 
-         case App.ApiClient.fetch_sales_feed_robust(actual_limit) do
+    case App.ApiClient.fetch_sales_feed_robust(sales_limit) do
       {:ok, [_ | _] = sales_data} ->
         formatted_sales =
           sales_data
@@ -71,13 +62,13 @@ defmodule App.Dashboard do
 
         {:ok, formatted_sales}
 
-             _ ->
-         try_fallback_strategies(actual_limit)
+      _ ->
+        try_fallback_strategies(sales_limit)
     end
   end
 
-  defp try_fallback_strategies(actual_limit) do
-    case App.Sales.get_sales_feed(actual_limit) do
+  defp try_fallback_strategies(sales_limit) do
+    case App.Sales.get_sales_feed(sales_limit) do
       {:ok, [_ | _] = saved_sales} ->
         {:ok, saved_sales}
 
@@ -112,8 +103,6 @@ defmodule App.Dashboard do
     end
   end
 
-  # === FUNÇÕES DE CONTROLE ===
-
   def force_refresh do
     Orchestrator.force_refresh()
   end
@@ -139,11 +128,7 @@ defmodule App.Dashboard do
     EventBroadcaster.subscribe_to_celebrations()
   end
 
-  # === COMPATIBILIDADE COM CÓDIGO EXISTENTE ===
-
-  # Mantém compatibilidade com o DashboardDataServer antigo
   def get_data(opts \\ []) do
-    # Primeiro tenta a nova arquitetura
     case Orchestrator.get_data(opts) do
       {:ok, data} -> %{api_status: :ok, data: data}
       {:loading, _} -> %{api_status: :loading, data: nil}
@@ -151,14 +136,11 @@ defmodule App.Dashboard do
     end
   rescue
     _ ->
-      # Fallback para o sistema antigo se a nova arquitetura falhar
       DashboardDataServer.get_data(opts)
   end
 
-  # === FUNÇÕES PRIVADAS (mantidas do código original) ===
-
   defp process_data(raw_data) do
-    processed = %{
+    processed_data = %{
       sales: extract_sales_data(raw_data),
       costs: extract_costs_data(raw_data),
       goals: extract_goals_data(raw_data),
@@ -166,31 +148,37 @@ defmodule App.Dashboard do
       percentages: calculate_percentages(raw_data)
     }
 
-    {:ok, processed}
+    {:ok, processed_data}
   rescue
     error -> {:error, "Erro no processamento: #{inspect(error)}"}
   end
 
   defp format_for_display(processed_data) do
-    formatted = %{
+    sales_total = get_numeric_value(processed_data.sales, :total)
+    costs_total = get_numeric_value(processed_data.costs, :total)
+    goals_total = get_numeric_value(processed_data.goals, :total)
+    goal_percentage = get_numeric_value(processed_data.percentages, :goal)
+    profit_percentage = get_numeric_value(processed_data.percentages, :profit)
+
+    formatted_data = %{
       sales: %{
-        total: get_numeric_value(processed_data.sales, :total),
-        formatted: format_money(get_numeric_value(processed_data.sales, :total))
+        total: sales_total,
+        formatted: format_money(sales_total)
       },
       costs: %{
-        total: get_numeric_value(processed_data.costs, :total),
-        formatted: format_money(get_numeric_value(processed_data.costs, :total)),
+        total: costs_total,
+        formatted: format_money(costs_total),
         devolutions: get_numeric_value(processed_data.costs, :devolutions)
       },
       goal: %{
-        total: get_numeric_value(processed_data.goals, :total),
-        formatted: format_money(get_numeric_value(processed_data.goals, :total)),
-        percentage: get_numeric_value(processed_data.percentages, :goal),
-        formatted_percentage: "#{Float.round(get_numeric_value(processed_data.percentages, :goal), 2)}%"
+        total: goals_total,
+        formatted: format_money(goals_total),
+        percentage: goal_percentage,
+        formatted_percentage: "#{Float.round(goal_percentage, 2)}%"
       },
       profit: %{
-        percentage: get_numeric_value(processed_data.percentages, :profit),
-        formatted: "#{Float.round(get_numeric_value(processed_data.percentages, :profit), 2)}%"
+        percentage: profit_percentage,
+        formatted: "#{Float.round(profit_percentage, 2)}%"
       },
       stores: format_stores_data(processed_data.stores),
       nfs_count: get_numeric_value(processed_data, :nfs_count),
@@ -198,7 +186,7 @@ defmodule App.Dashboard do
       api_status: :ok
     }
 
-    {:ok, formatted}
+    {:ok, formatted_data}
   rescue
     error -> {:error, "Erro na formatação: #{inspect(error)}"}
   end
@@ -208,7 +196,7 @@ defmodule App.Dashboard do
 
     total_sales =
       companies
-      |> Enum.map(& get_numeric_value(&1, "sale"))
+      |> Enum.map(&get_numeric_value(&1, "sale"))
       |> Enum.sum()
 
     %{total: total_sales}
@@ -219,12 +207,12 @@ defmodule App.Dashboard do
 
     total_costs =
       companies
-      |> Enum.map(& get_numeric_value(&1, "discount"))
+      |> Enum.map(&get_numeric_value(&1, "discount"))
       |> Enum.sum()
 
     total_devolutions =
       companies
-      |> Enum.map(& get_numeric_value(&1, "devolution"))
+      |> Enum.map(&get_numeric_value(&1, "devolution"))
       |> Enum.sum()
 
     %{total: total_costs, devolutions: total_devolutions}
@@ -235,7 +223,7 @@ defmodule App.Dashboard do
 
     total_goals =
       companies
-      |> Enum.map(& get_numeric_value(&1, "objective"))
+      |> Enum.map(&get_numeric_value(&1, "objective"))
       |> Enum.sum()
 
     %{total: total_goals}
@@ -250,17 +238,17 @@ defmodule App.Dashboard do
 
     total_sales =
       companies
-      |> Enum.map(& get_numeric_value(&1, "sale"))
+      |> Enum.map(&get_numeric_value(&1, "sale"))
       |> Enum.sum()
 
     total_goals =
       companies
-      |> Enum.map(& get_numeric_value(&1, "objective"))
+      |> Enum.map(&get_numeric_value(&1, "objective"))
       |> Enum.sum()
 
     total_costs =
       companies
-      |> Enum.map(& get_numeric_value(&1, "discount"))
+      |> Enum.map(&get_numeric_value(&1, "discount"))
       |> Enum.sum()
 
     goal_percentage = if total_goals > 0, do: (total_sales / total_goals * 100), else: 0.0
@@ -313,19 +301,14 @@ defmodule App.Dashboard do
   end
 
   defp calculate_performance_score(store) do
-    # Implementar lógica de cálculo de performance
     base_score = store.daily_percentage
-
-    # Ajustes baseados em outros fatores
-    adjusted_score = base_score * 1.0  # Placeholder
-
+    adjusted_score = base_score * 1.0
     Float.round(adjusted_score, 2)
   end
 
   defp analyze_metrics_for_alerts(metrics) do
     alerts = []
 
-    # Verifica se alguma loja está muito abaixo da meta
     low_performance_stores =
       Enum.filter(metrics.stores, fn store ->
         store.daily_percentage < 50.0
@@ -339,11 +322,10 @@ defmodule App.Dashboard do
         stores: Enum.map(low_performance_stores, & &1.name)
       }
       [alert | alerts]
-      else
-        alerts
-      end
+    else
+      alerts
+    end
 
-    # Verifica se a performance geral está baixa
     alerts = if metrics.goal.percentage < 70.0 do
       alert = %{
         type: :overall_low_performance,
@@ -352,9 +334,9 @@ defmodule App.Dashboard do
         current_percentage: metrics.goal.percentage
       }
       [alert | alerts]
-      else
-        alerts
-      end
+    else
+      alerts
+    end
 
     alerts
   end
@@ -374,7 +356,6 @@ defmodule App.Dashboard do
   end
 
   defp save_sale(sale_data) do
-    # Implementar lógica de salvamento
     {:ok, Map.put(sale_data, :id, System.unique_integer([:positive]))}
   end
 
@@ -384,7 +365,6 @@ defmodule App.Dashboard do
   end
 
   defp get_store_metrics(store_id) do
-    # Implementar busca de métricas específicas da loja
     {:ok, %{store_id: store_id, percentage: 95.0}}
   end
 
@@ -404,7 +384,6 @@ defmodule App.Dashboard do
   end
 
   defp format_and_save_api_sale(sale_data) do
-    # Implementar formatação e salvamento de venda da API
     %{
       id: System.unique_integer([:positive]),
       seller_name: Map.get(sale_data, "seller_name", "Desconhecido"),
@@ -431,7 +410,6 @@ defmodule App.Dashboard do
   defp get_numeric_value(_, _), do: 0.0
 
   def format_money(value) when is_number(value) do
-    # Formato brasileiro: R$ 1.234,56
     formatted =
       value
       |> Float.round(2)
@@ -524,7 +502,7 @@ defmodule App.Dashboard do
   end
 
   defp export_to_excel(_metrics) do
-    {:error, "Exportação para Excel não implementada ainda"}
+    {:error, "Exportação para Excel não implementada"}
   end
 
   defp format_status(:goal_achieved), do: "Meta Atingida"

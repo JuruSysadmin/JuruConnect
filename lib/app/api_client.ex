@@ -83,7 +83,10 @@ defmodule App.ApiClient do
         case Jason.decode(body) do
           {:ok, data} when is_map(data) ->
             sales_data = Map.get(data, "saleSupervisor", [])
-            formatted_sales = Enum.map(sales_data, &format_sale_supervisor/1)
+            formatted_sales =
+              sales_data
+              |> Stream.map(&format_sale_supervisor/1)
+              |> Enum.to_list()
             duration = System.monotonic_time(:millisecond) - start_time
             Logger.info("fetch_sales_feed_with_limit success", api: "sales_feed", status: :ok, duration_ms: duration, limit: limit)
             :telemetry.execute([:app, :api, :sales_feed], %{duration: duration}, %{status: :ok, limit: limit})
@@ -193,7 +196,8 @@ defmodule App.ApiClient do
             companies_data = Map.get(data, "saleSupervisor", [])
 
             companies =
-              Enum.map(companies_data, fn company ->
+              companies_data
+              |> Stream.map(fn company ->
                 %{
                   supervisor_id: Map.get(company, "supervisorId"),
                   nome: Map.get(company, "store", ""),
@@ -211,6 +215,7 @@ defmodule App.ApiClient do
                   status: determine_status(company)
                 }
               end)
+              |> Enum.to_list()
 
             result = %{
               companies: companies,

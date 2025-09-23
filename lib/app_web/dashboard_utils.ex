@@ -53,10 +53,16 @@ defmodule AppWeb.DashboardUtils do
   def format_percent(_), do: "0,00%"
 
   @spec add_thousands_separator(String.t()) :: String.t()
-  def add_thousands_separator(str) do
-    [int, frac] = String.split(str, ",")
-    int = int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
-    int <> "," <> frac
+  def add_thousands_separator(str) when is_binary(str) do
+    case String.split(str, ",") do
+      [int, frac] ->
+        formatted_int = int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
+        formatted_int <> "," <> frac
+      [int] ->
+        int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
+      _ ->
+        str
+    end
   end
 
   @spec parse_percent_to_number(binary | float | integer | nil | any) :: float
@@ -65,14 +71,15 @@ defmodule AppWeb.DashboardUtils do
     |> String.replace(",", ".")
     |> String.replace("%", "")
     |> String.trim()
-    |> case do
-      "" ->
-        0.0
-      clean_value ->
-        case Float.parse(clean_value) do
-          {num, _} -> num
-          :error -> 0.0
-        end
+    |> parse_clean_value()
+  end
+
+  @spec parse_clean_value(String.t()) :: float
+  defp parse_clean_value(""), do: 0.0
+  defp parse_clean_value(clean_value) do
+    case Float.parse(clean_value) do
+      {num, _} -> num
+      :error -> 0.0
     end
   end
 
@@ -89,56 +96,52 @@ defmodule AppWeb.DashboardUtils do
   def parse_percent_to_number(_), do: 0.0
 
   @spec calculate_margin(map) :: float
-  def calculate_margin(data) do
+  def calculate_margin(data) when is_map(data) do
     sale = get_numeric_value(data, "sale")
     discount = get_numeric_value(data, "discount")
-
-    if sale > 0 do
-      (sale - discount) / sale * 100
-    else
-      0.0
-    end
+    calculate_margin(sale, discount)
   end
+
+  @spec calculate_margin(float, float) :: float
+  defp calculate_margin(sale, _discount) when sale <= 0, do: 0.0
+  defp calculate_margin(sale, discount), do: (sale - discount) / sale * 100
 
   @spec calculate_ticket(map) :: float
-  def calculate_ticket(data) do
+  def calculate_ticket(data) when is_map(data) do
     sale = get_numeric_value(data, "sale")
     nfs = get_numeric_value(data, "nfs")
-
-    if nfs > 0 do
-      sale / nfs
-    else
-      0.0
-    end
+    calculate_ticket(sale, nfs)
   end
+
+  @spec calculate_ticket(float, float) :: float
+  defp calculate_ticket(_sale, nfs) when nfs <= 0, do: 0.0
+  defp calculate_ticket(sale, nfs), do: sale / nfs
 
   @spec get_numeric_value(map, String.t()) :: float
-  def get_numeric_value(data, key) when is_map(data) do
-    case Map.get(data, key, 0) do
-      value when is_float(value) ->
-        value
-      value when is_integer(value) ->
-        value * 1.0
-      value when is_binary(value) ->
-        case Float.parse(value) do
-          {num, _} -> num
-          :error -> 0.0
-        end
-      _ ->
-        0.0
+  def get_numeric_value(data, key) when is_map(data) and is_binary(key) do
+    data
+    |> Map.get(key, 0)
+    |> convert_to_float()
+  end
+
+  @spec convert_to_float(any) :: float
+  defp convert_to_float(value) when is_float(value), do: value
+  defp convert_to_float(value) when is_integer(value), do: value * 1.0
+  defp convert_to_float(value) when is_binary(value) do
+    case Float.parse(value) do
+      {num, _} -> num
+      :error -> 0.0
     end
   end
+  defp convert_to_float(_), do: 0.0
 
   @spec get_numeric_value(any, any) :: float
   def get_numeric_value(_, _), do: 0.0
 
   @spec calculate_percentual_number(map) :: float
   def calculate_percentual_number(data) when is_map(data) do
-    case Map.get(data, :percentual, 0.0) do
-      value when is_float(value) -> value
-      value when is_integer(value) -> value * 1.0
-      value when is_binary(value) -> parse_percent_to_number(value)
-      _ -> 0.0
-    end
+    data
+    |> Map.get(:percentual, 0.0)
+    |> convert_to_float()
   end
 end

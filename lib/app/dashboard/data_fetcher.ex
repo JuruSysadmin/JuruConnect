@@ -28,6 +28,7 @@ defmodule App.Dashboard.DataFetcher do
       {:ok, data} ->
         Logger.info("Dashboard data fetched successfully")
         {:reply, {:ok, data}, state}
+
       {:error, reason} ->
         Logger.error("Failed to fetch dashboard data: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -47,8 +48,6 @@ defmodule App.Dashboard.DataFetcher do
         })
 
       {:ok, merged_data}
-    else
-      {:error, reason} -> {:error, reason}
     end
   end
 end

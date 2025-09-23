@@ -17,29 +17,38 @@ defmodule App.Dashboard.Orchestrator do
   alias App.Dashboard.EventBroadcaster
 
   @fetch_interval 30_000
+  @cache_ttl 30_000
+
+  defstruct [
+    :fetch_count,
+    :last_fetch_time,
+    :error_count
+  ]
+
+  @type state :: %__MODULE__{
+    fetch_count: non_neg_integer(),
+    last_fetch_time: DateTime.t() | nil,
+    error_count: non_neg_integer()
+  }
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def get_data(opts \\ []) do
+  def get_data(opts \\ []) when is_list(opts) do
     timeout = Keyword.get(opts, :timeout, App.Config.api_timeout_ms())
     cache_key = "dashboard_data"
 
-    case CacheManager.get(cache_key) do
+    with {:error, _} <- CacheManager.get(cache_key),
+         {:ok, data} <- DataStore.get_data(timeout) do
+      CacheManager.put(cache_key, data, @cache_ttl)
+      {:ok, data}
+    else
       {:ok, cached_data} ->
         Logger.debug("Dashboard data served from cache")
         {:ok, cached_data}
-
-      {:error, _} ->
-        case DataStore.get_data(timeout) do
-          {:ok, data} ->
-            CacheManager.put(cache_key, data, 30_000)
-            {:ok, data}
-
-          other ->
-            other
-        end
+      other ->
+        other
     end
   end
 
@@ -63,7 +72,7 @@ defmodule App.Dashboard.Orchestrator do
   def init(_opts) do
     schedule_next_fetch()
 
-    initial_state = %{
+    initial_state = %__MODULE__{
       fetch_count: 0,
       last_fetch_time: nil,
       error_count: 0
@@ -93,44 +102,30 @@ defmodule App.Dashboard.Orchestrator do
     DataStore.update_status(:loading)
     EventBroadcaster.broadcast_system_status(:loading, "Fetching dashboard data")
 
-    case DataFetcher.fetch_dashboard_data() do
-      {:ok, raw_data} ->
-        Logger.info("Data fetched successfully")
+    with {:ok, raw_data} <- DataFetcher.fetch_dashboard_data(),
+         {:ok, processed_data} <- process_and_validate_data(raw_data) do
+      Logger.info("Data fetched and processed successfully")
 
-        case process_and_validate_data(raw_data) do
-          {:ok, processed_data} ->
-            DataStore.update_data(processed_data)
+      DataStore.update_data(processed_data)
+      CacheManager.delete("dashboard_data")
+      EventBroadcaster.broadcast_dashboard_update(processed_data)
+      EventBroadcaster.broadcast_system_status(:ok, "Data updated successfully")
 
-            CacheManager.delete("dashboard_data")
-
-            EventBroadcaster.broadcast_dashboard_update(processed_data)
-            EventBroadcaster.broadcast_system_status(:ok, "Data updated successfully")
-
-            %{
-              state |
-              fetch_count: state.fetch_count + 1,
-              last_fetch_time: DateTime.utc_now(),
-              error_count: 0
-            }
-
-          {:error, reason} ->
-            Logger.error("Data processing failed: #{inspect(reason)}")
-            handle_fetch_error(state, "Data processing failed: #{reason}")
-        end
-
+      %{
+        state |
+        fetch_count: state.fetch_count + 1,
+        last_fetch_time: DateTime.utc_now(),
+        error_count: 0
+      }
+    else
       {:error, reason} ->
-        Logger.error("Data fetch failed: #{inspect(reason)}")
-        handle_fetch_error(state, "API fetch failed: #{reason}")
+        Logger.error("Data fetch/processing failed: #{inspect(reason)}")
+        handle_fetch_error(state, "Data operation failed: #{reason}")
     end
   end
 
-  defp process_and_validate_data(raw_data) do
-    case App.Validators.ApiDataValidator.validate_dashboard_data(raw_data) do
-      {:ok, validated_data} ->
-        {:ok, validated_data}
-      {:error, reason} ->
-        {:error, reason}
-    end
+  defp process_and_validate_data(raw_data) when is_map(raw_data) do
+    App.Validators.ApiDataValidator.validate_dashboard_data(raw_data)
   rescue
     error ->
       {:error, "Processing error: #{inspect(error)}"}
@@ -150,5 +145,11 @@ defmodule App.Dashboard.Orchestrator do
 
   defp schedule_next_fetch do
     Process.send_after(self(), :fetch_data, @fetch_interval)
+  end
+
+  @impl true
+  def terminate(reason, _state) do
+    Logger.info("Dashboard Orchestrator terminating: #{inspect(reason)}")
+    :ok
   end
 end

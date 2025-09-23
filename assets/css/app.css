@@ -683,3 +683,170 @@
     to { transform: translateY(0); opacity: 1; }
   }
 }
+
+/* ========================================
+   ANIMAÇÕES DE CRESCIMENTO DE VENDAS
+   ======================================== */
+
+.sales-growth-animation {
+  animation: salesGrowthFadeIn 0.5s ease-out, salesGrowthFadeOut 0.5s ease-in 1.5s forwards;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.growth-arrow {
+  font-size: 12px;
+  animation: bounceArrow 0.6s ease-in-out;
+}
+
+.growth-amount {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+}
+
+@keyframes salesGrowthFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8) translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+}
+
+@keyframes salesGrowthFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8) translateX(-20px);
+  }
+}
+
+@keyframes bounceArrow {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Animação de destaque para células com crescimento */
+.sales-cell-growing {
+  animation: salesCellHighlight 1s ease-out;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+@keyframes salesCellHighlight {
+  0% {
+    background-color: rgba(16, 185, 129, 0.3);
+  }
+  100% {
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+}
+
+/* ========================================
+   ANIMAÇÕES DE CELEBRAÇÃO DE METAS
+   ======================================== */
+
+.goal-celebration {
+  animation: goalCelebrationFadeIn 0.5s ease-out, goalCelebrationFadeOut 0.5s ease-in 2.5s forwards;
+}
+
+.celebration-content {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  text-align: center;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.celebration-icon {
+  font-size: 48px;
+  animation: celebrationBounce 0.6s ease-in-out;
+}
+
+.celebration-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.celebration-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.celebration-store {
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.celebration-amount {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+@keyframes goalCelebrationFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes goalCelebrationFadeOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+@keyframes celebrationBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}

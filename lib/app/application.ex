@@ -31,8 +31,6 @@ Responsável também por aplicar mudanças de configuração dinâmica no endpoi
       {Phoenix.PubSub, name: App.PubSub},
       # Start Presence para rastreamento de usuários online
       AppWeb.Presence,
-      # Start o rate limiter do chat
-      App.Chat.RateLimiter,
       # Start the DashboardDataServer para dados do dashboard
       App.DashboardDataServer,
       # Start the CelebrationManager para controle de celebrações

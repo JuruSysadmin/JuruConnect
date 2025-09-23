@@ -58,7 +58,7 @@ defmodule JuruConnect.Sales do
       nil -> []
       data ->
         data.sale_supervisor
-        |> Enum.sort_by(& &1["percentualObjective"], :desc)
+        |> Stream.sort_by(& &1["percentualObjective"], :desc)
         |> Enum.take(limit)
     end
   end

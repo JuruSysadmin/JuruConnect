@@ -1,21 +1,47 @@
 defmodule AppWeb.GlobalLayoutLive do
+  @moduledoc """
+  LiveView para o layout global da aplicação.
+
+  Este módulo gerencia o layout global e notificações de devoluções
+  que são exibidas em toda a aplicação.
+  """
+
   use AppWeb, :live_view
 
   @impl true
+  @spec mount(map, map, Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
+    socket = case connected?(socket) do
+      true ->
+        Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
+        socket
+      false ->
+        socket
     end
+
     {:ok, socket}
   end
 
   @impl true
+  @spec handle_info(tuple, Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_info({:devolucao_aumentou, %{devolution: val, diff: diff, sellerName: seller}}, socket) do
-    msg = "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{AppWeb.DashboardUtils.format_money(val)} (aumento de R$ #{AppWeb.DashboardUtils.format_money(diff)})"
-    {:noreply, put_flash(socket, :error, msg)}
+    message = build_devolution_message(seller, val, diff)
+    {:noreply, put_flash(socket, :error, message)}
+  end
+
+  @doc """
+  Constrói a mensagem de notificação para devoluções.
+  """
+  @spec build_devolution_message(String.t(), number(), number()) :: String.t()
+  defp build_devolution_message(seller, val, diff) do
+    formatted_val = AppWeb.DashboardUtils.format_money(val)
+    formatted_diff = AppWeb.DashboardUtils.format_money(diff)
+
+    "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{formatted_val} (aumento de R$ #{formatted_diff})"
   end
 
   @impl true
+  @spec render(map) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
     <%= if @flash[:error] do %>

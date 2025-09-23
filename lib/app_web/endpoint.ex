@@ -61,8 +61,6 @@ defmodule AppWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
 
-  # Configuração CORS para permitir imagens do MinIO
-  plug CORSPlug, origin: ["http://localhost:9000", "http://10.1.1.23:9000"]
 
   plug AppWeb.Router
 end

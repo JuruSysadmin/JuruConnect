@@ -7,10 +7,19 @@ defmodule App.Dashboard.DataStore do
   use GenServer
   require Logger
 
-  @type state :: %{
+  @type api_status :: :ok | :error | :loading | :initializing
+
+  defstruct [
+    :data,
+    :last_update,
+    :api_status,
+    :api_error
+  ]
+
+  @type state :: %__MODULE__{
     data: map() | nil,
     last_update: DateTime.t() | nil,
-    api_status: :ok | :error | :loading | :initializing,
+    api_status: api_status(),
     api_error: String.t() | nil
   }
 
@@ -32,11 +41,11 @@ defmodule App.Dashboard.DataStore do
 
   def get_status do
     GenServer.call(__MODULE__, :get_status)
-    end
+  end
 
   @impl true
   def init(_opts) do
-    initial_state = %{
+    initial_state = %__MODULE__{
       data: nil,
       last_update: nil,
       api_status: :initializing,
@@ -99,5 +108,11 @@ defmodule App.Dashboard.DataStore do
 
     Logger.debug("Dashboard status updated: #{status}")
     {:noreply, new_state}
+  end
+
+  @impl true
+  def terminate(reason, _state) do
+    Logger.info("Dashboard DataStore terminating: #{inspect(reason)}")
+    :ok
   end
 end
