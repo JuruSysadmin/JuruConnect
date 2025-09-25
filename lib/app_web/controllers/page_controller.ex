@@ -16,4 +16,10 @@ defmodule AppWeb.PageController do
     |> put_session(:user_token, token)
     |> redirect(to: "/buscar-pedido")
   end
+
+  def set_token_and_redirect(conn, %{"token" => token, "redirect" => redirect_path}) do
+    conn
+    |> put_session(:user_token, token)
+    |> redirect(to: redirect_path)
+  end
 end

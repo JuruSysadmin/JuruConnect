@@ -1,7 +1,8 @@
 defmodule AppWeb.Router do
   use AppWeb, :router
 
-  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
+  # CSP mais permissivo para iframes
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors *;"
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -9,7 +10,22 @@ defmodule AppWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {AppWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers, %{"content-security-policy" => @csp}
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => @csp,
+      "x-frame-options" => "ALLOWALL"
+    }
+  end
+
+  pipeline :iframe do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {AppWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "frame-ancestors *;",
+      "x-frame-options" => "ALLOWALL"
+    }
   end
 
   pipeline :api do
@@ -26,13 +42,26 @@ defmodule AppWeb.Router do
     get "/", PageController, :home
     live "/login", UserSessionLive.Index, :new
     get "/auth/set-token", PageController, :set_token
+    get "/auth/set-token-and-redirect", PageController, :set_token_and_redirect
   end
 
   scope "/", AppWeb do
     pipe_through [:browser, :auth]
 
-    live "/chat/:order_id", ChatLive
     live "/buscar-pedido", OrderSearchLive
+  end
+
+  scope "/", AppWeb do
+    pipe_through [:iframe, :auth]
+
+    live "/chat/:order_id", ChatLive
+  end
+
+  # Rota específica para iframes com autenticação
+  scope "/iframe", AppWeb do
+    pipe_through [:iframe, :auth]
+
+    live "/chat/:order_id", ChatLive
   end
 
   # Other scopes may use custom stacks.
