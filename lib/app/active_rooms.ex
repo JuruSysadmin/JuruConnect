@@ -1,6 +1,6 @@
 defmodule App.ActiveRooms do
   @moduledoc """
-  Módulo responsável por gerenciar salas ativas (pedidos com usuários online).
+  Módulo responsável por gerenciar salas ativas (tratativas com usuários online).
   """
 
   use GenServer
@@ -15,17 +15,17 @@ defmodule App.ActiveRooms do
   end
 
   @doc """
-  Registra um usuário em uma sala (pedido).
+  Registra um usuário em uma sala (tratativa).
   """
-  def join_room(order_id, user_id, user_name) when is_binary(order_id) and is_binary(user_id) and is_binary(user_name) do
-    GenServer.call(__MODULE__, {:join_room, order_id, user_id, user_name})
+  def join_room(treaty_id, user_id, user_name) when is_binary(treaty_id) and is_binary(user_id) and is_binary(user_name) do
+    GenServer.call(__MODULE__, {:join_room, treaty_id, user_id, user_name})
   end
 
   @doc """
   Remove um usuário de uma sala.
   """
-  def leave_room(order_id, user_id) when is_binary(order_id) and is_binary(user_id) do
-    GenServer.call(__MODULE__, {:leave_room, order_id, user_id})
+  def leave_room(treaty_id, user_id) when is_binary(treaty_id) and is_binary(user_id) do
+    GenServer.call(__MODULE__, {:leave_room, treaty_id, user_id})
   end
 
   @doc """
@@ -38,8 +38,8 @@ defmodule App.ActiveRooms do
   @doc """
   Obtém informações de uma sala específica.
   """
-  def get_room_info(order_id) when is_binary(order_id) do
-    GenServer.call(__MODULE__, {:get_room_info, order_id})
+  def get_room_info(treaty_id) when is_binary(treaty_id) do
+    GenServer.call(__MODULE__, {:get_room_info, treaty_id})
   end
 
   @doc """
@@ -58,28 +58,28 @@ defmodule App.ActiveRooms do
   end
 
   @impl true
-  def handle_call({:join_room, order_id, user_id, user_name}, _from, state) do
-    room_key = build_room_key(order_id)
-    current_room = get_or_create_room(state, room_key, order_id)
+  def handle_call({:join_room, treaty_id, user_id, user_name}, _from, state) do
+    room_key = build_room_key(treaty_id)
+    current_room = get_or_create_room(state, room_key, treaty_id)
     updated_room = add_user_to_room(current_room, user_id, user_name)
     new_state = Map.put(state, room_key, updated_room)
 
     broadcast_room_update(room_key, updated_room)
-    log_user_joined(user_name, order_id, updated_room.user_count)
+    log_user_joined(user_name, treaty_id, updated_room.user_count)
 
     {:reply, :ok, new_state}
   end
 
   @impl true
-  def handle_call({:leave_room, order_id, user_id}, _from, state) do
-    room_key = build_room_key(order_id)
+  def handle_call({:leave_room, treaty_id, user_id}, _from, state) do
+    room_key = build_room_key(treaty_id)
 
     case Map.get(state, room_key) do
       nil ->
         {:reply, :ok, state}
 
       room_state ->
-        handle_user_leaving(state, room_key, room_state, user_id, order_id)
+        handle_user_leaving(state, room_key, room_state, user_id, treaty_id)
     end
   end
 
@@ -90,8 +90,8 @@ defmodule App.ActiveRooms do
   end
 
   @impl true
-  def handle_call({:get_room_info, order_id}, _from, state) do
-    room_key = build_room_key(order_id)
+  def handle_call({:get_room_info, treaty_id}, _from, state) do
+    room_key = build_room_key(treaty_id)
     room_info = Map.get(state, room_key)
     {:reply, room_info, state}
   end
@@ -110,15 +110,15 @@ defmodule App.ActiveRooms do
 
   # Private functions
 
-  defp build_room_key(order_id), do: "order:#{order_id}"
+  defp build_room_key(treaty_id), do: "treaty:#{treaty_id}"
 
-  defp get_or_create_room(state, room_key, order_id) do
-    Map.get(state, room_key, create_empty_room(order_id))
+  defp get_or_create_room(state, room_key, treaty_id) do
+    Map.get(state, room_key, create_empty_room(treaty_id))
   end
 
-  defp create_empty_room(order_id) do
+  defp create_empty_room(treaty_id) do
     %{
-      order_id: order_id,
+      treaty_id: treaty_id,
       users: %{},
       last_activity: DateTime.utc_now(),
       user_count: 0
@@ -142,26 +142,26 @@ defmodule App.ActiveRooms do
     }
   end
 
-  defp handle_user_leaving(state, room_key, room_state, user_id, order_id) do
+  defp handle_user_leaving(state, room_key, room_state, user_id, treaty_id) do
     updated_users = Map.delete(room_state.users, user_id)
 
     case map_size(updated_users) do
       0 ->
-        remove_empty_room(state, room_key, order_id)
+        remove_empty_room(state, room_key, treaty_id)
 
       _remaining_count ->
-        update_room_with_remaining_users(state, room_key, room_state, updated_users, order_id)
+        update_room_with_remaining_users(state, room_key, room_state, updated_users, treaty_id)
     end
   end
 
-  defp remove_empty_room(state, room_key, order_id) do
+  defp remove_empty_room(state, room_key, treaty_id) do
     new_state = Map.delete(state, room_key)
     broadcast_room_removed(room_key)
-    log_room_removed(order_id)
+    log_room_removed(treaty_id)
     {:reply, :ok, new_state}
   end
 
-  defp update_room_with_remaining_users(state, room_key, room_state, updated_users, order_id) do
+  defp update_room_with_remaining_users(state, room_key, room_state, updated_users, treaty_id) do
     updated_room = %{
       room_state |
       users: updated_users,
@@ -171,7 +171,7 @@ defmodule App.ActiveRooms do
 
     new_state = Map.put(state, room_key, updated_room)
     broadcast_room_update(room_key, updated_room)
-    log_user_left(order_id, updated_room.user_count)
+    log_user_left(treaty_id, updated_room.user_count)
 
     {:reply, :ok, new_state}
   end
@@ -206,16 +206,16 @@ defmodule App.ActiveRooms do
     Float.round(total_users / total_rooms, 1)
   end
 
-  defp log_user_joined(user_name, order_id, user_count) do
-    Logger.info("User #{user_name} joined room #{order_id}. Total users: #{user_count}")
+  defp log_user_joined(user_name, treaty_id, user_count) do
+    Logger.info("User #{user_name} joined room #{treaty_id}. Total users: #{user_count}")
   end
 
-  defp log_user_left(order_id, remaining_count) do
-    Logger.info("User left room #{order_id}. Remaining users: #{remaining_count}")
+  defp log_user_left(treaty_id, remaining_count) do
+    Logger.info("User left room #{treaty_id}. Remaining users: #{remaining_count}")
   end
 
-  defp log_room_removed(order_id) do
-    Logger.info("Room #{order_id} removed - no users left")
+  defp log_room_removed(treaty_id) do
+    Logger.info("Room #{treaty_id} removed - no users left")
   end
 
   defp broadcast_room_update(room_key, room_data) do

@@ -20,7 +20,7 @@ defmodule AppWeb.Router do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, html: {AppWeb.Layouts, :root}
+    plug :put_root_layout, html: {AppWeb.Layouts, :iframe}
     plug :protect_from_forgery
     plug :put_secure_browser_headers, %{
       "content-security-policy" => "frame-ancestors *;",
@@ -48,26 +48,31 @@ defmodule AppWeb.Router do
   scope "/", AppWeb do
     pipe_through [:browser, :auth]
 
-    live "/buscar-pedido", OrderSearchLive
+    live "/buscar-tratativa", TreatySearchLive
   end
 
   scope "/", AppWeb do
     pipe_through [:iframe, :auth]
 
-    live "/chat/:order_id", ChatLive
+    live "/chat/:treaty_id", ChatLive
   end
 
   # Rota específica para iframes com autenticação
   scope "/iframe", AppWeb do
     pipe_through [:iframe, :auth]
 
-    live "/chat/:order_id", ChatLive
+    live "/chat/:treaty_id", ChatLive
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", AppWeb do
-  #   pipe_through :api
-  # end
+  # API routes
+  scope "/api", AppWeb do
+    pipe_through [:api, :auth]
+
+    get "/notifications/unread-count", NotificationController, :unread_count
+    get "/notifications", NotificationController, :index
+    post "/notifications/:id/mark-as-read", NotificationController, :mark_as_read
+    post "/notifications/mark-all-as-read", NotificationController, :mark_all_as_read
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:app, :dev_routes) do

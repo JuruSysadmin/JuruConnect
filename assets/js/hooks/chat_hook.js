@@ -48,6 +48,13 @@ const ChatHook = {
       }
     });
 
+    // Handle badge count updates
+    this.handleEvent("update-badge-count", () => {
+      if (window.notificationComponent) {
+        window.notificationComponent.updateBrowserBadge();
+      }
+    });
+
     // Handle mention suggestions
     this.handleEvent("show-user-suggestions", (data) => {
       console.log('show-user-suggestions event received:', data);
@@ -84,7 +91,9 @@ const ChatHook = {
       });
     }
 
-      },
+    // Setup drag and drop functionality
+    this.setupDragAndDrop();
+  },
 
   setupTypingDetection() {
     const messageInput = this.el.querySelector('#message-input');
@@ -288,6 +297,118 @@ const ChatHook = {
         item.classList.remove('bg-blue-50');
       }
     });
+  },
+
+  // Drag and Drop functionality
+  setupDragAndDrop() {
+    console.log('Setting up drag and drop...');
+    const form = this.el.querySelector('form');
+    const messageInput = this.el.querySelector('#message-input');
+    const imageUpload = this.el.querySelector('#image-upload');
+
+    console.log('Elements found:', { form, messageInput, imageUpload });
+
+    if (!form || !messageInput || !imageUpload) {
+      console.error('Required elements for drag and drop not found');
+      return;
+    }
+
+    // Prevent default drag behaviors on the entire page
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.addEventListener(eventName, this.preventDefaults, false);
+    });
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+      form.addEventListener(eventName, (e) => {
+        console.log('Drag event on form:', eventName);
+        this.highlightDropArea(form, true);
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      form.addEventListener(eventName, (e) => {
+        console.log('Drag event on form:', eventName);
+        this.highlightDropArea(form, false);
+      }, false);
+    });
+
+    // Handle dropped files
+    form.addEventListener('drop', (e) => {
+      console.log('Drop event on form');
+      this.handleDroppedFiles(e, imageUpload);
+    }, false);
+  },
+
+  preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  },
+
+  highlightDropArea(element, highlight) {
+    const overlay = this.el.querySelector('#drag-overlay');
+    
+    if (highlight) {
+      element.classList.add('border-blue-500', 'bg-blue-50', 'border-2', 'border-dashed');
+      element.style.transition = 'all 0.2s ease-in-out';
+      
+      if (overlay) {
+        overlay.classList.remove('opacity-0', 'pointer-events-none');
+        overlay.classList.add('opacity-100');
+      }
+    } else {
+      element.classList.remove('border-blue-500', 'bg-blue-50', 'border-2', 'border-dashed');
+      
+      if (overlay) {
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        overlay.classList.remove('opacity-100');
+      }
+    }
+  },
+
+  handleDroppedFiles(e, imageUpload) {
+    console.log('handleDroppedFiles called');
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    console.log('Files dropped:', files.length);
+
+    if (files.length > 0) {
+      // Check if files are images
+      const imageFiles = Array.from(files).filter(file => {
+        console.log('File type:', file.type, 'is image:', file.type.startsWith('image/'));
+        return file.type.startsWith('image/');
+      });
+
+      console.log('Image files found:', imageFiles.length);
+
+      if (imageFiles.length > 0) {
+        // Use the first image file
+        const file = imageFiles[0];
+        console.log('Processing file:', file.name, 'size:', file.size);
+        
+        // Check file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Arquivo muito grande. Máximo permitido: 5MB');
+          return;
+        }
+
+        // Create a new FileList with the dropped file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        
+        // Set the files to the input
+        imageUpload.files = dataTransfer.files;
+        
+        // Trigger change event to notify LiveView
+        const changeEvent = new Event('change', { bubbles: true });
+        imageUpload.dispatchEvent(changeEvent);
+
+        console.log('File dropped and added to upload input:', file.name);
+      } else {
+        alert('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+      }
+    }
   }
 };
 

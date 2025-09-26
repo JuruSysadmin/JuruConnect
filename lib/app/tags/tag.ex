@@ -12,8 +12,8 @@ defmodule App.Tags.Tag do
     field :created_by, :binary_id
     field :store_id, :binary_id
 
-    has_many :order_tags, App.Tags.OrderTag
-    has_many :orders, through: [:order_tags, :order]
+    has_many :treaty_tags, App.Tags.TreatyTag
+    has_many :treaties, through: [:treaty_tags, :treaty]
 
     timestamps()
   end

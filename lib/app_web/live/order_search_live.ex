@@ -325,7 +325,7 @@ defmodule AppWeb.OrderSearchLive do
   defp enrich_orders_with_tags(_user, []), do: []
   defp enrich_orders_with_tags(_user, orders) do
     Enum.map(orders, fn order ->
-      tags = App.Tags.get_order_tags(order.order_id)
+      tags = App.Tags.get_treaty_tags(order.order_id)
       Map.put(order, :tags, tags)
     end)
   end

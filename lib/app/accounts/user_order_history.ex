@@ -8,7 +8,7 @@ defmodule App.Accounts.UserOrderHistory do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "user_order_history" do
-    field :order_id, :string
+    field :treaty_id, :string
     field :last_accessed_at, :utc_datetime
     field :access_count, :integer, default: 1
     belongs_to :user, App.Accounts.User
@@ -21,8 +21,8 @@ defmodule App.Accounts.UserOrderHistory do
   """
   def changeset(user_order_history, attrs) do
     user_order_history
-    |> cast(attrs, [:user_id, :order_id, :last_accessed_at, :access_count])
-    |> validate_required([:user_id, :order_id, :last_accessed_at])
-    |> unique_constraint([:user_id, :order_id], name: :user_order_history_user_id_order_id_index)
+    |> cast(attrs, [:user_id, :treaty_id, :last_accessed_at, :access_count])
+    |> validate_required([:user_id, :treaty_id, :last_accessed_at])
+    |> unique_constraint([:user_id, :treaty_id], name: :user_order_history_user_id_treaty_id_index)
   end
 end

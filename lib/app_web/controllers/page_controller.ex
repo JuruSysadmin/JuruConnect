@@ -14,7 +14,7 @@ defmodule AppWeb.PageController do
   def set_token(conn, %{"token" => token}) do
     conn
     |> put_session(:user_token, token)
-    |> redirect(to: "/buscar-pedido")
+    |> redirect(to: "/buscar-tratativa")
   end
 
   def set_token_and_redirect(conn, %{"token" => token, "redirect" => redirect_path}) do

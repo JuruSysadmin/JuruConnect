@@ -7,9 +7,9 @@ defmodule AppWeb.Auth.Plugs.AuthenticateUser do
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    # Verificar token na sessão
-    token = get_session(conn, :user_token)
-    Logger.info("AuthenticateUser: Token na sessão = #{inspect(token)}")
+    # Verificar token na sessão ou query params (para iframes)
+    token = get_session(conn, :user_token) || conn.query_params["token"]
+    Logger.info("AuthenticateUser: Token encontrado = #{inspect(token)}")
 
     case token do
       nil ->
@@ -23,6 +23,12 @@ defmodule AppWeb.Auth.Plugs.AuthenticateUser do
         case Guardian.resource_from_token(token) do
           {:ok, user, _claims} ->
             Logger.info("AuthenticateUser: Usuário autenticado = #{user.name || user.username}")
+            # Se o token veio da query string, salvar na sessão para futuras requisições
+            conn = if conn.query_params["token"] do
+              put_session(conn, :user_token, token)
+            else
+              conn
+            end
             assign(conn, :current_user, user)
 
           {:error, reason} ->

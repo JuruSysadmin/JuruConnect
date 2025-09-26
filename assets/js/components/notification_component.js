@@ -49,6 +49,9 @@ class NotificationComponent {
     // Tocar som de notificação
     this.playNotificationSound();
 
+    // Atualizar badge do navegador
+    this.updateBrowserBadge();
+
     // Auto-remover após 5 segundos
     setTimeout(() => {
       this.removeNotification(notification);
@@ -70,8 +73,8 @@ class NotificationComponent {
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-gray-900">${data.title}</p>
           <p class="text-sm text-gray-500 mt-1">${data.body}</p>
-          ${data.data && data.data.order_id ? `
-            <button onclick="notificationComponent.navigateToChat('${data.data.order_id}')" class="text-xs text-blue-800 hover:text-blue-900 mt-2">
+          ${data.data && data.data.treaty_id ? `
+            <button onclick="notificationComponent.navigateToChat('${data.data.treaty_id}')" class="text-xs text-blue-800 hover:text-blue-900 mt-2">
               Ver conversa
             </button>
           ` : ''}
@@ -105,8 +108,8 @@ class NotificationComponent {
       window.focus();
       notification.close();
 
-      if (data.data && data.data.order_id) {
-        this.navigateToChat(data.data.order_id);
+      if (data.data && data.data.treaty_id) {
+        this.navigateToChat(data.data.treaty_id);
       }
     };
 
@@ -130,11 +133,76 @@ class NotificationComponent {
   }
 
   playNotificationSound() {
-    const audio = new Audio('/sounds/notification.mp3');
-    audio.volume = 0.5;
+    // Verificar se som está habilitado nas configurações
+    if (!this.isSoundEnabled()) {
+      return;
+    }
+
+    // Tocar som de notificação
+    const soundFile = this.getNotificationSound();
+    const audio = new Audio(soundFile);
+    audio.volume = this.getNotificationVolume();
+    
     audio.play().catch(error => {
-      console.log('Could not play notification sound:', error);
+      console.log('Erro ao tocar som de notificação:', error);
     });
+  }
+
+  /**
+   * Verifica se o som de notificação está habilitado
+   */
+  isSoundEnabled() {
+    const config = this.getNotificationConfig();
+    return config.enableSound !== false; // Padrão: habilitado
+  }
+
+  /**
+   * Obtém o arquivo de som da notificação
+   */
+  getNotificationSound() {
+    const config = this.getNotificationConfig();
+    return config.soundFile || '/sounds/notification.mp3';
+  }
+
+  /**
+   * Obtém o volume da notificação
+   */
+  getNotificationVolume() {
+    const config = this.getNotificationConfig();
+    return config.volume || 0.5;
+  }
+
+  /**
+   * Obtém as configurações de notificação do localStorage
+   */
+  getNotificationConfig() {
+    try {
+      const config = localStorage.getItem('notificationConfig');
+      return config ? JSON.parse(config) : {};
+    } catch (error) {
+      console.error('Erro ao carregar configurações de notificação:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Salva as configurações de notificação no localStorage
+   */
+  saveNotificationConfig(config) {
+    try {
+      localStorage.setItem('notificationConfig', JSON.stringify(config));
+    } catch (error) {
+      console.error('Erro ao salvar configurações de notificação:', error);
+    }
+  }
+
+  /**
+   * Atualiza uma configuração específica
+   */
+  updateNotificationConfig(key, value) {
+    const config = this.getNotificationConfig();
+    config[key] = value;
+    this.saveNotificationConfig(config);
   }
 
   showSuccessMessage(message) {
@@ -156,6 +224,113 @@ class NotificationComponent {
         messageElement.parentElement.removeChild(messageElement);
       }
     }, 3000);
+  }
+
+  /**
+   * Atualiza o badge do navegador com o contador de notificações não lidas
+   */
+  updateBrowserBadge(count = null) {
+    // Se count não foi fornecido, buscar do servidor
+    if (count === null) {
+      this.fetchUnreadCount().then(unreadCount => {
+        this.setBrowserBadge(unreadCount);
+      });
+    } else {
+      this.setBrowserBadge(count);
+    }
+  }
+
+  /**
+   * Busca o contador de notificações não lidas do servidor
+   */
+  async fetchUnreadCount() {
+    try {
+      const response = await fetch('/api/notifications/unread-count', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.count || 0;
+      }
+    } catch (error) {
+      console.error('Erro ao buscar contador de notificações:', error);
+    }
+    return 0;
+  }
+
+  /**
+   * Define o badge do navegador
+   */
+  setBrowserBadge(count) {
+    // Atualizar título da página com contador
+    const baseTitle = document.title.replace(/^\(\d+\)\s*/, '');
+    if (count > 0) {
+      document.title = `(${count}) ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+
+    // Atualizar favicon com badge (se suportado)
+    this.updateFaviconBadge(count);
+  }
+
+  /**
+   * Atualiza o favicon com badge de notificação
+   */
+  updateFaviconBadge(count) {
+    if (count === 0) {
+      // Restaurar favicon original
+      const originalFavicon = document.querySelector('link[rel="icon"]');
+      if (originalFavicon) {
+        originalFavicon.href = '/favicon.ico';
+      }
+      return;
+    }
+
+    // Criar canvas para gerar favicon com badge
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 32;
+    canvas.height = 32;
+
+    // Desenhar ícone base (círculo azul)
+    ctx.fillStyle = '#3B82F6';
+    ctx.beginPath();
+    ctx.arc(16, 16, 16, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Desenhar contador
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const countText = count > 99 ? '99+' : count.toString();
+    ctx.fillText(countText, 16, 16);
+
+    // Converter para data URL e atualizar favicon
+    const dataURL = canvas.toDataURL('image/png');
+    let favicon = document.querySelector('link[rel="icon"]');
+    
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.appendChild(favicon);
+    }
+    
+    favicon.href = dataURL;
+  }
+
+  /**
+   * Limpa o badge do navegador
+   */
+  clearBrowserBadge() {
+    this.setBrowserBadge(0);
   }
 }
 

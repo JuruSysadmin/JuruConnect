@@ -6,26 +6,26 @@ defmodule App.Chat.Room do
   alias App.DateTimeHelper
 
   # Client API
-  def start_link(order_id) do
-    GenServer.start_link(__MODULE__, order_id, name: via_tuple(order_id))
+  def start_link(treaty_id) do
+    GenServer.start_link(__MODULE__, treaty_id, name: via_tuple(treaty_id))
   end
 
-  def via_tuple(order_id) do
-    {:via, Registry, {App.ChatRegistry, order_id}}
+  def via_tuple(treaty_id) do
+    {:via, Registry, {App.ChatRegistry, treaty_id}}
   end
 
   # GenServer Callbacks
   @impl true
-  def init(order_id) do
+  def init(treaty_id) do
     # Load messages when the room starts, using the configured limit
-    {:ok, messages, _has_more} = Chat.list_messages_for_order(order_id, ChatConfig.default_message_limit())
-    # The state includes the order_id, the list of messages, and users who are currently typing.
-    {:ok, %{order_id: order_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTimeHelper.now()}}
+    {:ok, messages, _has_more} = Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit())
+    # The state includes the treaty_id, the list of messages, and users who are currently typing.
+    {:ok, %{treaty_id: treaty_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTimeHelper.now()}}
   end
 
   @impl true
-  def handle_cast({:new_message, %{text: text, user_id: user_id, order_id: order_id} = message_params}, state)
-      when is_binary(text) and is_binary(user_id) and is_binary(order_id) do
+  def handle_cast({:new_message, %{text: text, user_id: user_id, treaty_id: treaty_id} = message_params}, state)
+      when is_binary(text) and is_binary(user_id) and is_binary(treaty_id) do
     # Obter o nome do usuário
     sender_name = get_username_by_id(user_id) || ChatConfig.default_username()
 
@@ -34,7 +34,7 @@ defmodule App.Chat.Room do
       text: text,
       sender_id: user_id,
       sender_name: sender_name,
-      order_id: order_id,
+      treaty_id: treaty_id,
       tipo: Map.get(message_params, :tipo, "mensagem"),
       timestamp: Map.get(message_params, :timestamp, DateTimeHelper.now())
     }
@@ -48,7 +48,7 @@ defmodule App.Chat.Room do
         Logger.info("Mensagem salva com sucesso: #{inspect(message)}")
 
         # Broadcast the new message to all LiveView subscribers via PubSub
-        broadcast_message(state.order_id, message)
+        broadcast_message(state.treaty_id, message)
 
         # Add the new message to the local state (optional, but good for consistency)
         new_messages = [message | state.messages]
@@ -67,12 +67,12 @@ defmodule App.Chat.Room do
           text: text,
           sender_id: user_id,
           sender_name: sender_name,
-          order_id: order_id,
+          treaty_id: treaty_id,
           tipo: "mensagem",
           inserted_at: DateTimeHelper.now()
         }
 
-        broadcast_message(state.order_id, temp_message)
+        broadcast_message(state.treaty_id, temp_message)
 
         {:noreply, %{state | last_activity: DateTimeHelper.now()}}
     end
@@ -81,7 +81,7 @@ defmodule App.Chat.Room do
   @impl true
   def handle_cast({:start_typing, user_id}, state) do
     typing_users = MapSet.put(state.typing_users, user_id)
-    broadcast_typing_users(state.order_id, typing_users)
+    broadcast_typing_users(state.treaty_id, typing_users)
 
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTimeHelper.now()}}
   end
@@ -89,7 +89,7 @@ defmodule App.Chat.Room do
   @impl true
   def handle_cast({:stop_typing, user_id}, state) do
     typing_users = MapSet.delete(state.typing_users, user_id)
-    broadcast_typing_users(state.order_id, typing_users)
+    broadcast_typing_users(state.treaty_id, typing_users)
 
     {:noreply, %{state | typing_users: typing_users, last_activity: DateTimeHelper.now()}}
   end
@@ -98,7 +98,7 @@ defmodule App.Chat.Room do
   def handle_cast({:join, user_data}, state) do
     # Quando um usuário entra, podemos querer enviar o estado atual de digitação
     # para ele, ou apenas registrar a entrada.
-    Logger.info("User #{user_data.name} joined Room GenServer for order #{state.order_id}")
+    Logger.info("User #{user_data.name} joined Room GenServer for treaty #{state.treaty_id}")
     {:noreply, %{state | last_activity: DateTimeHelper.now()}}
   end
 
@@ -110,7 +110,7 @@ defmodule App.Chat.Room do
     diff = DateTime.diff(now, state.last_activity, :second) / 60
 
     if diff > timeout_minutes do
-      Logger.info("Chat room for order #{state.order_id} inactive for #{diff} minutes, shutting down")
+      Logger.info("Chat room for treaty #{state.treaty_id} inactive for #{diff} minutes, shutting down")
       {:stop, :normal, state}
     else
       # Agendar próxima verificação
@@ -121,21 +121,21 @@ defmodule App.Chat.Room do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info("Chat room for order #{state.order_id} is shutting down. Reason: #{inspect(reason)}")
+    Logger.info("Chat room for treaty #{state.treaty_id} is shutting down. Reason: #{inspect(reason)}")
     :ok
   end
 
   # Broadcast message to LiveView subscribers
-  defp broadcast_message(order_id, message) do
-    topic = "order:#{order_id}"
+  defp broadcast_message(treaty_id, message) do
+    topic = "treaty:#{treaty_id}"
 
     # Broadcast via PubSub for LiveView subscribers
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-    Logger.info("Broadcasted new_message for order #{order_id}: #{inspect(message)}")
+    Logger.info("Broadcasted new_message for treaty #{treaty_id}: #{inspect(message)}")
   end
 
-  defp broadcast_typing_users(order_id, typing_users) do
-    topic = "order:#{order_id}"
+  defp broadcast_typing_users(treaty_id, typing_users) do
+    topic = "treaty:#{treaty_id}"
     # We convert the Set to a List for JSON serialization
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_users, %{users: MapSet.to_list(typing_users)}})
   end

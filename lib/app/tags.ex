@@ -1,11 +1,11 @@
 defmodule App.Tags do
   @moduledoc """
-  Módulo responsável por gerenciar tags de pedidos.
+  Módulo responsável por gerenciar tags de tratativas.
   """
 
   import Ecto.Query
   alias App.Repo
-  alias App.Tags.{Tag, OrderTag}
+  alias App.Tags.{Tag, TreatyTag}
 
   @doc """
   Lista todas as tags ativas.
@@ -55,12 +55,12 @@ defmodule App.Tags do
   end
 
   @doc """
-  Adiciona uma tag a um pedido.
+  Adiciona uma tag a uma tratativa.
   """
-  def add_tag_to_order(order_id, tag_id, user_id) do
-    %OrderTag{}
-    |> OrderTag.changeset(%{
-      order_id: order_id,
+  def add_tag_to_treaty(treaty_id, tag_id, user_id) do
+    %TreatyTag{}
+    |> TreatyTag.changeset(%{
+      treaty_id: treaty_id,
       tag_id: tag_id,
       added_by: user_id,
       added_at: App.DateTimeHelper.now()
@@ -69,39 +69,39 @@ defmodule App.Tags do
   end
 
   @doc """
-  Remove uma tag de um pedido.
+  Remove uma tag de uma tratativa.
   """
-  def remove_tag_from_order(order_id, tag_id) do
-    from(ot in OrderTag, where: ot.order_id == ^order_id and ot.tag_id == ^tag_id)
+  def remove_tag_from_treaty(treaty_id, tag_id) do
+    from(tt in TreatyTag, where: tt.treaty_id == ^treaty_id and tt.tag_id == ^tag_id)
     |> Repo.delete_all()
   end
 
   @doc """
-  Lista todas as tags de um pedido.
+  Lista todas as tags de uma tratativa.
   """
-  def get_order_tags(order_id) do
-    from(ot in OrderTag,
-      join: t in Tag, on: ot.tag_id == t.id,
-      where: ot.order_id == ^order_id and t.is_active == true,
+  def get_treaty_tags(treaty_id) do
+    from(tt in TreatyTag,
+      join: t in Tag, on: tt.tag_id == t.id,
+      where: tt.treaty_id == ^treaty_id and t.is_active == true,
       select: %{
         id: t.id,
         name: t.name,
         color: t.color,
         description: t.description,
-        added_at: ot.added_at,
-        added_by: ot.added_by
+        added_at: tt.added_at,
+        added_by: tt.added_by
       }
     )
     |> Repo.all()
   end
 
   @doc """
-  Lista todos os pedidos com uma tag específica.
+  Lista todas as tratativas com uma tag específica.
   """
-  def get_orders_with_tag(tag_id) do
-    from(ot in OrderTag,
-      where: ot.tag_id == ^tag_id,
-      select: ot.order_id
+  def get_treaties_with_tag(tag_id) do
+    from(tt in TreatyTag,
+      where: tt.tag_id == ^tag_id,
+      select: tt.treaty_id
     )
     |> Repo.all()
   end
@@ -129,18 +129,18 @@ defmodule App.Tags do
   """
   def create_default_tags(store_id, created_by) do
     default_tags = [
-      %{name: "EM ANÁLISE", color: "#3b82f6", description: "Pedido sendo analisado pela equipe"},
-      %{name: "AGUARDANDO CLIENTE", color: "#f59e0b", description: "Aguardando resposta do cliente"},
+      %{name: "EM ANÁLISE", color: "#3b82f6", description: "Tratativa sendo analisada pela equipe"},
+      %{name: "AGUARDANDO RESPOSTA", color: "#f59e0b", description: "Aguardando resposta do cliente"},
       %{name: "RESOLVIDO", color: "#10b981", description: "Problema resolvido com sucesso"},
-      %{name: "URGENTE", color: "#ef4444", description: "Pedidos que precisam de atenção imediata"},
-      %{name: "PENDENTE", color: "#f59e0b", description: "Pedidos aguardando resposta"},
-      %{name: "CANCELADO", color: "#6b7280", description: "Pedidos cancelados"},
-      %{name: "APROVADO", color: "#8b5cf6", description: "Pedidos aprovados"},
-      %{name: "REJEITADO", color: "#dc2626", description: "Pedidos rejeitados"},
+      %{name: "URGENTE", color: "#ef4444", description: "Tratativas que precisam de atenção imediata"},
+      %{name: "PENDENTE", color: "#f59e0b", description: "Tratativas aguardando resposta"},
+      %{name: "CANCELADO", color: "#6b7280", description: "Tratativas canceladas"},
+      %{name: "APROVADO", color: "#8b5cf6", description: "Tratativas aprovadas"},
+      %{name: "REJEITADO", color: "#dc2626", description: "Tratativas rejeitadas"},
       %{name: "VIP", color: "#fbbf24", description: "Clientes VIP"},
-      %{name: "EM PRODUÇÃO", color: "#06b6d4", description: "Pedido em processo de produção"},
-      %{name: "ENTREGUE", color: "#059669", description: "Pedido entregue com sucesso"},
-      %{name: "DEVOLVIDO", color: "#dc2626", description: "Pedido devolvido pelo cliente"}
+      %{name: "EM PROCESSO", color: "#06b6d4", description: "Tratativa em processo de resolução"},
+      %{name: "FINALIZADO", color: "#059669", description: "Tratativa finalizada com sucesso"},
+      %{name: "REABERTO", color: "#dc2626", description: "Tratativa reaberta pelo cliente"}
     ]
 
     Enum.each(default_tags, fn tag_attrs ->
@@ -152,7 +152,7 @@ defmodule App.Tags do
   end
 
   @doc """
-  Conta quantos pedidos têm cada tag.
+  Conta quantas tratativas têm cada tag.
   """
   def get_tag_statistics(store_id \\ nil) do
     base_query = from t in Tag, where: t.is_active == true
@@ -164,9 +164,9 @@ defmodule App.Tags do
     end
 
     from(t in query,
-      left_join: ot in OrderTag, on: t.id == ot.tag_id,
+      left_join: tt in TreatyTag, on: t.id == tt.tag_id,
       group_by: [t.id, t.name, t.color],
-      select: %{id: t.id, name: t.name, color: t.color, count: count(ot.order_id)}
+      select: %{id: t.id, name: t.name, color: t.color, count: count(tt.treaty_id)}
     )
     |> Repo.all()
   end

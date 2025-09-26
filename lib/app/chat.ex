@@ -6,6 +6,7 @@ defmodule App.Chat do
   import Ecto.Query, warn: false
   alias App.Repo
   alias App.Chat.Message
+  alias App.Chat.MessageAttachment
   alias App.ChatSession
   require Logger
 
@@ -65,49 +66,64 @@ defmodule App.Chat do
   end
 
   @doc """
-  Lista mensagens para um pedido (order_id), com limite e offset opcional.
+  Lista mensagens para uma tratativa (treaty_id), com limite e offset opcional.
   """
-  def list_messages_for_order(order_id, limit \\ 50, offset \\ 0)
-      when is_binary(order_id) and is_integer(limit) and is_integer(offset) do
-    Message
-    |> where([m], m.order_id == ^order_id)
+  def list_messages_for_treaty(treaty_id, limit \\ 50, offset \\ 0)
+      when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
+    messages = Message
+    |> where([m], m.treaty_id == ^treaty_id)
     |> order_by([m], asc: m.timestamp)
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
-    |> then(fn messages ->
-      has_more_messages = length(messages) == limit
-      {:ok, messages, has_more_messages}
+    |> Enum.map(fn message ->
+      attachments = get_message_attachments(message.id)
+      %{message | attachments: attachments}
     end)
+
+    has_more_messages = length(messages) == limit
+    {:ok, messages, has_more_messages}
   end
 
   @doc """
-  Envia uma mensagem para um pedido específico, com suporte a imagem e notificações.
+  Envia uma mensagem para uma tratativa específica, com suporte a anexos e notificações.
   """
-  def send_message(order_id, sender_id, text, image_url \\ nil)
-      when is_binary(order_id) and is_binary(text) and byte_size(text) > 0 do
+  def send_message(treaty_id, sender_id, text, file_info \\ nil)
+      when is_binary(treaty_id) and is_binary(text) and byte_size(text) > 0 do
     sender_name = get_sender_name(sender_id)
 
     params = %{
       text: text,
       sender_id: sender_id,
       sender_name: sender_name,
-      order_id: order_id,
+      treaty_id: treaty_id,
       tipo: "mensagem",
-      image_url: image_url,
       timestamp: DateTime.utc_now()
     }
 
     case create_message(params) do
       {:ok, message} ->
+        # Criar anexo se houver arquivo
+        if file_info do
+          case create_image_attachment(message.id, sender_id, file_info) do
+            {:ok, _attachment} ->
+              Logger.info("Attachment created for message #{message.id}")
+            {:error, changeset} ->
+              Logger.error("Erro ao criar anexo: #{inspect(changeset.errors)}")
+          end
+        end
+
+        # Carregar anexos para a mensagem
+        message_with_attachments = %{message | attachments: get_message_attachments(message.id)}
+
         # Publicar a mensagem via PubSub
-        topic = "order:#{order_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
+        topic = "treaty:#{treaty_id}"
+        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message_with_attachments})
 
         # Processar notificações
-        process_message_notifications(message, order_id)
+        process_message_notifications(message_with_attachments, treaty_id)
 
-        {:ok, message}
+        {:ok, message_with_attachments}
       {:error, changeset} ->
         Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}
@@ -124,10 +140,10 @@ defmodule App.Chat do
   end
   defp get_sender_name(_), do: "Usuário"
 
-  defp process_message_notifications(message, order_id) do
-    # Buscar todos os usuários que têm acesso ao pedido
+  defp process_message_notifications(message, treaty_id) do
+    # Buscar todos os usuários que têm acesso à tratativa
     # Por enquanto, vamos notificar todos os usuários online no chat
-    topic = "order:#{order_id}"
+    topic = "treaty:#{treaty_id}"
     presences = AppWeb.Presence.list(topic)
 
     # Extrair IDs dos usuários online
@@ -149,5 +165,70 @@ defmodule App.Chat do
     if length(mentioned_users) > 0 do
       App.Notifications.notify_mention(message, mentioned_users)
     end
+  end
+
+  # Message Attachments functions
+
+  @doc """
+  Creates a message attachment.
+  """
+  def create_message_attachment(attrs \\ %{}) do
+    %MessageAttachment{}
+    |> MessageAttachment.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates an image attachment for a message.
+  """
+  def create_image_attachment(message_id, uploaded_by_id, file_info) do
+    %{
+      message_id: message_id,
+      uploaded_by_id: uploaded_by_id,
+      filename: file_info.filename,
+      original_filename: file_info.original_filename,
+      file_size: file_info.file_size,
+      mime_type: file_info.mime_type,
+      file_url: file_info.file_url,
+      file_type: "image"
+    }
+    |> create_message_attachment()
+  end
+
+  @doc """
+  Gets all attachments for a message.
+  """
+  def get_message_attachments(message_id) do
+    from(ma in MessageAttachment,
+      where: ma.message_id == ^message_id,
+      order_by: [asc: ma.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets image attachments for a message.
+  """
+  def get_message_images(message_id) do
+    from(ma in MessageAttachment,
+      where: ma.message_id == ^message_id and ma.file_type == "image",
+      order_by: [asc: ma.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Deletes a message attachment.
+  """
+  def delete_message_attachment(%MessageAttachment{} = attachment) do
+    Repo.delete(attachment)
+  end
+
+  @doc """
+  Deletes all attachments for a message.
+  """
+  def delete_message_attachments(message_id) do
+    from(ma in MessageAttachment, where: ma.message_id == ^message_id)
+    |> Repo.delete_all()
   end
 end

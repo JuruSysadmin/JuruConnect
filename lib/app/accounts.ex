@@ -163,18 +163,18 @@ defmodule App.Accounts do
   end
 
   @doc """
-  Registra o acesso de um usuário a um pedido.
+  Registra o acesso de um usuário a uma tratativa.
   """
-  def record_order_access(user_id, order_id) do
+  def record_order_access(user_id, treaty_code) do
     now = App.DateTimeHelper.now()
 
-    case Repo.get_by(UserOrderHistory, user_id: user_id, order_id: order_id) do
+    case Repo.get_by(UserOrderHistory, user_id: user_id, treaty_id: treaty_code) do
       nil ->
         # Primeiro acesso
         %UserOrderHistory{}
         |> UserOrderHistory.changeset(%{
           user_id: user_id,
-          order_id: order_id,
+          treaty_id: treaty_code,
           last_accessed_at: now,
           access_count: 1
         })
@@ -192,7 +192,7 @@ defmodule App.Accounts do
   end
 
   @doc """
-  Obtém o histórico de pedidos de um usuário, ordenado por último acesso.
+  Obtém o histórico de tratativas de um usuário, ordenado por último acesso.
   """
   def get_user_order_history(user_id, limit \\ 10) do
     UserOrderHistory
@@ -203,24 +203,24 @@ defmodule App.Accounts do
   end
 
   @doc """
-  Obtém estatísticas do histórico de pedidos de um usuário.
+  Obtém estatísticas do histórico de tratativas de um usuário.
   """
   def get_user_order_stats(user_id) do
     query = from h in UserOrderHistory,
       where: h.user_id == ^user_id,
       select: %{
-        total_orders: count(h.order_id),
+        total_treaties: count(h.treaty_id),
         total_accesses: sum(h.access_count)
       }
 
     case Repo.one(query) do
-      %{total_orders: total_orders, total_accesses: total_accesses} ->
+      %{total_treaties: total_treaties, total_accesses: total_accesses} ->
         %{
-          total_orders: total_orders || 0,
+          total_treaties: total_treaties || 0,
           total_accesses: total_accesses || 0
         }
       _ ->
-        %{total_orders: 0, total_accesses: 0}
+        %{total_treaties: 0, total_accesses: 0}
     end
   end
 
@@ -240,5 +240,14 @@ defmodule App.Accounts do
     User
     |> where(role: ^role)
     |> Repo.all()
+  end
+
+  @doc """
+  Limpa o histórico de tratativas de um usuário.
+  """
+  def clear_user_order_history(user_id) do
+    UserOrderHistory
+    |> where(user_id: ^user_id)
+    |> Repo.delete_all()
   end
 end

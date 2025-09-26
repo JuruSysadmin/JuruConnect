@@ -4,15 +4,16 @@ defmodule App.Chat.Message do
 
   @primary_key {:id, :id, autogenerate: true}
 
-  @derive {Jason.Encoder, only: [:id, :text, :sender_id, :sender_name, :order_id, :tipo, :inserted_at, :image_url, :timestamp]}
+  @derive {Jason.Encoder, only: [:id, :text, :sender_id, :sender_name, :treaty_id, :tipo, :inserted_at, :image_url, :timestamp, :attachments]}
   schema "messages" do
     field :text,        :string
     field :sender_id,   :string
     field :sender_name, :string
-    field :order_id,    :string
+    field :treaty_id,   :string
     field :tipo,        :string, default: "mensagem"
     field :image_url,   :string
     field :timestamp,   :utc_datetime
+    field :attachments, {:array, :map}, virtual: true, default: []
     timestamps(type: :utc_datetime_usec)
   end
 
@@ -21,8 +22,8 @@ defmodule App.Chat.Message do
   """
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:text, :sender_id, :sender_name, :order_id, :tipo, :image_url, :timestamp])
-    |> validate_required([:text, :sender_name, :order_id])
+    |> cast(attrs, [:text, :sender_id, :sender_name, :treaty_id, :tipo, :image_url, :timestamp])
+    |> validate_required([:text, :sender_name, :treaty_id])
     |> validate_length(:text, min: 1, max: 2000)
     |> validate_length(:sender_name, min: 1, max: 100)
     |> validate_inclusion(:tipo, ["mensagem", "sistema", "notificacao"])

@@ -5,6 +5,9 @@ defmodule App.Notifications do
 
   alias App.Accounts
   alias App.Chat
+  alias App.Notifications.Notification
+  alias App.Repo
+  import Ecto.Query
   require Logger
 
   @doc """
@@ -16,7 +19,7 @@ defmodule App.Notifications do
   def notify_new_message(message, current_user_id) do
     with {:ok, _} <- prevent_self_notification(message, current_user_id),
          {:ok, user} <- fetch_user_by_id(current_user_id),
-         {:ok, is_user_online} <- check_presence_in_order(message.order_id, current_user_id) do
+         {:ok, is_user_online} <- check_presence_in_treaty(message.treaty_id, current_user_id) do
 
       deliver_notification(message, user, is_user_online)
       {:ok, :notification_sent}
@@ -46,8 +49,8 @@ defmodule App.Notifications do
     end
   end
 
-  defp check_presence_in_order(order_id, user_id) do
-    topic = "order:#{order_id}"
+  defp check_presence_in_treaty(treaty_id, user_id) do
+    topic = "treaty:#{treaty_id}"
     presences = AppWeb.Presence.list(topic)
 
     is_user_online = presences
@@ -61,10 +64,13 @@ defmodule App.Notifications do
   end
 
   defp deliver_notification(message, user, true) do
+    # User is online - send real-time notification
     broadcast_liveview_notification(user.id, message)
+    send_desktop_notification(user, message)
   end
 
   defp deliver_notification(message, user, false) do
+    # User is offline - save notification and send desktop notification
     save_offline_notification(user.id, message)
     send_desktop_notification(user, message)
   end
@@ -75,7 +81,7 @@ defmodule App.Notifications do
       "user:#{user_id}",
       {:notification, :new_message, %{
         message: message,
-        order_id: message.order_id,
+        treaty_id: message.treaty_id,
         sender_name: message.sender_name,
         text: message.text,
         timestamp: message.inserted_at
@@ -98,6 +104,8 @@ defmodule App.Notifications do
 
   defp send_mention_notification(message, user_id) do
     with {:ok, user} <- fetch_user_by_id(user_id) do
+      # Save mention notification to database
+      save_mention_notification(user_id, message)
       broadcast_mention_notification(user_id, message)
       send_desktop_notification(user, message, :mention)
       {:ok, :mention_sent}
@@ -117,7 +125,7 @@ defmodule App.Notifications do
       "user:#{user_id}",
       {:notification, :mention, %{
         message: message,
-        order_id: message.order_id,
+        treaty_id: message.treaty_id,
         sender_name: message.sender_name,
         text: message.text,
         timestamp: message.inserted_at,
@@ -128,20 +136,63 @@ defmodule App.Notifications do
 
   @doc """
   Retrieves unread notifications for a user.
-
-  Currently returns an empty list as the notification storage is not yet implemented.
   """
   def get_unread_notifications(user_id) do
-    []
+    Notification
+    |> where([n], n.user_id == ^user_id and n.is_read == false)
+    |> order_by([n], desc: n.inserted_at)
+    |> limit(50)
+    |> Repo.all()
+  end
+
+  @doc """
+  Retrieves all notifications for a user (read and unread).
+  """
+  def get_user_notifications(user_id, limit \\ 100) do
+    Notification
+    |> where([n], n.user_id == ^user_id)
+    |> order_by([n], desc: n.inserted_at)
+    |> limit(^limit)
+    |> Repo.all()
   end
 
   @doc """
   Marks notifications as read for a user.
-
-  Currently a no-op as the notification storage is not yet implemented.
   """
-  def mark_notifications_as_read(user_id, notification_ids) do
-    :ok
+  def mark_notifications_as_read(user_id, notification_ids) when is_list(notification_ids) do
+    Notification
+    |> where([n], n.user_id == ^user_id and n.id in ^notification_ids)
+    |> Repo.update_all(set: [is_read: true, read_at: DateTime.utc_now()])
+    |> case do
+      {count, _} -> {:ok, count}
+      error -> {:error, error}
+    end
+  end
+
+  def mark_notifications_as_read(user_id, notification_id) when is_binary(notification_id) do
+    mark_notifications_as_read(user_id, [notification_id])
+  end
+
+  @doc """
+  Marks all notifications as read for a user.
+  """
+  def mark_all_notifications_as_read(user_id) do
+    Notification
+    |> where([n], n.user_id == ^user_id and n.is_read == false)
+    |> Repo.update_all(set: [is_read: true, read_at: DateTime.utc_now()])
+    |> case do
+      {count, _} -> {:ok, count}
+      error -> {:error, error}
+    end
+  end
+
+  @doc """
+  Gets the count of unread notifications for a user.
+  """
+  def get_unread_count(user_id) do
+    Notification
+    |> where([n], n.user_id == ^user_id and n.is_read == false)
+    |> Repo.aggregate(:count)
   end
 
   @doc """
@@ -194,7 +245,7 @@ defmodule App.Notifications do
     "#{message.sender_name} mencionou você: #{String.slice(message.text, 0, 50)}"
   end
   defp build_notification_body(message, _) do
-    "#{message.sender_name}: #{String.slice(message.text, 0, 50)}"
+    "#{message.sender_name}: #{String.slice(message.text, 0, 100)}"
   end
 
   defp broadcast_desktop_notification(user_id, title, body, message) do
@@ -207,20 +258,95 @@ defmodule App.Notifications do
         icon: "/images/notification-icon.svg",
         tag: "chat-notification",
         data: %{
-          order_id: message.order_id,
+          treaty_id: message.treaty_id,
           message_id: message.id
         }
       }}
     )
   end
 
-  @doc """
-  Saves notification for offline user.
-
-  Currently logs the action as the notification storage is not yet implemented.
-  """
   defp save_offline_notification(user_id, message) do
-    Logger.info("Salvando notificação offline para usuário #{user_id}")
-    :ok
+    # Get the actual treaty ID (binary_id) from treaty_code
+    treaty_id = get_treaty_id_from_code(message.treaty_id)
+
+    # Skip notification if treaty doesn't exist
+    if is_nil(treaty_id) do
+      Logger.warning("Treaty não encontrado para notificação offline: #{message.treaty_id}")
+      {:ok, :treaty_not_found}
+    else
+      notification_attrs = %{
+        user_id: user_id,
+        treaty_id: treaty_id,
+        message_id: message.id,
+        sender_id: message.sender_id,
+        sender_name: message.sender_name,
+        notification_type: "new_message",
+        title: "Nova mensagem",
+        body: build_notification_body(message, :new_message),
+        metadata: %{
+          treaty_code: message.treaty_id,
+          message_preview: String.slice(message.text, 0, 100)
+        }
+      }
+
+      case Notification.create_changeset(notification_attrs) |> Repo.insert() do
+        {:ok, notification} ->
+          Logger.info("Notificação salva para usuário offline: #{user_id}")
+          {:ok, notification}
+        {:error, changeset} ->
+          Logger.error("Erro ao salvar notificação: #{inspect(changeset.errors)}")
+          {:error, changeset}
+      end
+    end
+  end
+
+  defp get_treaty_code(treaty_id) do
+    case App.Treaties.get_treaty(treaty_id) do
+      {:ok, treaty} -> treaty.treaty_code
+      {:error, _} -> "Tratativa"
+    end
+  end
+
+  defp get_treaty_id_from_code(treaty_code) do
+    case App.Treaties.get_treaty(treaty_code) do
+      {:ok, treaty} -> treaty.id
+      {:error, _} -> nil
+    end
+  end
+
+  defp save_mention_notification(user_id, message) do
+    # Get the actual treaty ID (binary_id) from treaty_code
+    treaty_id = get_treaty_id_from_code(message.treaty_id)
+
+    # Skip notification if treaty doesn't exist
+    if is_nil(treaty_id) do
+      Logger.warning("Treaty não encontrado para notificação: #{message.treaty_id}")
+      {:ok, :treaty_not_found}
+    else
+      notification_attrs = %{
+        user_id: user_id,
+        treaty_id: treaty_id,
+        message_id: message.id,
+        sender_id: message.sender_id,
+        sender_name: message.sender_name,
+        notification_type: "mention",
+        title: "Você foi mencionado!",
+        body: build_notification_body(message, :mention),
+        metadata: %{
+          treaty_code: message.treaty_id,
+          message_preview: String.slice(message.text, 0, 100),
+          mentioned_by: message.sender_name
+        }
+      }
+
+      case Notification.create_changeset(notification_attrs) |> Repo.insert() do
+        {:ok, notification} ->
+          Logger.info("Notificação de menção salva para usuário: #{user_id}")
+          {:ok, notification}
+        {:error, changeset} ->
+          Logger.error("Erro ao salvar notificação de menção: #{inspect(changeset.errors)}")
+          {:error, changeset}
+      end
+    end
   end
 end
