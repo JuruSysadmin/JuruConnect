@@ -23,8 +23,8 @@ defmodule App.Chat.Message do
   def changeset(message, attrs) do
     message
     |> cast(attrs, [:text, :sender_id, :sender_name, :treaty_id, :tipo, :image_url, :timestamp])
-    |> validate_required([:text, :sender_name, :treaty_id])
-    |> validate_length(:text, min: 1, max: 2000)
+    |> validate_required([:sender_name, :treaty_id])
+    |> validate_length(:text, max: 2000)
     |> validate_length(:sender_name, min: 1, max: 100)
     |> validate_inclusion(:tipo, ["mensagem", "sistema", "notificacao"])
     |> put_timestamp()

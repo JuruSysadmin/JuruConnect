@@ -1,23 +1,127 @@
 const ImageUploadHook = {
   mounted() {
-    console.log('ImageUploadHook mounted');
     this.setupDragAndDrop();
+    this.setupVisualFeedback();
+    this.setupFileInput();
   },
 
   setupDragAndDrop() {
     const input = this.el;
-    console.log('Setting up drag and drop for input:', input);
+    const container = input.closest('form') || input.parentElement;
+    const messageInput = container.querySelector('#message-input');
 
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      input.addEventListener(eventName, this.preventDefaults, false);
+      container.addEventListener(eventName, this.preventDefaults, false);
     });
 
     // Handle dropped files
-    input.addEventListener('drop', (e) => {
-      console.log('Drop event on input');
+    container.addEventListener('drop', (e) => {
       this.handleDroppedFiles(e);
     }, false);
+
+    // Visual feedback for drag over
+    container.addEventListener('dragenter', (e) => {
+      this.showDragOverlay();
+      if (messageInput) {
+        messageInput.classList.add('border-blue-400', 'bg-blue-50/50');
+      }
+    }, false);
+
+    container.addEventListener('dragleave', (e) => {
+      // Only hide if leaving the entire container
+      if (!container.contains(e.relatedTarget)) {
+        this.hideDragOverlay();
+        if (messageInput) {
+          messageInput.classList.remove('border-blue-400', 'bg-blue-50/50');
+        }
+      }
+    }, false);
+
+    // Reset input styling on drop
+    container.addEventListener('drop', (e) => {
+      if (messageInput) {
+        messageInput.classList.remove('border-blue-400', 'bg-blue-50/50');
+      }
+    }, false);
+  },
+
+  setupVisualFeedback() {
+    const container = this.el.closest('form') || this.el.parentElement;
+    this.dragOverlay = container.querySelector('#drag-overlay');
+  },
+
+  setupFileInput() {
+    // Listen for file input changes (when user clicks to select file)
+    this.el.addEventListener('change', (e) => {
+      console.log('File input changed, files:', e.target.files.length);
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        console.log('File selected:', file.name, 'size:', file.size, 'type:', file.type);
+        
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          this.showError('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+          e.target.value = ''; // Clear the input
+          return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+          this.showError('Arquivo muito grande. Máximo permitido: 5MB');
+          e.target.value = ''; // Clear the input
+          return;
+        }
+        
+        // Transfer file to LiveView input
+        this.transferFileToLiveView(file);
+        
+        console.log('File validation passed, LiveView should show preview');
+      }
+    });
+  },
+
+  transferFileToLiveView(file) {
+    // Debug: log all file inputs
+    const allInputs = document.querySelectorAll('input[type="file"]');
+    console.log('All file inputs found:', allInputs.length);
+    allInputs.forEach((input, index) => {
+      console.log(`Input ${index}:`, {
+        id: input.id,
+        name: input.name,
+        className: input.className,
+        attributes: Array.from(input.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', ')
+      });
+    });
+
+    // Try different selectors for LiveView input
+    let liveViewInput = document.querySelector('input[data-phx-upload]');
+    if (!liveViewInput) {
+      liveViewInput = document.querySelector('input[phx-upload]');
+    }
+    if (!liveViewInput) {
+      liveViewInput = document.querySelector('input[data-phx-hook]');
+    }
+    if (!liveViewInput) {
+      // Try to find input with accept="image/*" that's not our drag-drop input
+      liveViewInput = document.querySelector('input[type="file"][accept*="image"]:not(#drag-drop-input)');
+    }
+
+    if (liveViewInput) {
+      // Create a new FileList with the file
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      
+      // Set the files to the LiveView input
+      liveViewInput.files = dataTransfer.files;
+      
+      // Trigger change event to notify LiveView
+      const changeEvent = new Event('change', { bubbles: true });
+      liveViewInput.dispatchEvent(changeEvent);
+      
+      console.log('File transferred to LiveView input:', liveViewInput.id || liveViewInput.className);
+    } else {
+      console.log('LiveView input not found with any selector');
+    }
   },
 
   preventDefaults(e) {
@@ -25,50 +129,144 @@ const ImageUploadHook = {
     e.stopPropagation();
   },
 
+  showDragOverlay() {
+    if (this.dragOverlay) {
+      const content = this.dragOverlay.querySelector('#drag-content');
+      
+      // Show overlay with animation
+      this.dragOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      this.dragOverlay.classList.add('opacity-100', 'drag-overlay-active');
+      
+      // Animate content
+      if (content) {
+        content.classList.remove('scale-95');
+        content.classList.add('scale-100', 'drag-content-active');
+      }
+      
+      // Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+  },
+
+  hideDragOverlay() {
+    if (this.dragOverlay) {
+      const content = this.dragOverlay.querySelector('#drag-content');
+      
+      // Remove animation classes
+      this.dragOverlay.classList.remove('drag-overlay-active');
+      if (content) {
+        content.classList.remove('drag-content-active', 'scale-100');
+        content.classList.add('scale-95');
+      }
+      
+      // Hide overlay after animation
+      setTimeout(() => {
+        this.dragOverlay.classList.remove('opacity-100');
+        this.dragOverlay.classList.add('opacity-0', 'pointer-events-none');
+      }, 150);
+    }
+  },
+
   handleDroppedFiles(e) {
-    console.log('handleDroppedFiles called on input');
     const dt = e.dataTransfer;
     const files = dt.files;
-
-    console.log('Files dropped on input:', files.length);
 
     if (files.length > 0) {
       // Check if files are images
       const imageFiles = Array.from(files).filter(file => {
-        console.log('File type:', file.type, 'is image:', file.type.startsWith('image/'));
         return file.type.startsWith('image/');
       });
-
-      console.log('Image files found:', imageFiles.length);
 
       if (imageFiles.length > 0) {
         // Use the first image file
         const file = imageFiles[0];
-        console.log('Processing file:', file.name, 'size:', file.size);
         
         // Check file size (5MB limit)
         if (file.size > 5 * 1024 * 1024) {
-          alert('Arquivo muito grande. Máximo permitido: 5MB');
+          this.hideDragOverlay();
+          this.showError('Arquivo muito grande. Máximo permitido: 5MB');
           return;
         }
 
-        // Create a new FileList with the dropped file
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
+        // Show success animation before hiding
+        this.showSuccessAnimation();
         
-        // Set the files to the input
-        this.el.files = dataTransfer.files;
+        // Transfer file to LiveView input
+        this.transferFileToLiveView(file);
         
-        // Trigger change event to notify LiveView
-        const changeEvent = new Event('change', { bubbles: true });
-        this.el.dispatchEvent(changeEvent);
-
-        console.log('File dropped and added to upload input:', file.name);
+        // Debug: log that change event was dispatched
+        console.log('Change event dispatched for file:', file.name);
       } else {
-        alert('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+        this.hideDragOverlay();
+        this.showError('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+      }
+    } else {
+      this.hideDragOverlay();
+    }
+  },
+
+  showSuccessAnimation() {
+    if (this.dragOverlay) {
+      const content = this.dragOverlay.querySelector('#drag-content');
+      
+      if (content) {
+        // Change to success state
+        content.innerHTML = `
+          <div class="text-center relative">
+            <div class="relative mb-6">
+              <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <!-- Partículas de sucesso -->
+              <div class="success-particles">
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+                <div class="success-particle"></div>
+              </div>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Imagem adicionada!</h3>
+            <p class="text-sm text-gray-600">Processando upload...</p>
+          </div>
+        `;
+        
+        // Add success animation
+        content.classList.add('animate-pulse');
+        
+        // Hide after success animation
+        setTimeout(() => {
+          this.hideDragOverlay();
+        }, 1500);
       }
     }
+  },
+
+  showError(message) {
+    // Create or update error message
+    let errorDiv = document.querySelector('.upload-error');
+    if (!errorDiv) {
+      errorDiv = document.createElement('div');
+      errorDiv.className = 'upload-error text-red-600 text-sm mt-2 p-2 bg-red-50 border border-red-200 rounded';
+      this.el.parentElement.appendChild(errorDiv);
+    }
+    errorDiv.textContent = message;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      if (errorDiv) {
+        errorDiv.remove();
+      }
+    }, 5000);
   }
 };
 
 export default ImageUploadHook;
+

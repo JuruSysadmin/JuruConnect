@@ -1,13 +1,13 @@
 defmodule AppWeb.ChatLive do
   @moduledoc """
-  LiveView component for real-time chat functionality in order management.
+  Componente LiveView para funcionalidade de chat em tempo real no gerenciamento de pedidos.
 
-  Provides secure chat interface for order discussions with features like:
-  - Real-time messaging with PubSub
-  - User presence tracking
-  - File upload support
-  - Tag management for orders
-  - Message history with pagination
+  Fornece interface de chat segura para discussões de pedidos com recursos como:
+  - Mensagens em tempo real com PubSub
+  - Rastreamento de presença de usuários
+  - Suporte a upload de arquivos
+  - Gerenciamento de tags para pedidos
+  - Histórico de mensagens com paginação
   """
   use AppWeb, :live_view
   alias AppWeb.Presence
@@ -16,86 +16,102 @@ defmodule AppWeb.ChatLive do
   alias App.DateTimeHelper
   require Logger
 
-  @doc """
-  Authentication hook that validates user session tokens.
+  defstruct [:filename, :original_filename, :file_size, :mime_type, :file_url]
 
-  Ensures secure access by verifying Guardian tokens from session data
-  before allowing chat participation. Anonymous users are permitted
-  but with limited functionality.
+  @doc """
+  Hook de autenticação que valida tokens de sessão do usuário.
+
+  Garante acesso seguro verificando tokens Guardian dos dados de sessão
+  antes de permitir participação no chat. Usuários anônimos são permitidos
+  mas com funcionalidade limitada.
   """
   def on_mount(:default, _params, session, socket) do
-    Logger.info("on_mount: session user_token = #{inspect(session["user_token"])}")
-
     case session["user_token"] do
       nil ->
-        Logger.info("on_mount: No token found")
         {:cont, socket}
 
       token ->
         case AppWeb.Auth.Guardian.resource_from_token(token) do
           {:ok, user, _claims} ->
-            Logger.info("on_mount: Authenticated user: #{user.name || user.username}")
             {:cont, assign(socket, :current_user, user)}
 
-          {:error, reason} ->
-            Logger.error("on_mount: Token decode error: #{inspect(reason)}")
+          {:error, _reason} ->
             {:cont, socket}
         end
     end
   end
 
   @doc """
-  Initializes the chat LiveView for a specific treaty.
+  Inicializa o LiveView de chat para uma tratativa específica.
 
-  Sets up real-time subscriptions, loads treaty data and message history,
-  and configures user presence tracking. Handles both authenticated and
-  anonymous users with appropriate permission levels.
+  Configura assinaturas em tempo real, carrega dados da tratativa e histórico de mensagens,
+  e configura rastreamento de presença de usuários. Lida com usuários autenticados e
+  anônimos com níveis de permissão apropriados.
   """
   @impl true
   def mount(%{"treaty_id" => treaty_id} = _params, session, socket) do
     topic = "treaty:#{treaty_id}"
-
-    Logger.info("Socket assigns current_user: #{inspect(socket.assigns[:current_user])}")
-    Logger.info("Session user_token: #{inspect(session["user_token"])}")
-
     {current_user_name, authenticated_user} = resolve_user_identity(socket, session)
 
+    is_connected = connected?(socket)
+    connection_status = if is_connected, do: "Conectado", else: "Desconectado"
+
+    socket = socket
+    |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
+    |> load_initial_data(treaty_id, topic)
+    |> handle_authenticated_user_actions(authenticated_user, treaty_id)
+    |> assign(:treaty_id, treaty_id)
+    |> assign(:current_user, current_user_name)
+    |> assign(:user_object, authenticated_user)
+    |> assign(:token, session["user_token"])
+    |> assign(:topic, topic)
+    |> assign_connection_state(is_connected, connection_status)
+    |> assign_ui_state()
+    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000, auto_upload: true)
+
+    {:ok, socket}
+  end
+
+  # --- Funções Auxiliares para Mount ---
+
+  defp setup_connection_if_connected(socket, topic, current_user_name, authenticated_user, treaty_id) do
     if connected?(socket) do
       setup_pubsub_subscriptions(topic, authenticated_user)
       setup_presence_tracking(topic, socket, current_user_name, authenticated_user, treaty_id)
       schedule_connection_status_update()
     end
+    socket
+  end
 
+  defp load_initial_data(socket, treaty_id, topic) do
     treaty_data = fetch_treaty_with_fallback(treaty_id)
     {message_history, has_more_messages} = load_paginated_messages(treaty_id)
     treaty_tags = Tags.get_treaty_tags(treaty_id)
     current_presences = Presence.list(topic)
     online_users = extract_users_from_presences(current_presences)
 
-    if authenticated_user do
-      App.Accounts.record_order_access(authenticated_user.id, treaty_id)
-      # Mark notifications as read when entering chat
-      App.Notifications.mark_all_notifications_as_read(authenticated_user.id)
-    end
-
-    socket = assign_initial_socket_data(socket, %{
-      treaty_id: treaty_id,
-      treaty: treaty_data,
-      messages: message_history,
-      has_more_messages: has_more_messages,
-      treaty_tags: treaty_tags,
-      presences: current_presences,
-      users_online: online_users,
-      current_user: current_user_name,
-      user_object: authenticated_user,
-      token: session["user_token"],
-      topic: topic
-    })
-
-    {:ok, socket}
+    socket
+    |> assign(:treaty, treaty_data)
+    |> assign(:messages, message_history)
+    |> assign(:has_more_messages, has_more_messages)
+    |> assign(:treaty_tags, treaty_tags)
+    |> assign(:presences, current_presences)
+    |> assign(:users_online, online_users)
+    |> assign(:message_count, length(message_history))
   end
 
-  # --- User Authentication & Identity ---
+  defp handle_authenticated_user_actions(socket, authenticated_user, treaty_id) do
+    case authenticated_user do
+      %{id: user_id} ->
+        App.Accounts.record_order_access(user_id, treaty_id)
+        App.Notifications.mark_all_notifications_as_read(user_id)
+        socket
+      nil ->
+        socket
+    end
+  end
+
+  # --- Autenticação e Identidade do Usuário ---
 
   defp resolve_user_identity(socket, session) do
     case socket.assigns[:current_user] do
@@ -107,47 +123,39 @@ defmodule AppWeb.ChatLive do
   defp extract_user_from_session_token(session) do
     case session["user_token"] do
       nil ->
-        Logger.info("No token found in session")
         {ChatConfig.default_username(), nil}
 
       token when is_binary(token) ->
         case AppWeb.Auth.Guardian.resource_from_token(token) do
           {:ok, %{name: name} = user, _claims} when not is_nil(name) ->
-            Logger.info("User found via token: #{name}")
             {name, user}
 
           {:ok, %{username: username} = user, _claims} when not is_nil(username) ->
-            Logger.info("User found via token: #{username}")
             {username, user}
 
           {:ok, user, _claims} ->
-            Logger.info("User found via token: #{ChatConfig.default_username()}")
             {ChatConfig.default_username(), user}
 
-          {:error, reason} ->
-            Logger.error("Token decode error: #{inspect(reason)}")
+          {:error, _reason} ->
             {ChatConfig.default_username(), nil}
         end
     end
   end
 
   defp extract_user_from_socket_assigns(%{name: name} = user) when not is_nil(name) do
-    Logger.info("User authenticated via on_mount: #{name} (ID: #{user.id})")
     {name, user}
   end
 
   defp extract_user_from_socket_assigns(%{username: username} = user) when not is_nil(username) do
-    Logger.info("User authenticated via on_mount: #{username} (ID: #{user.id})")
     {username, user}
   end
 
   defp extract_user_from_socket_assigns(user) do
     default_name = ChatConfig.default_username()
-    Logger.info("User authenticated via on_mount: #{default_name} (ID: #{user.id})")
     {default_name, user}
   end
 
-  # --- Real-time Communication Setup ---
+  # --- Configuração de Comunicação em Tempo Real ---
 
   defp setup_pubsub_subscriptions(topic, authenticated_user) do
     Phoenix.PubSub.subscribe(App.PubSub, topic)
@@ -162,39 +170,38 @@ defmodule AppWeb.ChatLive do
       user_id: get_user_id_for_presence(authenticated_user),
       name: user_name,
       joined_at: DateTimeHelper.now() |> DateTime.to_iso8601(),
-      user_agent: get_connect_info(socket, :user_agent) || "Unknown"
+      user_agent: get_connect_info(socket, :user_agent) || "Desconhecido"
     }
 
     case Presence.track(self(), topic, socket.id, user_data) do
       {:ok, _} ->
-        Logger.info("User #{user_name} joined chat for treaty #{treaty_id}")
-        # Also track in active rooms system
+        # Também rastrear no sistema de salas ativas
         if authenticated_user do
           case Process.whereis(App.ActiveRooms) do
             nil ->
-              Logger.warning("ActiveRooms GenServer not available")
+              :ok
             _pid ->
               try do
                 App.ActiveRooms.join_room(treaty_id, authenticated_user.id, user_name)
               rescue
-                e -> Logger.error("Failed to join active room: #{inspect(e)}")
+                _e -> :ok
               catch
-                :exit, reason -> Logger.error("ActiveRooms process not available: #{inspect(reason)}")
+                :exit, _reason -> :ok
               end
           end
         end
-      {:error, reason} -> Logger.error("Failed to track presence: #{inspect(reason)}")
+      {:error, _reason} -> :ok
     end
   end
 
-  defp get_user_id_for_presence(nil), do: "anonymous"
+  defp get_user_id_for_presence(nil), do: "anonimo"
   defp get_user_id_for_presence(%{id: id}), do: id
 
   defp schedule_connection_status_update do
     Process.send_after(self(), :update_connection_status, 5000)
   end
 
-  # --- Data Loading & Management ---
+  # --- Carregamento e Gerenciamento de Dados ---
 
   defp fetch_treaty_with_fallback(treaty_id) when is_binary(treaty_id) do
     case App.Treaties.get_treaty(treaty_id) do
@@ -215,44 +222,17 @@ defmodule AppWeb.ChatLive do
   defp load_paginated_messages(treaty_id) when is_binary(treaty_id) do
     case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit()) do
       {:ok, messages, has_more} -> {messages, has_more}
-      {:error, _reason} -> {[], false}
     end
   end
 
   defp format_message_with_mentions(text) when is_binary(text) do
-    # Replace @username with highlighted mentions
+    # Substitui @username com menções destacadas
     text
     |> String.replace(~r/@(\w+)/, ~s(<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md text-xs font-medium">@\\1</span>))
     |> Phoenix.HTML.raw()
   end
   defp format_message_with_mentions(_), do: ""
 
-  defp assign_initial_socket_data(socket, data) do
-    is_connected = connected?(socket)
-    connection_status = if is_connected, do: "Conectado", else: "Desconectado"
-
-    socket
-    |> assign_initial_data(data)
-    |> assign_connection_state(is_connected, connection_status)
-    |> assign_ui_state()
-    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000)
-  end
-
-  defp assign_initial_data(socket, data) do
-    socket
-    |> assign(:treaty_id, data.treaty_id)
-    |> assign(:treaty, data.treaty)
-    |> assign(:messages, data.messages)
-    |> assign(:has_more_messages, data.has_more_messages)
-    |> assign(:treaty_tags, data.treaty_tags)
-    |> assign(:presences, data.presences)
-    |> assign(:users_online, data.users_online)
-    |> assign(:current_user, data.current_user)
-    |> assign(:user_object, data.user_object)
-    |> assign(:token, data.token)
-    |> assign(:topic, data.topic)
-    |> assign(:message_count, length(data.messages))
-  end
 
   defp assign_connection_state(socket, is_connected, connection_status) do
     socket
@@ -275,13 +255,13 @@ defmodule AppWeb.ChatLive do
     |> assign(:show_sidebar, false)
   end
 
-  # --- Message Processing ---
+  # --- Processamento de Mensagens ---
 
   @doc """
-  Processes message sending with validation and security checks.
+  Processa o envio de mensagens com validação e verificações de segurança.
 
-  Validates message content, handles image uploads, and broadcasts
-  the message to all connected users in the order chat room.
+  Valida o conteúdo da mensagem, lida com uploads de imagens e transmite
+  a mensagem para todos os usuários conectados na sala de chat do pedido.
   """
   @impl true
   def handle_event("send_message", %{"message" => text}, socket) do
@@ -301,98 +281,99 @@ defmodule AppWeb.ChatLive do
          {:ok, _} <- validate_message_length(trimmed_text),
          {:ok, _} <- validate_connection(socket) do
       {:ok, :valid}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp validate_message_not_empty("", socket) when map_size(socket.assigns.uploads.image.entries) == 0 do
-    {:error, "Mensagem não pode estar vazia"}
+  defp validate_message_not_empty("", %{assigns: %{uploads: %{image: %{entries: []}}}}) do
+    {:error, "Digite uma mensagem ou selecione uma imagem"}
   end
+  defp validate_message_not_empty("", _socket), do: {:ok, :valid}
   defp validate_message_not_empty(_text, _socket), do: {:ok, :valid}
 
-  defp validate_message_length(text) do
+  defp validate_message_length(text) when is_binary(text) do
     max_length = ChatConfig.security_config()[:max_message_length]
 
-    if byte_size(text) > max_length do
-      {:error, "Mensagem muito longa"}
-    else
-      {:ok, :valid}
+    case byte_size(text) > max_length do
+      true -> {:error, "Mensagem muito longa"}
+      false -> {:ok, :valid}
     end
   end
+  defp validate_message_length(_), do: {:ok, :valid}
 
   defp validate_connection(socket) do
-    if not connected?(socket) do
-      {:error, "Conexão perdida. Tente recarregar a página."}
-    else
-      {:ok, :valid}
+    case connected?(socket) do
+      true -> {:ok, :valid}
+      false -> {:error, "Conexão perdida. Tente recarregar a página."}
     end
   end
 
   defp process_message_send(socket, trimmed_text) do
-    file_info = process_image_upload(socket)
-    {user_id, user_name} = extract_user_info_for_message(socket)
+    file_info = handle_image_upload(socket)
+    {user_id, _user_name} = get_user_info_for_message(socket)
 
     case App.Chat.send_message(socket.assigns.treaty_id, user_id, trimmed_text, file_info) do
       {:ok, _message} ->
-        Logger.info("Message sent by #{user_name} in treaty #{socket.assigns.treaty_id}")
         {:noreply,
           socket
           |> assign(:message, "")
           |> assign(:message_error, nil)
         }
-      {:error, changeset} ->
-        Logger.error("Failed to send message: #{inspect(changeset.errors)}")
+      {:error, _changeset} ->
         {:noreply, assign(socket, :message_error, "Erro ao enviar mensagem")}
     end
   end
 
-  defp process_image_upload(socket) do
-    Logger.info("Processing image upload")
-    Logger.info("Upload entries: #{inspect(socket.assigns.uploads.image.entries)}")
+  defp handle_image_upload(socket) do
+    entries = socket.assigns.uploads.image.entries
+    Logger.info("handle_image_upload: Found #{length(entries)} entries")
 
-    result = consume_uploaded_entries(socket, :image, fn %{path: path, client_name: name}, entry ->
-      Logger.info("Processing uploaded file: #{name} at #{path}")
-      case App.ImageUpload.upload_image(path, name) do
-        {:ok, url} ->
-          Logger.info("Image uploaded successfully: #{url}")
-          %{
-            filename: Path.basename(url),
-            original_filename: name,
-            file_size: entry.client_size,
-            mime_type: entry.client_type,
-            file_url: url
-          }
-        {:error, reason} ->
-          Logger.error("Erro no upload da imagem: #{inspect(reason)}")
-          nil
-      end
-    end)
-    |> List.first()
+    case entries do
+      [] -> nil
+      [entry | _] ->
+        Logger.info("handle_image_upload: Processing entry: #{entry.client_name}, progress: #{entry.progress}%")
 
-    Logger.info("Image upload result: #{inspect(result)}")
-    result
-  end
+        consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
+          Logger.info("handle_image_upload: Consuming entry: #{entry.client_name}")
 
-  defp extract_user_info_for_message(socket) do
-    case socket.assigns[:user_object] do
-      nil ->
-        {nil, socket.assigns.current_user}
-
-      %{id: id, name: name} when not is_nil(name) ->
-        {id, name}
-
-      %{id: id, username: username} when not is_nil(username) ->
-        {id, username}
-
-      %{id: id} ->
-        {id, socket.assigns.current_user}
+          with {:ok, url} <- App.ImageUpload.upload_image(path, entry.client_name) do
+            Logger.info("handle_image_upload: Upload successful: #{url}")
+            {:ok, %__MODULE__{
+              filename: Path.basename(url),
+              original_filename: entry.client_name,
+              file_size: entry.client_size,
+              mime_type: entry.client_type,
+              file_url: url
+            }}
+          else
+            {:error, reason} ->
+              Logger.error("handle_image_upload: Upload failed: #{inspect(reason)}")
+              {:ok, nil}
+          end
+        end)
+        |> List.first()
     end
   end
 
-  @doc """
-  Loads additional message history for the current treaty.
+  defp get_user_info_for_message(%{assigns: %{user_object: nil, current_user: current_user}}) do
+    {nil, current_user}
+  end
+  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id, name: name}, current_user: _}}) when not is_nil(name) do
+    {id, name}
+  end
+  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id, username: username}, current_user: _}}) when not is_nil(username) do
+    {id, username}
+  end
+  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id}, current_user: current_user}}) do
+    {id, current_user}
+  end
 
-  Implements pagination to prevent overwhelming the client with
-  large message histories while maintaining responsive UX.
+  @doc """
+  Carrega histórico adicional de mensagens para a tratativa atual.
+
+  Implementa paginação para evitar sobrecarregar o cliente com
+  históricos grandes de mensagens mantendo UX responsiva.
   """
   @impl true
   def handle_event("load_older_messages", _params, socket) do
@@ -440,7 +421,7 @@ defmodule AppWeb.ChatLive do
     {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
   end
 
-  # These events may come from order_search_live component - we ignore them here to prevent conflicts
+  # Estes eventos podem vir do componente order_search_live - os ignoramos aqui para evitar conflitos
   def handle_event("focus_search", _params, socket), do: {:noreply, socket}
   def handle_event("blur_search", _params, socket), do: {:noreply, socket}
   def handle_event("stopPropagation", _params, socket), do: {:noreply, socket}
@@ -469,9 +450,6 @@ defmodule AppWeb.ChatLive do
     end)
     |> Enum.take(5) # Limit results to prevent UI overflow
 
-    Logger.info("Search users query: '#{query}', found: #{inspect(matching_users)}")
-    Logger.info("All users online: #{inspect(socket.assigns.users_online)}")
-
     {:noreply,
       socket
       |> push_event("show-user-suggestions", %{
@@ -490,13 +468,30 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("validate", _params, socket) do
+    # Debug: verificar se há entradas no upload durante validação
+    entries = socket.assigns.uploads.image.entries
+    Logger.info("Validate event received. Entries count: #{length(entries)}")
+
+    if length(entries) > 0 do
+      entry = List.first(entries)
+      Logger.info("First entry in validate: #{entry.client_name}, progress: #{entry.progress}%")
+    end
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("upload", _params, socket) do
-    Logger.info("Upload event received")
-    Logger.info("Uploads in socket: #{inspect(socket.assigns.uploads)}")
+    # Debug: verificar se há entradas no upload
+    entries = socket.assigns.uploads.image.entries
+    Logger.info("Upload event received. Entries count: #{length(entries)}")
+
+    if length(entries) > 0 do
+      entry = List.first(entries)
+      Logger.info("First entry: #{entry.client_name}, progress: #{entry.progress}%")
+    end
+
+    # O preview é exibido automaticamente pelo LiveView quando há entradas
     {:noreply, socket}
   end
 
@@ -512,13 +507,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("show_tag_modal", _params, socket) do
-    require Logger
-    Logger.info("show_tag_modal event triggered")
-    Logger.info("User object: #{inspect(socket.assigns.user_object)}")
-    Logger.info("Store ID: #{inspect(socket.assigns.user_object.store_id)}")
-
     all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
-    Logger.info("Tags found: #{length(all_tags)}")
 
     {:noreply,
       socket
@@ -566,7 +555,7 @@ defmodule AppWeb.ChatLive do
         |> assign(:tag_search_results, results)
       }
     else
-      # Show all tags when query is too short to give users context of available options
+      # Mostrar todas as tags quando a consulta é muito curta para dar contexto aos usuários das opções disponíveis
       all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
       {:noreply,
         socket
@@ -612,10 +601,10 @@ defmodule AppWeb.ChatLive do
   end
 
   @doc """
-  Handles incoming messages from PubSub and updates the UI.
+  Lida com mensagens recebidas do PubSub e atualiza a interface.
 
-  Filters messages for the current treaty and provides visual/audio
-  notifications for messages from other users to enhance real-time collaboration.
+  Filtra mensagens para a tratativa atual e fornece notificações visuais/auditivas
+  para mensagens de outros usuários para melhorar colaboração em tempo real.
   """
   @impl true
   def handle_info({:new_message, msg}, socket) do
@@ -633,7 +622,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:notification, :new_message, notification_data}, socket) do
-    # Only show notification if user is not in the current chat
+    # Mostrar notificação apenas se o usuário não estiver no chat atual
     current_treaty_id = socket.assigns.treaty_id
 
     if notification_data.treaty_id != current_treaty_id do
@@ -657,7 +646,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:notification, :mention, notification_data}, socket) do
-    # Always show mention notifications
+    # Sempre mostrar notificações de menção
     {:noreply,
       socket
       |> push_event("show-notification", %{
@@ -717,10 +706,10 @@ defmodule AppWeb.ChatLive do
   end
 
   @doc """
-  Updates user presence information when users join or leave the chat.
+  Atualiza informações de presença do usuário quando usuários entram ou saem do chat.
 
-  Maintains real-time visibility of active participants to improve
-  collaboration awareness and communication context.
+  Mantém visibilidade em tempo real de participantes ativos para melhorar
+  consciência de colaboração e contexto de comunicação.
   """
   @impl true
   def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
@@ -741,7 +730,7 @@ defmodule AppWeb.ChatLive do
     is_connected = connected?(socket)
     connection_status = if(is_connected, do: "Conectado", else: "Desconectado")
 
-    # Remove user from active rooms when disconnected
+    # Remover usuário das salas ativas quando desconectado
     if not is_connected and socket.assigns.user_object do
       case Process.whereis(App.ActiveRooms) do
         nil -> :ok
@@ -756,7 +745,7 @@ defmodule AppWeb.ChatLive do
       end
     end
 
-    # Continue monitoring while connected to provide real-time status updates
+    # Continuar monitorando enquanto conectado para fornecer atualizações de status em tempo real
     if is_connected do
       Process.send_after(self(), :update_connection_status, 5000)
     end
@@ -771,7 +760,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def terminate(_reason, socket) do
-    # Remove user from active rooms when LiveView terminates
+    # Remover usuário das salas ativas quando o LiveView termina
     if socket.assigns.user_object do
       case Process.whereis(App.ActiveRooms) do
         nil -> :ok
@@ -1118,13 +1107,39 @@ defmodule AppWeb.ChatLive do
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
               <!-- Drag and drop overlay -->
-              <div class="absolute inset-0 bg-blue-50/80 border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center opacity-0 pointer-events-none transition-all duration-200 z-10" id="drag-overlay">
-                <div class="text-center">
-                  <svg class="w-8 h-8 text-blue-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  <p class="text-sm font-medium text-blue-700">Solte a imagem aqui</p>
-                  <p class="text-xs text-blue-500">JPG, PNG, GIF até 5MB</p>
+              <div class="fixed inset-0 bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/30 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50" id="drag-overlay">
+                <div class="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-blue-200/50 transform scale-95 transition-all duration-300 max-w-sm mx-4" id="drag-content">
+                  <div class="text-center">
+                    <!-- Ícone animado -->
+                    <div class="relative mb-6">
+                      <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                      </div>
+                      <!-- Círculos animados -->
+                      <div class="absolute inset-0 w-20 h-20 mx-auto">
+                        <div class="absolute inset-0 border-4 border-blue-300/60 rounded-full animate-ping"></div>
+                        <div class="absolute inset-2 border-2 border-blue-400/60 rounded-full animate-ping" style="animation-delay: 0.5s"></div>
+                        <div class="absolute inset-4 border border-blue-500/60 rounded-full animate-ping" style="animation-delay: 1s"></div>
+                      </div>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Solte a imagem aqui</h3>
+                    <p class="text-sm text-gray-600 mb-4">JPG, PNG, GIF até 5MB</p>
+
+                    <!-- Barra de progresso animada -->
+                    <div class="w-32 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+                      <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full animate-pulse"></div>
+                    </div>
+
+                    <!-- Indicador de área de drop -->
+                    <div class="mt-4 flex items-center justify-center space-x-2 text-blue-600">
+                      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <!-- Preview da imagem -->
@@ -1163,11 +1178,10 @@ defmodule AppWeb.ChatLive do
                 id="message-input"
                 name="message"
                 value={@message}
-                placeholder="Digite sua mensagem..."
-                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-gray-400 text-sm"
+                placeholder="Digite uma mensagem ou arraste uma imagem aqui..."
+                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-sm"
                 autocomplete="off"
                 maxlength={ChatConfig.security_config()[:max_message_length]}
-                required
                 disabled={not @connected}
                 phx-change="update_message"
                 aria-describedby="message-help"
@@ -1190,15 +1204,14 @@ defmodule AppWeb.ChatLive do
                 <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
+                <.live_file_input upload={@uploads.image} id="image-upload" class="hidden" phx-change="validate" phx-upload="upload" />
+                <!-- Input separado para drag & drop -->
                 <input
-                  id="image-upload"
+                  id="drag-drop-input"
                   type="file"
-                  name="image"
                   accept="image/*"
                   class="hidden"
-                  phx-drop-target={@uploads.image.ref}
                   phx-hook="ImageUploadHook"
-                  phx-change="upload"
                   multiple={false}
                 />
               </label>
@@ -1218,7 +1231,7 @@ defmodule AppWeb.ChatLive do
               </svg>
             </button>
             <div id="send-button-help" class="sr-only">
-              Botão para enviar mensagem. Disponível quando há texto ou imagem para enviar.
+              Botão para enviar mensagem ou imagem. Disponível quando há texto ou imagem para enviar.
             </div>
 
 
@@ -1309,35 +1322,40 @@ defmodule AppWeb.ChatLive do
     """
   end
 
-  # --- Utility Functions ---
+  # --- Funções Utilitárias ---
 
-  defp extract_users_from_presences(presences) do
+  defp extract_users_from_presences(presences) when is_map(presences) do
     presences
     |> Map.values()
     |> Enum.flat_map(&extract_names_from_metas/1)
     |> Enum.uniq()
     |> Enum.sort()
   end
+  defp extract_users_from_presences(_), do: []
 
-  defp extract_names_from_metas(%{metas: metas}) do
-    Enum.map(metas, fn %{name: name} -> name end)
+  defp extract_names_from_metas(%{metas: metas}) when is_list(metas) do
+    Enum.map(metas, fn %{name: name} when is_binary(name) -> name end)
   end
+  defp extract_names_from_metas(_), do: []
 
   defp load_older_messages_async(socket) do
     treaty_id = socket.assigns.treaty_id
     current_count = length(socket.assigns.messages)
 
     Task.start(fn ->
-      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.pagination_config()[:default_limit], current_count) do
-        {:ok, older_messages, has_more} ->
-          send(self(), {:older_messages_loaded, older_messages, has_more})
+      with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.pagination_config()[:default_limit], current_count) do
+        send(self(), {:older_messages_loaded, older_messages, has_more})
+      else
+        {:error, reason} ->
+          Logger.error("Failed to load older messages: #{inspect(reason)}")
+          send(self(), {:older_messages_loaded, [], false})
       end
     end)
 
     socket
   end
 
-  # --- UI Formatting & Display Helpers ---
+  # --- Auxiliares de Formatação e Exibição da Interface ---
 
   defp get_user_initial(user) when is_binary(user) and byte_size(user) > 0 do
     user |> String.first() |> String.upcase()
@@ -1373,10 +1391,8 @@ defmodule AppWeb.ChatLive do
 
   defp format_date_separator(datetime) do
     case DateTimeHelper.to_sao_paulo_timezone(datetime) do
-      %DateTime{} = dt ->
-        format_relative_date(dt)
-      _ ->
-        "Data não disponível"
+      %DateTime{} = dt -> format_relative_date(dt)
+      _ -> "Data não disponível"
     end
   end
 

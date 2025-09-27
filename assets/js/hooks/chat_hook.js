@@ -2,13 +2,23 @@ const ChatHook = {
   mounted() {
     console.log('ChatHook mounted - autocomplete system initialized');
     console.log('Hook element:', this.el);
-    this.scrollToBottom();
+    // Instant scroll on initial load
+    this.scrollToBottom(false);
     this.setupEventListeners();
     this.setupTypingDetection();
   },
 
   updated() {
-    this.scrollToBottom();
+    // Only smooth scroll if user is near the bottom and not actively scrolling
+    const messagesContainer = this.el.querySelector('#messages');
+    if (messagesContainer) {
+      const isNearBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+      const userIsScrolling = this.isUserScrolling ? this.isUserScrolling() : false;
+      
+      if (isNearBottom && !userIsScrolling) {
+        this.scrollToBottom(true);
+      }
+    }
   },
 
   destroyed() {
@@ -23,6 +33,9 @@ const ChatHook = {
     this.handleEvent("scroll-to-bottom", () => {
       this.scrollToBottom();
     });
+
+    // Setup scroll detection for auto-scroll behavior
+    this.setupScrollDetection();
 
     // Handle connection status updates
     this.handleEvent("connection-status", (data) => {
@@ -108,16 +121,27 @@ const ChatHook = {
 
         // Set new timer
         typingTimer = setTimeout(() => {
-          this.pushEvent('stop_typing', {});
+          if (this.isConnected()) {
+            this.pushEvent('stop_typing', {});
+          }
         }, 1000); // Stop typing after 1 second of inactivity
       });
     }
   },
 
-  scrollToBottom() {
+  scrollToBottom(smooth = true) {
     const messagesContainer = this.el.querySelector('#messages');
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (smooth) {
+        // Smooth scroll to bottom
+        messagesContainer.scrollTo({
+          top: messagesContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        // Instant scroll for initial load
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
     }
   },
 
@@ -297,6 +321,31 @@ const ChatHook = {
         item.classList.remove('bg-blue-50');
       }
     });
+  },
+
+  setupScrollDetection() {
+    const messagesContainer = this.el.querySelector('#messages');
+    if (messagesContainer) {
+      let isUserScrolling = false;
+      let scrollTimeout;
+
+      messagesContainer.addEventListener('scroll', () => {
+        isUserScrolling = true;
+        
+        // Clear existing timeout
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+        
+        // Set timeout to reset user scrolling flag
+        scrollTimeout = setTimeout(() => {
+          isUserScrolling = false;
+        }, 1000);
+      });
+
+      // Store the flag for use in updated() method
+      this.isUserScrolling = () => isUserScrolling;
+    }
   },
 
   // Drag and Drop functionality

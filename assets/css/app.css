@@ -14,6 +14,169 @@
   }
 }
 
+/* Animações para drag & drop */
+@keyframes dragPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes dragFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes dragGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+  }
+}
+
+.drag-overlay-active {
+  animation: dragPulse 2s ease-in-out infinite;
+}
+
+.drag-content-active {
+  animation: dragFloat 3s ease-in-out infinite, dragGlow 2s ease-in-out infinite;
+}
+
+/* Efeito de partículas para sucesso */
+@keyframes particleExplosion {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.success-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.success-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: particleExplosion 0.6s ease-out forwards;
+}
+
+.success-particle:nth-child(1) { animation-delay: 0s; transform: translate(0, -30px); }
+.success-particle:nth-child(2) { animation-delay: 0.1s; transform: translate(21px, -21px); }
+.success-particle:nth-child(3) { animation-delay: 0.2s; transform: translate(30px, 0); }
+.success-particle:nth-child(4) { animation-delay: 0.3s; transform: translate(21px, 21px); }
+.success-particle:nth-child(5) { animation-delay: 0.4s; transform: translate(0, 30px); }
+.success-particle:nth-child(6) { animation-delay: 0.5s; transform: translate(-21px, 21px); }
+.success-particle:nth-child(7) { animation-delay: 0.6s; transform: translate(-30px, 0); }
+.success-particle:nth-child(8) { animation-delay: 0.7s; transform: translate(-21px, -21px); }
+
+/* Chat Scrollbar Styles - Smooth and Modern */
+#messages {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+#messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+#messages::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+#messages::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+#messages::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  border-color: #cbd5e1;
+}
+
+#messages::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+}
+
+/* Smooth scrolling behavior */
+#messages {
+  scroll-behavior: smooth;
+  scroll-padding-top: 20px;
+}
+
+/* Smooth message animations */
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInFromBottom 0.3s ease-out;
+}
+
+/* Fade in animation for empty state */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Custom scrollbar for sidebar */
+.w-64::-webkit-scrollbar {
+  width: 6px;
+}
+
+.w-64::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.w-64::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.w-64::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+}
+
 /* This file is for your main application CSS */
 
 /* Apple-like Login Custom Styles */

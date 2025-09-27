@@ -78,6 +78,7 @@ defmodule App.Chat do
     |> Repo.all()
     |> Enum.map(fn message ->
       attachments = get_message_attachments(message.id)
+      Logger.info("Message #{message.id} has #{length(attachments)} attachments: #{inspect(attachments)}")
       %{message | attachments: attachments}
     end)
 
@@ -89,28 +90,35 @@ defmodule App.Chat do
   Envia uma mensagem para uma tratativa específica, com suporte a anexos e notificações.
   """
   def send_message(treaty_id, sender_id, text, file_info \\ nil)
-      when is_binary(treaty_id) and is_binary(text) and byte_size(text) > 0 do
-    sender_name = get_sender_name(sender_id)
+      when is_binary(treaty_id) and is_binary(text) do
+    # Validar que a mensagem tenha conteúdo (texto ou anexo)
+    if String.trim(text) == "" and is_nil(file_info) do
+      {:error, "Mensagem deve conter texto ou anexo"}
+    else
+      sender_name = get_sender_name(sender_id)
 
-    params = %{
-      text: text,
-      sender_id: sender_id,
-      sender_name: sender_name,
-      treaty_id: treaty_id,
-      tipo: "mensagem",
-      timestamp: DateTime.utc_now()
-    }
+      params = %{
+        text: text,
+        sender_id: sender_id,
+        sender_name: sender_name,
+        treaty_id: treaty_id,
+        tipo: "mensagem",
+        timestamp: DateTime.utc_now()
+      }
 
     case create_message(params) do
       {:ok, message} ->
         # Criar anexo se houver arquivo
         if file_info do
+          Logger.info("Creating attachment for message #{message.id} with file_info: #{inspect(file_info)}")
           case create_image_attachment(message.id, sender_id, file_info) do
-            {:ok, _attachment} ->
-              Logger.info("Attachment created for message #{message.id}")
+            {:ok, attachment} ->
+              Logger.info("Attachment created successfully: #{inspect(attachment)}")
             {:error, changeset} ->
               Logger.error("Erro ao criar anexo: #{inspect(changeset.errors)}")
           end
+        else
+          Logger.info("No file_info provided for message #{message.id}")
         end
 
         # Carregar anexos para a mensagem
@@ -127,6 +135,7 @@ defmodule App.Chat do
       {:error, changeset} ->
         Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}
+    end
     end
   end
 
