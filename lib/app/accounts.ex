@@ -135,29 +135,20 @@ defmodule App.Accounts do
   """
   def authenticate_user(username, password, _deps \\ nil)
       when is_binary(username) and is_binary(password) and byte_size(username) > 0 do
-    require Logger
-    Logger.info("Authenticating user: #{username}")
-
     case Repo.get_by(User, username: username) do
       nil ->
-        Logger.warning("User not found: #{username}")
         Pbkdf2.no_user_verify()
         {:error, :invalid_credentials}
 
       user ->
-        Logger.info("User found: #{user.username}, verifying password")
         verify_user_password(user, password, username)
     end
   end
 
-  defp verify_user_password(user, password, username) do
-    require Logger
-
+  defp verify_user_password(user, password, _username) do
     if Pbkdf2.verify_pass(password, user.password_hash) do
-      Logger.info("Password verified successfully for user: #{user.username}")
       {:ok, user}
     else
-      Logger.warning("Invalid password for user: #{username}")
       {:error, :invalid_credentials}
     end
   end

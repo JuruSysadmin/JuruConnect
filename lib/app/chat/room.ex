@@ -1,6 +1,5 @@
 defmodule App.Chat.Room do
   use GenServer
-  require Logger
   alias App.Chat
   alias App.ChatConfig
   alias App.DateTimeHelper
@@ -45,7 +44,6 @@ defmodule App.Chat.Room do
     # Persist the message to the database with the generated ID
     case Chat.create_message(complete_params) do
       {:ok, message} ->
-        Logger.info("Mensagem salva com sucesso: #{inspect(message)}")
 
         # Broadcast the new message to all LiveView subscribers via PubSub
         broadcast_message(state.treaty_id, message)
@@ -55,10 +53,8 @@ defmodule App.Chat.Room do
         new_state = %{state | messages: new_messages, last_activity: DateTimeHelper.now()}
         {:noreply, new_state}
 
-      {:error, changeset} ->
+      {:error, _changeset} ->
         # Log the error if the message couldn't be saved
-        Logger.error("Failed to save message: #{inspect(changeset)}")
-        Logger.error("Validation errors: #{inspect(changeset.errors)}")
 
         # Mesmo se falhar ao salvar no banco, vamos transmitir a mensagem para os clientes
         # com um ID temporário para garantir que ela apareça no frontend
@@ -95,10 +91,9 @@ defmodule App.Chat.Room do
   end
 
   @impl true
-  def handle_cast({:join, user_data}, state) do
+  def handle_cast({:join, _user_data}, state) do
     # Quando um usuário entra, podemos querer enviar o estado atual de digitação
     # para ele, ou apenas registrar a entrada.
-    Logger.info("User #{user_data.name} joined Room GenServer for treaty #{state.treaty_id}")
     {:noreply, %{state | last_activity: DateTimeHelper.now()}}
   end
 
@@ -110,7 +105,6 @@ defmodule App.Chat.Room do
     diff = DateTime.diff(now, state.last_activity, :second) / 60
 
     if diff > timeout_minutes do
-      Logger.info("Chat room for treaty #{state.treaty_id} inactive for #{diff} minutes, shutting down")
       {:stop, :normal, state}
     else
       # Agendar próxima verificação
@@ -120,8 +114,7 @@ defmodule App.Chat.Room do
   end
 
   @impl true
-  def terminate(reason, state) do
-    Logger.info("Chat room for treaty #{state.treaty_id} is shutting down. Reason: #{inspect(reason)}")
+  def terminate(_reason, _state) do
     :ok
   end
 
@@ -131,7 +124,6 @@ defmodule App.Chat.Room do
 
     # Broadcast via PubSub for LiveView subscribers
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
-    Logger.info("Broadcasted new_message for treaty #{treaty_id}: #{inspect(message)}")
   end
 
   defp broadcast_typing_users(treaty_id, typing_users) do

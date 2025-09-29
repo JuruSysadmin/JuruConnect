@@ -1,64 +1,152 @@
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-  <div class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white">
-    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+  <!-- Background decorative elements -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+  </div>
+  
+  <!-- Hero Section -->
+  <div class="relative bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 text-white">
+    <div class="absolute inset-0 bg-black/10"></div>
+    <div class="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div class="text-center">
-        <h1 class="text-3xl font-bold mb-3 sm:text-5xl sm:mb-4">JuruConnect</h1>
-        <p class="text-blue-100 text-base mb-4 sm:text-xl sm:mb-8">Sistema de Chat por Pedido</p>
-        <p class="text-blue-200 text-sm max-w-md mx-auto sm:text-lg sm:max-w-2xl">
-          Conecte-se com seus clientes de forma rápida e eficiente através de chats organizados por pedido
+        <!-- Logo/Brand -->
+        <div class="mb-8">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 border border-white/20">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Main heading -->
+        <h1 class="text-4xl font-bold mb-4 sm:text-6xl sm:mb-6 lg:text-7xl bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+          JuruConnect
+        </h1>
+        
+        <!-- Subtitle -->
+        <p class="text-blue-100 text-lg mb-6 sm:text-2xl sm:mb-8 font-medium">
+          <%= gettext("Treaty Chat System") %>
         </p>
+        
+        <!-- Description -->
+        <p class="text-blue-200 text-base max-w-2xl mx-auto sm:text-xl leading-relaxed">
+          <%= gettext("Connect with your clients quickly and efficiently through chats organized by treaty") %>
+        </p>
+        
+        <!-- CTA Button -->
+        <div class="mt-10">
+          <a
+            href="/buscar-tratativa"
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
+          >
+            <%= gettext("Get Started") %>
+            <svg class="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
-    <div class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-3 md:gap-8 md:mb-16">
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 md:p-8">
-        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:w-16 sm:h-16 sm:mb-6">
-          <svg class="w-6 h-6 text-blue-800 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-          </svg>
+  <!-- Features Section -->
+  <div class="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+    <!-- Section Header -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
+        <%= gettext("Why Choose JuruConnect?") %>
+      </h2>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        <%= gettext("Powerful features designed to streamline your client communication") %>
+      </p>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <!-- Feature 1: Real-time Communication -->
+      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div class="relative">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Real-time Communication") %></h3>
+          <p class="text-gray-600 leading-relaxed"><%= gettext("Instant communication with your clients through real-time messages") %></p>
         </div>
-        <p class="text-gray-600 text-sm sm:text-base">Comunicação instantânea com seus clientes através de mensagens em tempo real</p>
       </div>
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 md:p-8">
-        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:w-16 sm:h-16 sm:mb-6">
-          <svg class="w-6 h-6 text-green-600 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
+
+      <!-- Feature 2: Organized by Treaty -->
+      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+        <div class="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div class="relative">
+          <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-green-500/25 transition-all duration-300">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Organized by Treaty") %></h3>
+          <p class="text-gray-600 leading-relaxed"><%= gettext("Each conversation is organized by treaty for easy tracking") %></p>
         </div>
-        <h3 class="text-lg font-bold text-gray-900 mb-2 sm:text-xl sm:mb-4">Organizado por Pedido</h3>
-        <p class="text-gray-600 text-sm sm:text-base">Cada conversa é organizada por número de pedido para fácil acompanhamento</p>
       </div>
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 text-center hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 md:p-8">
-        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:w-16 sm:h-16 sm:mb-6">
-          <svg class="w-6 h-6 text-purple-600 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-          </svg>
+
+      <!-- Feature 3: Intuitive Interface -->
+      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-violet-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div class="relative">
+          <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Intuitive Interface") %></h3>
+          <p class="text-gray-600 leading-relaxed"><%= gettext("Intuitive interface that allows quick responses and efficient service") %></p>
         </div>
-        <p class="text-gray-600 text-sm sm:text-base">Interface intuitiva que permite respostas rápidas e atendimento eficiente</p>
       </div>
     </div>
-    <div class="text-center">
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md mx-auto sm:p-12 sm:max-w-2xl">
-        <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:w-20 sm:h-20 sm:mb-6">
-          <svg class="w-8 h-8 text-white sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
+  </div>
+  <!-- CTA Section -->
+  <div class="relative bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white">
+    <div class="absolute inset-0 bg-black/20"></div>
+    <div class="relative max-w-7xl mx-auto px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <div class="text-center">
+        <div class="max-w-3xl mx-auto">
+          <!-- Icon -->
+          <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/20">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          
+          <!-- Heading -->
+          <h2 class="text-3xl font-bold mb-6 sm:text-4xl lg:text-5xl">
+            <%= gettext("Ready to Get Started?") %>
+          </h2>
+          
+          <!-- Description -->
+          <p class="text-blue-100 text-lg mb-10 sm:text-xl leading-relaxed max-w-2xl mx-auto">
+            <%= gettext("Enter the treaty code to access the corresponding chat and start talking with your clients") %>
+          </p>
+          
+          <!-- CTA Button -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a
+              href="/buscar-tratativa"
+              class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
+            >
+              <%= gettext("Search Treaty") %>
+              <svg class="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </a>
+            
+            <div class="text-blue-200 text-sm">
+              <%= gettext("No account required") %>
+            </div>
+          </div>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-3 sm:text-3xl sm:mb-4">Comece Agora</h2>
-        <p class="text-gray-600 mb-4 sm:mb-8 text-sm sm:text-base">
-          Digite o número do pedido para acessar o chat correspondente e começar a conversar
-        </p>
-        <a
-          href="/buscar-pedido"
-          class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-blue-800 to-indigo-800 text-white text-base font-semibold rounded-xl hover:from-blue-900 hover:to-indigo-900 focus:ring-4 focus:ring-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 sm:px-8 sm:py-4 sm:text-lg"
-        >
-          Buscar Pedido
-          <svg class="w-4 h-4 ml-2 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
-        </a>
       </div>
     </div>
   </div>

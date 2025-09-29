@@ -1,0 +1,128 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/app_web/components/core_components.ex:483
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:161
+#, elixir-autogen, elixir-format
+msgid "Attempting to reconnect"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Connect with your clients quickly and efficiently through chats organized by treaty"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Each conversation is organized by treaty for easy tracking"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:152
+#, elixir-autogen, elixir-format
+msgid "Error!"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Get Started"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:173
+#, elixir-autogen, elixir-format
+msgid "Hang in there while we get back on track"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Instant communication with your clients through real-time messages"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Intuitive interface that allows quick responses and efficient service"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "Organized by Treaty"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "Search Treaty"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:168
+#, elixir-autogen, elixir-format
+msgid "Something went wrong!"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:151
+#, elixir-autogen, elixir-format
+msgid "Success!"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Treaty Chat System"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:156
+#, elixir-autogen, elixir-format
+msgid "We can't find the internet"
+msgstr ""
+
+#: lib/app_web/components/core_components.ex:77
+#: lib/app_web/components/core_components.ex:131
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:130
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Enter the treaty code to access the corresponding chat and start talking with your clients"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "Intuitive Interface"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:146
+#, elixir-autogen, elixir-format
+msgid "No account required"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:61
+#, elixir-autogen, elixir-format
+msgid "Powerful features designed to streamline your client communication"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Ready to Get Started?"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Real-time Communication"
+msgstr ""
+
+#: lib/app_web/controllers/page_html/home.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Why Choose JuruConnect?"
+msgstr ""

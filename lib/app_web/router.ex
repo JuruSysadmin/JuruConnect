@@ -39,16 +39,10 @@ defmodule AppWeb.Router do
   scope "/", AppWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", TreatySearchLive
     live "/login", UserSessionLive.Index, :new
     get "/auth/set-token", PageController, :set_token
     get "/auth/set-token-and-redirect", PageController, :set_token_and_redirect
-  end
-
-  scope "/", AppWeb do
-    pipe_through [:browser, :auth]
-
-    live "/buscar-tratativa", TreatySearchLive
   end
 
   scope "/", AppWeb do

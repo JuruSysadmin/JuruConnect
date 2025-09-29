@@ -7,8 +7,6 @@ defmodule App.Chat do
   alias App.Repo
   alias App.Chat.Message
   alias App.Chat.MessageAttachment
-  alias App.ChatSession
-  require Logger
 
   def list_recent_messages(chat_id, limit \\ 100) do
     from(m in Message,
@@ -78,7 +76,6 @@ defmodule App.Chat do
     |> Repo.all()
     |> Enum.map(fn message ->
       attachments = get_message_attachments(message.id)
-      Logger.info("Message #{message.id} has #{length(attachments)} attachments: #{inspect(attachments)}")
       %{message | attachments: attachments}
     end)
 
@@ -110,15 +107,12 @@ defmodule App.Chat do
       {:ok, message} ->
         # Criar anexo se houver arquivo
         if file_info do
-          Logger.info("Creating attachment for message #{message.id} with file_info: #{inspect(file_info)}")
           case create_image_attachment(message.id, sender_id, file_info) do
-            {:ok, attachment} ->
-              Logger.info("Attachment created successfully: #{inspect(attachment)}")
-            {:error, changeset} ->
-              Logger.error("Erro ao criar anexo: #{inspect(changeset.errors)}")
+            {:ok, _attachment} ->
+              :ok
+            {:error, _changeset} ->
+              :ok
           end
-        else
-          Logger.info("No file_info provided for message #{message.id}")
         end
 
         # Carregar anexos para a mensagem
@@ -133,7 +127,6 @@ defmodule App.Chat do
 
         {:ok, message_with_attachments}
       {:error, changeset} ->
-        Logger.error("Erro ao criar mensagem: #{inspect(changeset.errors)}")
         {:error, changeset}
     end
     end

@@ -36,12 +36,9 @@ defmodule AppWeb.UserSessionLive.Index do
 
   def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket)
       when is_binary(username) and is_binary(password) and byte_size(username) > 0 and byte_size(password) > 0 do
-    require Logger
-    Logger.info("Login attempt for username: #{username}")
 
     with {:ok, user} <- App.Accounts.authenticate_user(username, password),
          {:ok, token, _claims} <- AppWeb.Auth.Guardian.encode_and_sign(user) do
-      Logger.info("User authenticated and token generated for: #{user.username}")
 
       {:noreply,
        socket
@@ -49,11 +46,9 @@ defmodule AppWeb.UserSessionLive.Index do
        |> push_navigate(to: "/auth/set-token?token=#{token}")}
     else
       {:error, :invalid_credentials} ->
-        Logger.warning("Invalid credentials for username: #{username}")
         {:noreply, put_flash(socket, :error, "Usuário ou senha inválidos.")}
 
-      {:error, reason} ->
-        Logger.error("Failed to generate token: #{inspect(reason)}")
+      {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Erro ao gerar token de autenticação.")}
     end
   end
@@ -103,9 +98,7 @@ defmodule AppWeb.UserSessionLive.Index do
   end
 
   # Handler genérico para capturar todos os eventos
-  def handle_event(event, params, socket) do
-    require Logger
-    Logger.info("Unhandled event: #{event} with params: #{inspect(params)}")
+  def handle_event(_event, _params, socket) do
     {:noreply, socket}
   end
 

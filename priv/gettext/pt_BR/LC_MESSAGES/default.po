@@ -1,284 +1,115 @@
-# Arquivo de traduções para português brasileiro
-# JuruConnect - Sistema de Chat por Pedido
+#: lib/app_web/components/core_components.ex:483
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr ""
 
-msgid "Type a message or select an image"
-msgstr "Digite uma mensagem ou selecione uma imagem"
+#: lib/app_web/components/core_components.ex:161
+#, elixir-autogen, elixir-format
+msgid "Attempting to reconnect"
+msgstr ""
 
-msgid "Treaty not found. Create a new treaty below."
-msgstr "Tratativa não encontrada. Crie uma nova tratativa abaixo."
+#: lib/app_web/controllers/page_html/home.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "Connect with your clients quickly and efficiently through chats organized by treaty"
+msgstr "Conecte-se com seus clientes de forma rápida e eficiente através de chats organizados por tratativa"
 
-msgid "Welcome, %{username}!"
-msgstr "Bem-vindo, %{username}!"
+#: lib/app_web/controllers/page_html/home.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Each conversation is organized by treaty for easy tracking"
+msgstr "Cada conversa é organizada por tratativa para fácil acompanhamento"
 
-msgid "Unknown"
-msgstr "Desconhecido"
+#: lib/app_web/components/core_components.ex:152
+#, elixir-autogen, elixir-format
+msgid "Error!"
+msgstr ""
 
-msgid "Online"
-msgstr "Online"
+#: lib/app_web/controllers/page_html/home.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "Get Started"
+msgstr "Comece Agora"
 
-msgid "Connected"
-msgstr "Conectado"
+#: lib/app_web/components/core_components.ex:173
+#, elixir-autogen, elixir-format
+msgid "Hang in there while we get back on track"
+msgstr ""
 
-msgid "Disconnected"
-msgstr "Desconectado"
+#: lib/app_web/controllers/page_html/home.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Instant communication with your clients through real-time messages"
+msgstr "Comunicação instantânea com seus clientes através de mensagens em tempo real"
 
-msgid "Loading..."
-msgstr "Carregando..."
+#: lib/app_web/controllers/page_html/home.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Intuitive interface that allows quick responses and efficient service"
+msgstr "Interface intuitiva que permite respostas rápidas e atendimento eficiente"
 
-msgid "Load previous"
-msgstr "Carregar anteriores"
+#: lib/app_web/controllers/page_html/home.html.heex:90
+#, elixir-autogen, elixir-format
+msgid "Organized by Treaty"
+msgstr "Organizado por Tratativa"
 
-msgid "No messages yet"
-msgstr "Nenhuma mensagem ainda"
-
-msgid "Be the first to send a message!"
-msgstr "Seja o primeiro a enviar uma mensagem!"
-
-msgid "Search messages..."
-msgstr "Buscar nas mensagens..."
-
-msgid "Close search"
-msgstr "Fechar busca"
-
-msgid "Send message"
-msgstr "Enviar mensagem"
-
-msgid "Attach file"
-msgstr "Anexar arquivo"
-
-msgid "Remove image"
-msgstr "Remover imagem"
-
-msgid "Drop image here"
-msgstr "Solte a imagem aqui"
-
-msgid "JPG, PNG, GIF up to 5MB"
-msgstr "JPG, PNG, GIF até 5MB"
-
-msgid "Tags"
-msgstr "Tags"
-
-msgid "Manage tags"
-msgstr "Gerenciar tags"
-
-msgid "No tags added"
-msgstr "Nenhuma tag adicionada"
-
-msgid "Remove tag"
-msgstr "Remover tag"
-
-msgid "Users Online"
-msgstr "Usuários Online"
-
-msgid "You"
-msgstr "Você"
-
-msgid "typing..."
-msgstr "digitando..."
-
-msgid "Add Tag"
-msgstr "Adicionar Tag"
-
-msgid "Filter tags"
-msgstr "Filtrar tags"
-
-msgid "Type to filter tags..."
-msgstr "Digite para filtrar tags..."
-
-msgid "No tags available"
-msgstr "Nenhuma tag disponível"
-
-msgid "Add"
-msgstr "Adicionar"
-
-msgid "Error sending message"
-msgstr "Erro ao enviar mensagem"
-
-msgid "Tag added successfully!"
-msgstr "Tag adicionada com sucesso!"
-
-msgid "Error adding tag"
-msgstr "Erro ao adicionar tag"
-
-msgid "Tag removed successfully!"
-msgstr "Tag removida com sucesso!"
-
-msgid "Error removing tag"
-msgstr "Erro ao remover tag"
-
-msgid "You were mentioned!"
-msgstr "Você foi mencionado!"
-
-msgid "New message"
-msgstr "Nova mensagem"
-
-msgid "View conversation →"
-msgstr "Ver conversa →"
-
-msgid "No notifications"
-msgstr "Nenhuma notificação"
-
-msgid "Mark all as read"
-msgstr "Marcar todas como lidas"
-
-msgid "Notifications"
-msgstr "Notificações"
-
-msgid "Active Rooms"
-msgstr "Salas Ativas"
-
-msgid "No active rooms"
-msgstr "Nenhuma sala ativa"
-
-msgid "History"
-msgstr "Histórico"
-
-msgid "Clear history"
-msgstr "Limpar histórico"
-
-msgid "No treaty accessed"
-msgstr "Nenhuma tratativa acessada"
-
-msgid "Login to see history"
-msgstr "Faça login para ver histórico"
-
-msgid "Create New"
-msgstr "Criar Nova"
-
-msgid "Search Existing"
-msgstr "Buscar Existente"
-
-msgid "Treaty Title *"
-msgstr "Título da Tratativa *"
-
-msgid "Ex: Contract Negotiation"
-msgstr "Ex: Negociação de Contrato"
-
-msgid "Description *"
-msgstr "Descrição *"
-
-msgid "Describe the treaty details..."
-msgstr "Descreva os detalhes da tratativa..."
-
-msgid "Creating..."
-msgstr "Criando..."
-
-msgid "Create Treaty"
-msgstr "Criar Tratativa"
-
-msgid "Treaty Code *"
-msgstr "Código da Tratativa *"
-
-msgid "Ex: TRT001234"
-msgstr "Ex: TRT001234"
-
-msgid "Searching..."
-msgstr "Buscando..."
-
+#: lib/app_web/controllers/page_html/home.html.heex:139
+#, elixir-autogen, elixir-format
 msgid "Search Treaty"
 msgstr "Buscar Tratativa"
 
-msgid "You need to be logged in to create treaties"
-msgstr "Você precisa estar logado para criar tratativas"
+#: lib/app_web/components/core_components.ex:168
+#, elixir-autogen, elixir-format
+msgid "Something went wrong!"
+msgstr ""
 
-msgid "Error generating unique code. Try again."
-msgstr "Erro ao gerar código único. Tente novamente."
+#: lib/app_web/components/core_components.ex:151
+#, elixir-autogen, elixir-format
+msgid "Success!"
+msgstr ""
 
-msgid "Error creating treaty"
-msgstr "Erro ao criar tratativa"
+#: lib/app_web/controllers/page_html/home.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Treaty Chat System"
+msgstr "Sistema de Chat por Tratativa"
 
-msgid "JuruConnect"
-msgstr "JuruConnect"
+#: lib/app_web/components/core_components.ex:156
+#, elixir-autogen, elixir-format
+msgid "We can't find the internet"
+msgstr ""
 
-msgid "Treaty System"
-msgstr "Sistema de Tratativas"
+#: lib/app_web/components/core_components.ex:77
+#: lib/app_web/components/core_components.ex:131
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr ""
 
-msgid "Home"
-msgstr "Início"
+#: lib/app_web/controllers/page_html/home.html.heex:130
+#, elixir-autogen, elixir-format
+msgid "Enter the treaty code to access the corresponding chat and start talking with your clients"
+msgstr "Digite o código da tratativa para acessar o chat correspondente e começar a conversar com seus clientes"
 
-msgid "Treaties"
-msgstr "Tratativas"
+#: lib/app_web/controllers/page_html/home.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "Intuitive Interface"
+msgstr ""
 
-msgid "Manage Treaties"
-msgstr "Gerenciar Tratativas"
+#: lib/app_web/controllers/page_html/home.html.heex:146
+#, elixir-autogen, elixir-format
+msgid "No account required"
+msgstr "Nenhuma conta necessária"
 
-msgid "Search for an existing treaty or create a new one"
-msgstr "Busque uma tratativa existente ou crie uma nova"
+#: lib/app_web/controllers/page_html/home.html.heex:61
+#, elixir-autogen, elixir-format
+msgid "Powerful features designed to streamline your client communication"
+msgstr "Recursos poderosos projetados para otimizar sua comunicação com clientes"
 
-msgid "Treaty #%{code}"
-msgstr "Tratativa #%{code}"
+#: lib/app_web/controllers/page_html/home.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Ready to Get Started?"
+msgstr "Pronto para começar?"
 
-msgid "Exit chat and return to treaty search"
-msgstr "Sair do chat e voltar para busca de tratativas"
+#: lib/app_web/controllers/page_html/home.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "Real-time Communication"
+msgstr "Comunicação em Tempo Real"
 
-msgid "Exit chat"
-msgstr "Sair do chat"
-
-msgid "Search messages"
-msgstr "Buscar mensagens"
-
-msgid "Connection lost. Try reloading the page."
-msgstr "Conexão perdida. Tente recarregar a página."
-
-msgid "Message too long"
-msgstr "Mensagem muito longa"
-
-msgid "Type your message. Maximum %{max} characters."
-msgstr "Digite sua mensagem. Máximo de %{max} caracteres."
-
-msgid "Send message or image button. Available when there is text or image to send."
-msgstr "Botão para enviar mensagem ou imagem. Disponível quando há texto ou imagem para enviar."
-
-msgid "Chat messages"
-msgstr "Mensagens do chat"
-
-msgid "Message from %{sender}"
-msgstr "Mensagem de %{sender}"
-
-msgid "Today"
-msgstr "Hoje"
-
-msgid "Yesterday"
-msgstr "Ontem"
-
-msgid "Date not available"
-msgstr "Data não disponível"
-
-msgid "a few seconds ago"
-msgstr "há alguns segundos"
-
-msgid "%{count} minute ago"
-msgid_plural "%{count} minutes ago"
-msgstr[0] "há %{count} minuto"
-msgstr[1] "há %{count} minutos"
-
-msgid "%{count} hour ago"
-msgid_plural "%{count} hours ago"
-msgstr[0] "há %{count} hora"
-msgstr[1] "há %{count} horas"
-
-msgid "%{count} day ago"
-msgid_plural "%{count} days ago"
-msgstr[0] "há %{count} dia"
-msgstr[1] "há %{count} dias"
-
-msgid "more than a month ago"
-msgstr "há mais de um mês"
-
-msgid "active"
-msgstr "ativo"
-
-msgid "pending"
-msgstr "pendente"
-
-msgid "cancelled"
-msgstr "cancelado"
-
-msgid "completed"
-msgstr "concluído"
-
-msgid "Not found"
-msgstr "Não encontrado"
-
-msgid "N/A"
-msgstr "N/A"
+#: lib/app_web/controllers/page_html/home.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Why Choose JuruConnect?"
+msgstr "Por que escolher o JuruConnect?"

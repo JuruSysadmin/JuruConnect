@@ -10,7 +10,6 @@ defmodule App.ImageUpload do
   @images_dir "priv/static/images"
   @max_file_size 5_000_000 # 5MB
   @allowed_extensions ~w(.jpg .jpeg .png .gif .webp)
-  @allowed_mime_types ~w(image/jpeg image/png image/gif image/webp)
 
   @doc """
   Salva um arquivo de imagem localmente e retorna a URL pública.
@@ -95,38 +94,6 @@ defmodule App.ImageUpload do
     end
   end
 
-  defp validate_mime_type(path) do
-    case :filelib.is_file(path) do
-      true ->
-        case :mimerl.filename(path) do
-          {mime_type, _} when mime_type in @allowed_mime_types ->
-            :ok
-          {mime_type, _} when mime_type == "application/octet-stream" ->
-            validate_by_extension(path)
-          {mime_type, _} ->
-            {:error, "Tipo MIME não permitido: #{mime_type}. Permitidos: #{Enum.join(@allowed_mime_types, ", ")}"}
-          mime_type when mime_type == "application/octet-stream" ->
-            validate_by_extension(path)
-          mime_type when is_binary(mime_type) and mime_type in @allowed_mime_types ->
-            :ok
-          :undefined ->
-            validate_by_extension(path)
-          _ ->
-            {:error, "Tipo MIME não permitido (indeterminado ou formato desconhecido)."}
-        end
-      false ->
-        {:error, "Arquivo não encontrado"}
-    end
-  end
-
-  defp validate_by_extension(path) do
-    extension = Path.extname(path) |> String.downcase()
-
-    case extension in @allowed_extensions do
-      true -> :ok
-      false -> {:error, "Extensão não permitida: #{extension}. Permitidas: #{Enum.join(@allowed_extensions, ", ")}"}
-    end
-  end
 
   defp generate_unique_filename(original_name) do
     extension = Path.extname(original_name)

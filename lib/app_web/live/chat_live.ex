@@ -14,7 +14,6 @@ defmodule AppWeb.ChatLive do
   alias App.ChatConfig
   alias App.Tags
   alias App.DateTimeHelper
-  require Logger
 
   defstruct [:filename, :original_filename, :file_size, :mime_type, :file_url]
 
@@ -90,6 +89,11 @@ defmodule AppWeb.ChatLive do
     current_presences = Presence.list(topic)
     online_users = extract_users_from_presences(current_presences)
 
+    # Carregar dados de ratings, atividades e estatísticas
+    treaty_ratings = App.Treaties.get_treaty_ratings(treaty_data.id)
+    treaty_activities = App.Treaties.get_treaty_activities(treaty_data.id, 20)
+    treaty_stats = App.Treaties.get_treaty_stats(treaty_data.id)
+
     socket
     |> assign(:treaty, treaty_data)
     |> assign(:messages, message_history)
@@ -98,6 +102,9 @@ defmodule AppWeb.ChatLive do
     |> assign(:presences, current_presences)
     |> assign(:users_online, online_users)
     |> assign(:message_count, length(message_history))
+    |> assign(:treaty_ratings, treaty_ratings)
+    |> assign(:treaty_activities, treaty_activities)
+    |> assign(:treaty_stats, treaty_stats)
   end
 
   defp handle_authenticated_user_actions(socket, authenticated_user, treaty_id) do
@@ -253,6 +260,24 @@ defmodule AppWeb.ChatLive do
     |> assign(:tag_search_query, "")
     |> assign(:tag_search_results, [])
     |> assign(:show_sidebar, false)
+    |> assign(:show_shortcuts_modal, false)
+    |> assign(:show_shortcuts_tour, false)
+    |> assign(:search_query, "")
+    |> assign(:search_filters, %{
+      date_from: nil,
+      date_to: nil,
+      user_filter: nil,
+      content_type: "all"
+    })
+    |> assign(:search_results, [])
+    |> assign(:search_active, false)
+    |> assign(:show_close_modal, false)
+    |> assign(:show_rating_modal, false)
+    |> assign(:show_activities_modal, false)
+    |> assign(:close_reason, "")
+    |> assign(:resolution_notes, "")
+    |> assign(:rating_value, 5)
+    |> assign(:rating_comment, "")
   end
 
   # --- Processamento de Mensagens ---
@@ -263,6 +288,8 @@ defmodule AppWeb.ChatLive do
   Valida o conteúdo da mensagem, lida com uploads de imagens e transmite
   a mensagem para todos os usuários conectados na sala de chat do pedido.
   """
+  # --- Event Handlers ---
+  # All handle_event/3 functions are grouped together for better organization
   @impl true
   def handle_event("send_message", %{"message" => text}, socket) do
     trimmed_text = String.trim(text)
@@ -274,6 +301,569 @@ defmodule AppWeb.ChatLive do
       {:ok, _} ->
         process_message_send(socket, trimmed_text)
     end
+  end
+
+  @impl true
+  def handle_event("clear_error", _params, socket) do
+    {:noreply, assign(socket, :message_error, nil)}
+  end
+
+  @impl true
+  def handle_event("load_older_messages", _params, socket) do
+    if socket.assigns.loading_messages do
+      {:noreply, socket}
+    else
+      {:noreply,
+        socket
+        |> assign(:loading_messages, true)
+        |> load_older_messages_async()
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("update_message", %{"message" => message}, socket) do
+    if connected?(socket) && String.length(message) > 0 do
+      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_start, socket.assigns.current_user})
+    end
+
+    {:noreply, assign(socket, :message, message)}
+  end
+
+  @impl true
+  def handle_event("stop_typing", _params, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_stop, socket.assigns.current_user})
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_search", _params, socket) do
+    {:noreply, assign(socket, :show_search, !socket.assigns[:show_search])}
+  end
+
+  @impl true
+  def handle_event("toggle_sidebar", _params, socket) do
+    {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
+  end
+
+  @impl true
+  def handle_event("close_sidebar", _params, socket) do
+    {:noreply, assign(socket, :show_sidebar, false)}
+  end
+
+  @impl true
+  def handle_event("close_all_modals", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_sidebar, false)
+      |> assign(:show_search, false)
+      |> assign(:show_tag_modal, false)
+      |> assign(:modal_image_url, nil)
+    }
+  end
+
+  @impl true
+  def handle_event("show_shortcuts_help", _params, socket) do
+    {:noreply, assign(socket, :show_shortcuts_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_shortcuts_help", _params, socket) do
+    {:noreply, assign(socket, :show_shortcuts_modal, false)}
+  end
+
+  @impl true
+  def handle_event("show_shortcuts_tour", _params, socket) do
+    {:noreply, assign(socket, :show_shortcuts_tour, true)}
+  end
+
+  @impl true
+  def handle_event("hide_shortcuts_tour", _params, socket) do
+    {:noreply, assign(socket, :show_shortcuts_tour, false)}
+  end
+
+  def handle_event("focus_search", _params, socket), do: {:noreply, socket}
+  def handle_event("blur_search", _params, socket), do: {:noreply, socket}
+  def handle_event("stopPropagation", _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("exit_chat", _params, socket) do
+    # Navegar de volta para a tela de busca de tratativas
+    {:noreply, push_navigate(socket, to: "/")}
+  end
+
+  @impl true
+  def handle_event("search_messages", %{"query" => query}, socket) do
+    filtered_messages = apply_search_filters(socket.assigns.messages, query, socket.assigns.search_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_query, query)
+      |> assign(:search_results, filtered_messages)
+      |> assign(:search_active, String.trim(query) != "")
+    }
+  end
+
+  @impl true
+  def handle_event("update_search_filters", %{"filters" => filters_json}, socket) do
+    filters = Jason.decode!(filters_json)
+    updated_filters = Map.merge(socket.assigns.search_filters, filters)
+    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_filters, updated_filters)
+      |> assign(:search_results, filtered_messages)
+    }
+  end
+
+  @impl true
+  def handle_event("clear_search", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:search_query, "")
+      |> assign(:search_results, [])
+      |> assign(:search_active, false)
+      |> assign(:search_filters, %{
+        date_from: nil,
+        date_to: nil,
+        user_filter: nil,
+        content_type: "all"
+      })
+    }
+  end
+
+  @impl true
+  def handle_event("update_date_from", %{"value" => date_from}, socket) do
+    updated_filters = Map.put(socket.assigns.search_filters, :date_from, parse_date(date_from))
+    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_filters, updated_filters)
+      |> assign(:search_results, filtered_messages)
+    }
+  end
+
+  @impl true
+  def handle_event("update_date_to", %{"value" => date_to}, socket) do
+    updated_filters = Map.put(socket.assigns.search_filters, :date_to, parse_date(date_to))
+    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_filters, updated_filters)
+      |> assign(:search_results, filtered_messages)
+    }
+  end
+
+  @impl true
+  def handle_event("update_user_filter", %{"value" => user_filter}, socket) do
+    updated_filters = Map.put(socket.assigns.search_filters, :user_filter, if(user_filter == "", do: nil, else: user_filter))
+    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_filters, updated_filters)
+      |> assign(:search_results, filtered_messages)
+    }
+  end
+
+  @impl true
+  def handle_event("update_content_type", %{"value" => content_type}, socket) do
+    updated_filters = Map.put(socket.assigns.search_filters, :content_type, content_type)
+    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
+
+    {:noreply,
+      socket
+      |> assign(:search_filters, updated_filters)
+      |> assign(:search_results, filtered_messages)
+    }
+  end
+
+  @impl true
+  def handle_event("search_users", %{"query" => query}, socket) do
+    matching_users = socket.assigns.users_online
+    |> Enum.filter(fn username ->
+      String.contains?(String.downcase(username), String.downcase(query))
+    end)
+    |> Enum.take(5) # Limit results to prevent UI overflow
+
+    {:noreply,
+      socket
+      |> push_event("show-user-suggestions", %{
+        users: matching_users,
+        query: query
+      })
+    }
+  end
+
+  @impl true
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
+  @impl true
+  def handle_event("validate", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("upload", _params, socket) do
+    # O preview é exibido automaticamente pelo LiveView quando há entradas
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("show_image", %{"url" => url}, socket) do
+    {:noreply, assign(socket, :modal_image_url, url)}
+  end
+
+  @impl true
+  def handle_event("close_image_modal", _params, socket) do
+    {:noreply, assign(socket, :modal_image_url, nil)}
+  end
+
+  @impl true
+  def handle_event("show_tag_modal", _params, socket) do
+    all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
+
+    {:noreply,
+      socket
+      |> assign(:show_tag_modal, true)
+      |> assign(:tag_search_results, all_tags)
+      |> assign(:tag_search_query, "")
+    }
+  end
+
+  @impl true
+  def handle_event("hide_tag_modal", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_tag_modal, false)
+      |> assign(:tag_search_query, "")
+      |> assign(:tag_search_results, [])
+    }
+  end
+
+  @impl true
+  def handle_event("search_tags", %{"query" => query}, socket) do
+    if String.length(query) >= 2 do
+      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, results)
+      }
+    else
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, [])
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("search_tags", %{"value" => query}, socket) do
+    if String.length(query) >= 2 do
+      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, results)
+      }
+    else
+      # Mostrar todas as tags quando a consulta é muito curta para dar contexto aos usuários das opções disponíveis
+      all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
+      {:noreply,
+        socket
+        |> assign(:tag_search_query, query)
+        |> assign(:tag_search_results, all_tags)
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("add_tag_to_treaty", %{"tag_id" => tag_id}, socket) do
+    user_id = socket.assigns.user_object.id
+
+    case Tags.add_tag_to_treaty(socket.assigns.treaty_id, tag_id, user_id) do
+      {:ok, _treaty_tag} ->
+        treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+        {:noreply,
+          socket
+          |> assign(:treaty_tags, treaty_tags)
+          |> assign(:show_tag_modal, false)
+          |> assign(:tag_search_query, "")
+          |> assign(:tag_search_results, [])
+          |> push_event("show-toast", %{
+            type: "success",
+            title: "Tag adicionada!",
+            message: "A tag foi adicionada com sucesso à tratativa.",
+            duration: 3000
+          })
+        }
+      {:error, _changeset} ->
+        {:noreply,
+          socket
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro ao adicionar tag",
+            message: "Não foi possível adicionar a tag. Tente novamente.",
+            duration: 5000
+          })
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("remove_tag_from_treaty", %{"tag_id" => tag_id}, socket) do
+    case Tags.remove_tag_from_treaty(socket.assigns.treaty_id, tag_id) do
+      {count, nil} when count > 0 ->
+        treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+        {:noreply,
+          socket
+          |> assign(:treaty_tags, treaty_tags)
+          |> push_event("show-toast", %{
+            type: "success",
+            title: "Tag removida!",
+            message: "A tag foi removida com sucesso da tratativa.",
+            duration: 3000
+          })
+        }
+      _ ->
+        {:noreply,
+          socket
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro ao remover tag",
+            message: "Não foi possível remover a tag. Tente novamente.",
+            duration: 5000
+          })
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("show_close_modal", _params, socket) do
+    {:noreply, assign(socket, :show_close_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_close_modal", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_close_modal, false)
+      |> assign(:close_reason, "")
+      |> assign(:resolution_notes, "")
+    }
+  end
+
+  @impl true
+  def handle_event("close_treaty", %{"close_reason" => reason, "resolution_notes" => notes}, socket) do
+    case socket.assigns.user_object do
+      nil ->
+        {:noreply,
+          socket
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro",
+            message: "Você precisa estar logado para encerrar tratativas.",
+            duration: 5000
+          })
+        }
+
+      user ->
+        close_attrs = %{
+          close_reason: reason,
+          resolution_notes: notes
+        }
+
+        case App.Treaties.close_treaty(socket.assigns.treaty, user.id, close_attrs) do
+          {:ok, updated_treaty} ->
+            # Recarregar dados da tratativa
+            treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+            treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
+
+            {:noreply,
+              socket
+              |> assign(:treaty, updated_treaty)
+              |> assign(:treaty_activities, treaty_activities)
+              |> assign(:treaty_stats, treaty_stats)
+              |> assign(:show_close_modal, false)
+              |> assign(:close_reason, "")
+              |> assign(:resolution_notes, "")
+              |> push_event("show-toast", %{
+                type: "success",
+                title: "Tratativa encerrada!",
+                message: "A tratativa foi encerrada com sucesso.",
+                duration: 3000
+              })
+            }
+
+          {:error, _changeset} ->
+            {:noreply,
+              socket
+              |> push_event("show-toast", %{
+                type: "error",
+                title: "Erro ao encerrar",
+                message: "Não foi possível encerrar a tratativa. Tente novamente.",
+                duration: 5000
+              })
+            }
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("reopen_treaty", _params, socket) do
+    case socket.assigns.user_object do
+      nil ->
+        {:noreply,
+          socket
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro",
+            message: "Você precisa estar logado para reabrir tratativas.",
+            duration: 5000
+          })
+        }
+
+      user ->
+        case App.Treaties.reopen_treaty(socket.assigns.treaty, user.id) do
+          {:ok, updated_treaty} ->
+            # Recarregar dados da tratativa
+            treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+            treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
+
+            {:noreply,
+              socket
+              |> assign(:treaty, updated_treaty)
+              |> assign(:treaty_activities, treaty_activities)
+              |> assign(:treaty_stats, treaty_stats)
+              |> push_event("show-toast", %{
+                type: "success",
+                title: "Tratativa reaberta!",
+                message: "A tratativa foi reaberta com sucesso.",
+                duration: 3000
+              })
+            }
+
+          {:error, _changeset} ->
+            {:noreply,
+              socket
+              |> push_event("show-toast", %{
+                type: "error",
+                title: "Erro ao reabrir",
+                message: "Não foi possível reabrir a tratativa. Tente novamente.",
+                duration: 5000
+              })
+            }
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("show_rating_modal", _params, socket) do
+    {:noreply, assign(socket, :show_rating_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_rating_modal", _params, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_rating_modal, false)
+      |> assign(:rating_value, 5)
+      |> assign(:rating_comment, "")
+    }
+  end
+
+  @impl true
+  def handle_event("add_rating", %{"rating" => rating, "comment" => comment}, socket) do
+    case socket.assigns.user_object do
+      nil ->
+        {:noreply,
+          socket
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro",
+            message: "Você precisa estar logado para avaliar tratativas.",
+            duration: 5000
+          })
+        }
+
+      user ->
+        rating_int = String.to_integer(rating)
+
+        case App.Treaties.add_rating(socket.assigns.treaty.id, user.id, rating_int, comment) do
+          {:ok, _rating} ->
+            # Recarregar dados de ratings e estatísticas
+            treaty_ratings = App.Treaties.get_treaty_ratings(socket.assigns.treaty.id)
+            treaty_activities = App.Treaties.get_treaty_activities(socket.assigns.treaty.id, 20)
+            treaty_stats = App.Treaties.get_treaty_stats(socket.assigns.treaty.id)
+
+            {:noreply,
+              socket
+              |> assign(:treaty_ratings, treaty_ratings)
+              |> assign(:treaty_activities, treaty_activities)
+              |> assign(:treaty_stats, treaty_stats)
+              |> assign(:show_rating_modal, false)
+              |> assign(:rating_value, 5)
+              |> assign(:rating_comment, "")
+              |> push_event("show-toast", %{
+                type: "success",
+                title: "Avaliação adicionada!",
+                message: "Sua avaliação foi registrada com sucesso.",
+                duration: 3000
+              })
+            }
+
+          {:error, _changeset} ->
+            {:noreply,
+              socket
+              |> push_event("show-toast", %{
+                type: "error",
+                title: "Erro ao avaliar",
+                message: "Não foi possível registrar sua avaliação. Tente novamente.",
+                duration: 5000
+              })
+            }
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("show_activities_modal", _params, socket) do
+    {:noreply, assign(socket, :show_activities_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_activities_modal", _params, socket) do
+    {:noreply, assign(socket, :show_activities_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_close_reason", %{"value" => reason}, socket) do
+    {:noreply, assign(socket, :close_reason, reason)}
+  end
+
+  @impl true
+  def handle_event("update_resolution_notes", %{"value" => notes}, socket) do
+    {:noreply, assign(socket, :resolution_notes, notes)}
+  end
+
+  @impl true
+  def handle_event("update_rating_value", %{"value" => rating}, socket) do
+    {:noreply, assign(socket, :rating_value, String.to_integer(rating))}
+  end
+
+  @impl true
+  def handle_event("update_rating_comment", %{"value" => comment}, socket) do
+    {:noreply, assign(socket, :rating_comment, comment)}
   end
 
   defp validate_message_input(socket, trimmed_text) do
@@ -319,26 +909,35 @@ defmodule AppWeb.ChatLive do
           socket
           |> assign(:message, "")
           |> assign(:message_error, nil)
+          |> push_event("show-toast", %{
+            type: "success",
+            title: "Mensagem enviada!",
+            message: "Sua mensagem foi enviada com sucesso.",
+            duration: 2000
+          })
         }
       {:error, _changeset} ->
-        {:noreply, assign(socket, :message_error, "Erro ao enviar mensagem")}
+        {:noreply,
+          socket
+          |> assign(:message_error, "Erro ao enviar mensagem")
+          |> push_event("show-toast", %{
+            type: "error",
+            title: "Erro ao enviar",
+            message: "Não foi possível enviar a mensagem. Verifique sua conexão.",
+            duration: 5000
+          })
+        }
     end
   end
 
   defp handle_image_upload(socket) do
     entries = socket.assigns.uploads.image.entries
-    Logger.info("handle_image_upload: Found #{length(entries)} entries")
 
     case entries do
       [] -> nil
-      [entry | _] ->
-        Logger.info("handle_image_upload: Processing entry: #{entry.client_name}, progress: #{entry.progress}%")
-
+      [_entry | _] ->
         consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
-          Logger.info("handle_image_upload: Consuming entry: #{entry.client_name}")
-
           with {:ok, url} <- App.ImageUpload.upload_image(path, entry.client_name) do
-            Logger.info("handle_image_upload: Upload successful: #{url}")
             {:ok, %__MODULE__{
               filename: Path.basename(url),
               original_filename: entry.client_name,
@@ -347,8 +946,7 @@ defmodule AppWeb.ChatLive do
               file_url: url
             }}
           else
-            {:error, reason} ->
-              Logger.error("handle_image_upload: Upload failed: #{inspect(reason)}")
+            {:error, _reason} ->
               {:ok, nil}
           end
         end)
@@ -369,243 +967,13 @@ defmodule AppWeb.ChatLive do
     {id, current_user}
   end
 
-  @doc """
-  Carrega histórico adicional de mensagens para a tratativa atual.
-
-  Implementa paginação para evitar sobrecarregar o cliente com
-  históricos grandes de mensagens mantendo UX responsiva.
-  """
-  @impl true
-  def handle_event("load_older_messages", _params, socket) do
-    if socket.assigns.loading_messages do
-      {:noreply, socket}
-    else
-      {:noreply,
-        socket
-        |> assign(:loading_messages, true)
-        |> load_older_messages_async()
-      }
-    end
-  end
-
-  @impl true
-  def handle_event("clear_error", _params, socket) do
-    {:noreply, assign(socket, :message_error, nil)}
-  end
-
-  @impl true
-  def handle_event("update_message", %{"message" => message}, socket) do
-    if connected?(socket) && String.length(message) > 0 do
-      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_start, socket.assigns.current_user})
-    end
-
-    {:noreply, assign(socket, :message, message)}
-  end
-
-    @impl true
-  def handle_event("stop_typing", _params, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_stop, socket.assigns.current_user})
-    end
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("toggle_search", _params, socket) do
-    {:noreply, assign(socket, :show_search, !socket.assigns[:show_search])}
-  end
-
-  @impl true
-  def handle_event("toggle_sidebar", _params, socket) do
-    {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
-  end
-
-  # Estes eventos podem vir do componente order_search_live - os ignoramos aqui para evitar conflitos
-  def handle_event("focus_search", _params, socket), do: {:noreply, socket}
-  def handle_event("blur_search", _params, socket), do: {:noreply, socket}
-  def handle_event("stopPropagation", _params, socket), do: {:noreply, socket}
-
-  @impl true
-  def handle_event("exit_chat", _params, socket) do
-    # Navegar de volta para a tela de busca de tratativas
-    {:noreply, push_navigate(socket, to: "/buscar-tratativa")}
-  end
-
-  @impl true
-  def handle_event("search_messages", %{"query" => query}, socket) do
-    filtered_messages = socket.assigns.messages
-    |> Enum.filter(fn message ->
-      String.contains?(String.downcase(message.text), String.downcase(query))
-    end)
-
-    {:noreply, assign(socket, :filtered_messages, filtered_messages)}
-  end
-
-  @impl true
-  def handle_event("search_users", %{"query" => query}, socket) do
-    matching_users = socket.assigns.users_online
-    |> Enum.filter(fn username ->
-      String.contains?(String.downcase(username), String.downcase(query))
-    end)
-    |> Enum.take(5) # Limit results to prevent UI overflow
-
-    {:noreply,
-      socket
-      |> push_event("show-user-suggestions", %{
-        users: matching_users,
-        query: query
-      })
-    }
-  end
 
 
 
-  @impl true
-  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :image, ref)}
-  end
 
-  @impl true
-  def handle_event("validate", _params, socket) do
-    # Debug: verificar se há entradas no upload durante validação
-    entries = socket.assigns.uploads.image.entries
-    Logger.info("Validate event received. Entries count: #{length(entries)}")
 
-    if length(entries) > 0 do
-      entry = List.first(entries)
-      Logger.info("First entry in validate: #{entry.client_name}, progress: #{entry.progress}%")
-    end
 
-    {:noreply, socket}
-  end
 
-  @impl true
-  def handle_event("upload", _params, socket) do
-    # Debug: verificar se há entradas no upload
-    entries = socket.assigns.uploads.image.entries
-    Logger.info("Upload event received. Entries count: #{length(entries)}")
-
-    if length(entries) > 0 do
-      entry = List.first(entries)
-      Logger.info("First entry: #{entry.client_name}, progress: #{entry.progress}%")
-    end
-
-    # O preview é exibido automaticamente pelo LiveView quando há entradas
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("show_image", %{"url" => url}, socket) do
-    {:noreply, assign(socket, :modal_image_url, url)}
-  end
-
-  @impl true
-  def handle_event("close_image_modal", _params, socket) do
-    {:noreply, assign(socket, :modal_image_url, nil)}
-  end
-
-  @impl true
-  def handle_event("show_tag_modal", _params, socket) do
-    all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
-
-    {:noreply,
-      socket
-      |> assign(:show_tag_modal, true)
-      |> assign(:tag_search_results, all_tags)
-      |> assign(:tag_search_query, "")
-    }
-  end
-
-  @impl true
-  def handle_event("hide_tag_modal", _params, socket) do
-    {:noreply,
-      socket
-      |> assign(:show_tag_modal, false)
-      |> assign(:tag_search_query, "")
-      |> assign(:tag_search_results, [])
-    }
-  end
-
-    @impl true
-  def handle_event("search_tags", %{"query" => query}, socket) do
-    if String.length(query) >= 2 do
-      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, results)
-      }
-    else
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, [])
-      }
-    end
-  end
-
-  @impl true
-  def handle_event("search_tags", %{"value" => query}, socket) do
-    if String.length(query) >= 2 do
-      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, results)
-      }
-    else
-      # Mostrar todas as tags quando a consulta é muito curta para dar contexto aos usuários das opções disponíveis
-      all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, all_tags)
-      }
-    end
-  end
-
-  @impl true
-  def handle_event("add_tag_to_treaty", %{"tag_id" => tag_id}, socket) do
-    user_id = socket.assigns.user_object.id
-
-          case Tags.add_tag_to_treaty(socket.assigns.treaty_id, tag_id, user_id) do
-        {:ok, _treaty_tag} ->
-          treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
-          {:noreply,
-            socket
-            |> assign(:treaty_tags, treaty_tags)
-            |> assign(:show_tag_modal, false)
-            |> assign(:tag_search_query, "")
-            |> assign(:tag_search_results, [])
-            |> put_flash(:info, "Tag adicionada com sucesso!")
-          }
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Erro ao adicionar tag")}
-    end
-  end
-
-  @impl true
-  def handle_event("remove_tag_from_treaty", %{"tag_id" => tag_id}, socket) do
-    case Tags.remove_tag_from_treaty(socket.assigns.treaty_id, tag_id) do
-      {count, nil} when count > 0 ->
-        treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
-        {:noreply,
-          socket
-          |> assign(:treaty_tags, treaty_tags)
-          |> put_flash(:info, "Tag removida com sucesso!")
-        }
-      _ ->
-        {:noreply, put_flash(socket, :error, "Erro ao remover tag")}
-    end
-  end
-
-  @doc """
-  Lida com mensagens recebidas do PubSub e atualiza a interface.
-
-  Filtra mensagens para a tratativa atual e fornece notificações visuais/auditivas
-  para mensagens de outros usuários para melhorar colaboração em tempo real.
-  """
   @impl true
   def handle_info({:new_message, msg}, socket) do
     if msg.treaty_id == socket.assigns.treaty_id do
@@ -782,7 +1150,7 @@ defmodule AppWeb.ChatLive do
     ~H"""
     <div id="chat-container"
          class="min-h-screen w-full bg-gray-50 font-sans antialiased flex flex-col lg:flex-row overflow-hidden m-0 p-0 relative"
-         phx-hook="ChatHook"
+         phx-hook="ChatHook,KeyboardShortcutsHook,ToastNotificationHook,LoadingStatesHook"
          role="main">
 
 
@@ -834,20 +1202,72 @@ defmodule AppWeb.ChatLive do
           </div>
 
            <div class="flex items-center space-x-1 sm:space-x-2 mt-2 sm:mt-0">
-            <button phx-click="toggle_search" class="p-1.5 sm:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm"
+            <!-- Botão para abrir sidebar no mobile -->
+            <button phx-click="toggle_sidebar" class="lg:hidden p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    aria-label="Abrir sidebar com tags e usuários online"
+                    title="Tags e usuários online">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+            <!-- Botão de atividades/tracking -->
+            <button phx-click="show_activities_modal" class="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    aria-label="Ver atividades da tratativa"
+                    title="Histórico de atividades">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </button>
+
+            <!-- Botão de rating -->
+            <button phx-click="show_rating_modal" class="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                    aria-label="Avaliar tratativa"
+                    title="Avaliar tratativa">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+              </svg>
+            </button>
+
+            <!-- Botão de encerrar/reabrir tratativa -->
+            <%= if @treaty.status == "closed" do %>
+              <button phx-click="reopen_treaty" class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      aria-label="Reabrir tratativa"
+                      title="Reabrir tratativa">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+            <% else %>
+              <button phx-click="show_close_modal" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      aria-label="Encerrar tratativa"
+                      title="Encerrar tratativa">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            <% end %>
+
+            <button phx-click="toggle_search" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     aria-label="Buscar mensagens"
-                    title="Buscar mensagens">
-              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    title="Buscar mensagens (Ctrl+K)">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </button>
+            <button phx-click="show_shortcuts_help" class="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    aria-label="Mostrar atalhos de teclado"
+                    title="Atalhos de teclado (Ctrl+/)">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </button>
             <button
               phx-click="exit_chat"
-              class="p-1.5 sm:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm"
+              class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               title="Sair do chat e voltar para busca de tratativas"
               aria-label="Sair do chat"
             >
-              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
               </svg>
             </button>
@@ -873,25 +1293,102 @@ defmodule AppWeb.ChatLive do
 
         <!-- Search Bar -->
         <%= if @show_search do %>
-          <div class="mx-2 sm:mx-3 mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-            <div class="flex items-center space-x-2">
-              <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="mx-2 sm:mx-3 mt-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
+            <!-- Search Input -->
+            <div class="flex items-center space-x-2 mb-3">
+              <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
               <input
                 type="text"
                 placeholder="Buscar nas mensagens..."
-                class="flex-1 px-2 py-1.5 text-xs border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={@search_query}
+                class="flex-1 px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 phx-keyup="search_messages"
                 phx-debounce="300"
                 aria-label="Buscar mensagens"
               />
-              <button phx-click="toggle_search" class="text-blue-500 hover:text-blue-700 p-1" aria-label="Fechar busca">
+              <%= if @search_active do %>
+                <button phx-click="clear_search" class="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Limpar busca">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              <% end %>
+              <button phx-click="toggle_search" class="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-100 rounded-lg transition-colors" aria-label="Fechar busca">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </button>
             </div>
+
+            <!-- Advanced Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Date Range Filter -->
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700">Período</label>
+                <div class="flex space-x-1">
+                  <input
+                    type="date"
+                    class="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    phx-change="update_date_from"
+                    placeholder="De"
+                  />
+                  <input
+                    type="date"
+                    class="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    phx-change="update_date_to"
+                    placeholder="Até"
+                  />
+          </div>
+              </div>
+
+              <!-- User Filter -->
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700">Usuário</label>
+                <select
+                  class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  phx-change="update_user_filter"
+                >
+                  <option value="">Todos os usuários</option>
+                  <%= for user <- @users_online do %>
+                    <option value={user}><%= user %></option>
+                  <% end %>
+                </select>
+              </div>
+
+              <!-- Content Type Filter -->
+              <div class="space-y-1">
+                <label class="text-xs font-medium text-gray-700">Tipo de conteúdo</label>
+                <select
+                  class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  phx-change="update_content_type"
+                >
+                  <option value="all">Todos</option>
+                  <option value="text">Apenas texto</option>
+                  <option value="images">Com imagens</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Search Results Summary -->
+            <%= if @search_active do %>
+              <div class="mt-3 pt-3 border-t border-blue-200">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-blue-800">
+                      <%= length(@search_results) %> resultado<%= if length(@search_results) != 1, do: "s", else: "" %> encontrado<%= if length(@search_results) != 1, do: "s", else: "" %>
+                    </span>
+                  </div>
+                  <button phx-click="clear_search" class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                    Limpar filtros
+                  </button>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
 
@@ -909,12 +1406,13 @@ defmodule AppWeb.ChatLive do
               <button
                 phx-click="load_older_messages"
                 disabled={@loading_messages}
-                class="px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
+                class={"px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 " <>
+                       if(@loading_messages, do: "btn-loading", else: "")}>
                 <%= if @loading_messages do %>
                   <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                   </svg>
-                  <span>Carregando...</span>
+                  <span>Carregando mensagens...</span>
                 <% else %>
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path>
@@ -925,6 +1423,22 @@ defmodule AppWeb.ChatLive do
             </div>
           <% end %>
 
+          <%= if @search_active && Enum.empty?(@search_results) do %>
+            <div class="flex flex-col items-center justify-center h-full text-center py-6 animate-fade-in">
+              <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-3 shadow-sm">
+                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <h2 class="text-sm font-semibold text-gray-900 mb-2">Nenhum resultado encontrado</h2>
+              <p class="text-xs text-gray-600 max-w-md">Tente ajustar os filtros ou usar termos de busca diferentes.</p>
+            </div>
+          <% else %>
+            <%= if @search_active do %>
+              <%= for {message, index} <- Enum.with_index(@search_results) do %>
+                <%= render_message(message, index, @search_results, @user_object) %>
+              <% end %>
+            <% else %>
           <%= if Enum.empty?(@messages) do %>
             <div class="flex flex-col items-center justify-center h-full text-center py-6 animate-fade-in">
               <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-3 shadow-sm animate-bounce">
@@ -937,75 +1451,68 @@ defmodule AppWeb.ChatLive do
             </div>
           <% else %>
             <%= for {message, index} <- Enum.with_index(@messages) do %>
-              <%
-                is_current_user = case @user_object do
-                  nil -> false
-                  user -> user.id == message.sender_id
-                end
-
-                previous_message = if index > 0, do: Enum.at(@messages, index - 1), else: nil
-                show_date_separator = should_show_date_separator(message, previous_message)
-              %>
-
-              <%= if show_date_separator do %>
-                <!-- Separador de Data -->
-                <div class="flex items-center justify-center my-4">
-                  <div class="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                    <%= format_date_separator(message.timestamp || message.inserted_at) %>
-                  </div>
-                </div>
+                  <%= render_message(message, index, @messages, @user_object) %>
               <% end %>
-              <div class={"flex mb-3 animate-slide-in " <> if(is_current_user, do: "justify-end", else: "justify-start")}
-                   role="article"
-                   aria-label={"Mensagem de " <> message.sender_name}>
-
-
-                <div class={
-                  "relative max-w-[90%] sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg " <>
-                  if(is_current_user,
-                    do: "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-lg",
-                    else: "bg-white text-gray-900 rounded-bl-lg border border-gray-200 shadow-sm hover:border-gray-300")
-                }>
-                  <%= if not is_current_user do %>
-                    <div class="text-sm font-semibold text-gray-700 mb-1"><%= message.sender_name %></div>
                   <% end %>
-                  <div class="text-sm break-words leading-relaxed"><%= format_message_with_mentions(message.text) %></div>
-                  <%= if message.attachments && length(message.attachments) > 0 do %>
-                    <div class="mt-2 space-y-2">
-                      <%= for attachment <- message.attachments do %>
-                        <%= if attachment.file_type == "image" do %>
-                          <img src={attachment.file_url}
-                               class="w-24 h-24 object-cover rounded cursor-pointer hover:scale-105 transition-all duration-300 shadow-sm hover:shadow-md"
-                               phx-click="show_image"
-                               phx-value-url={attachment.file_url}
-                               alt={attachment.original_filename} />
                         <% end %>
                       <% end %>
                     </div>
-                  <% end %>
-                  <div class="flex items-center justify-end mt-1 space-x-1">
-                    <span class={"text-xs " <> if(is_current_user, do: "text-white/70", else: "text-gray-400")}><%= format_time(message.inserted_at) %></span>
-                    <%= if is_current_user do %>
-                      <svg class="w-2.5 h-2.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                    <% end %>
-                  </div>
-                </div>
-
-              </div>
-            <% end %>
-          <% end %>
-          </div>
 
           <!-- Sidebar com usuários online e tags -->
-          <div class="hidden lg:block w-64 bg-white border-l border-gray-200 overflow-y-auto">
+          <div class={"w-64 bg-white border-l border-gray-200 overflow-y-auto transition-transform duration-300 ease-in-out " <>
+                if(@show_sidebar, do: "translate-x-0", else: "translate-x-full") <>
+                " lg:translate-x-0 lg:block " <>
+                if(@show_sidebar, do: "fixed inset-y-0 right-0 z-30", else: "hidden lg:block")}
+                role="complementary"
+                aria-label="Sidebar com tags e usuários online">
+            <!-- Header da sidebar com botão de fechar no mobile -->
+            <div class="lg:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <h2 class="text-lg font-semibold text-gray-900">Menu</h2>
+              <button phx-click="close_sidebar"
+                      class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      aria-label="Fechar menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+              </button>
+                </div>
+
+            <!-- Seção de Estatísticas -->
+            <div class="p-4 border-b border-gray-200">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">Estatísticas</h3>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-600">Mensagens</span>
+                  <span class="font-medium text-gray-900"><%= @treaty_stats.message_count %></span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-600">Avaliações</span>
+                  <span class="font-medium text-gray-900"><%= @treaty_stats.rating_count %></span>
+                </div>
+                <%= if @treaty_stats.average_rating > 0 do %>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Média</span>
+                    <div class="flex items-center space-x-1">
+                      <span class="font-medium text-gray-900"><%= @treaty_stats.average_rating %></span>
+                      <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </div>
+                  </div>
+                <% end %>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-600">Atividades</span>
+                  <span class="font-medium text-gray-900"><%= @treaty_stats.activity_count %></span>
+                </div>
+              </div>
+            </div>
+
             <!-- Seção de Tags -->
             <div class="p-4 border-b border-gray-200">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-gray-900">Tags</h3>
                 <button phx-click="show_tag_modal"
-                        class="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded"
+                        class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         aria-label="Gerenciar tags"
                         title="Gerenciar tags">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1023,9 +1530,10 @@ defmodule AppWeb.ChatLive do
                       </div>
                       <button phx-click="remove_tag_from_treaty"
                               phx-value-tag_id={tag.id}
-                              class="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200"
-                              title="Remover tag">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                              title="Remover tag"
+                              aria-label={"Remover tag #{tag.name}"}>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                       </button>
@@ -1148,7 +1656,7 @@ defmodule AppWeb.ChatLive do
                   <%= for entry <- @uploads.image.entries do %>
                     <div class="relative inline-block mr-1 mb-1">
                       <!-- Preview da imagem -->
-                      <.live_img_preview entry={entry} class="w-16 h-16 object-cover rounded border border-gray-200 shadow" />
+                      <.live_img_preview entry={entry} class="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200" />
 
                       <!-- Barra de progresso animada -->
                       <div class="absolute bottom-0 left-0 w-full h-1 bg-gray-200 rounded-b overflow-hidden">
@@ -1167,8 +1675,10 @@ defmodule AppWeb.ChatLive do
 
                       <!-- Botão para remover o upload -->
                       <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref}
-                              class="absolute top-0 right-0 bg-white/80 rounded-full p-0.5 text-red-500 hover:text-red-700" title="Remover imagem">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                              class="absolute top-0 right-0 bg-white/90 rounded-full p-1 text-red-500 hover:text-red-700 hover:bg-white transition-all duration-200 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                              title="Remover imagem"
+                              aria-label="Remover imagem">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                       </button>
                     </div>
                   <% end %>
@@ -1179,7 +1689,7 @@ defmodule AppWeb.ChatLive do
                 name="message"
                 value={@message}
                 placeholder="Digite uma mensagem ou arraste uma imagem aqui..."
-                class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-sm"
+                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-base focus:outline-none"
                 autocomplete="off"
                 maxlength={ChatConfig.security_config()[:max_message_length]}
                 disabled={not @connected}
@@ -1200,8 +1710,8 @@ defmodule AppWeb.ChatLive do
                   <!-- Sugestões serão inseridas aqui via JavaScript -->
                 </div>
               </div>
-              <label for="image-upload" class="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 cursor-pointer" aria-label="Anexar arquivo" title="Anexar arquivo">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <label for="image-upload" class="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Anexar arquivo" title="Anexar arquivo">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
                 <.live_file_input upload={@uploads.image} id="image-upload" class="hidden" phx-change="validate" phx-upload="upload" />
@@ -1220,13 +1730,13 @@ defmodule AppWeb.ChatLive do
             <button
               type="submit"
               disabled={String.trim(@message) == "" && @uploads.image.entries == []}
-              class="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed phx-submit-loading:opacity-75 text-sm"
+              class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed phx-submit-loading:opacity-75 text-base min-w-[60px]"
               aria-label="Enviar mensagem"
               aria-describedby="send-button-help"
               title="Enviar mensagem">
               <span class="hidden sm:inline">Enviar</span>
               <span class="sm:hidden">→</span>
-              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
               </svg>
             </button>
@@ -1319,10 +1829,382 @@ defmodule AppWeb.ChatLive do
         </div>
       </div>
     <% end %>
+
+    <!-- Modal de Atalhos de Teclado -->
+    <%= if @show_shortcuts_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_shortcuts_help">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+          <!-- Header do modal -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900">Atalhos de Teclado</h3>
+                <p class="text-sm text-gray-600">Acelere seu trabalho com estes atalhos</p>
+              </div>
+            </div>
+            <button phx-click="hide_shortcuts_help" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Conteúdo do modal -->
+          <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Navegação -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  Navegação
+                </h4>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Abrir busca</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+K</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Fechar modais</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">ESC</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Mostrar atalhos</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+/</kbd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mensagens -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                  Mensagens
+                </h4>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Enviar mensagem</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+Enter</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Navegar mensagens</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">↑↓</kbd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ações Rápidas -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  Ações Rápidas
+                </h4>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Focar input</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">1</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Toggle sidebar</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">2</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Gerenciar tags</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">3</kbd>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm font-medium text-gray-700">Sair do chat</span>
+                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">4</kbd>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dicas -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                  </svg>
+                  Dicas
+                </h4>
+                <div class="space-y-3">
+                  <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-800">
+                      <strong>💡 Dica:</strong> Use <kbd class="px-1 py-0.5 bg-blue-200 text-blue-800 rounded text-xs font-mono">Ctrl+K</kbd> para buscar rapidamente em qualquer lugar do chat.
+                    </p>
+                  </div>
+                  <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-800">
+                      <strong>⚡ Produtividade:</strong> Os atalhos funcionam mesmo quando você não está focando nos elementos da interface.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rodapé -->
+          <div class="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+            <p class="text-sm text-gray-600">
+              💡 Pressione <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+/</kbd> a qualquer momento para mostrar esta ajuda
+            </p>
+            <button phx-click="hide_shortcuts_help" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+              Entendi!
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Tour de Boas-vindas para Shortcuts -->
+    <%= if @show_shortcuts_tour do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_shortcuts_tour">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
+          <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">🚀 Atalhos de Teclado Ativados!</h3>
+            <p class="text-gray-600 mb-4">
+              Agora você pode usar atalhos para ser mais produtivo no chat.
+              Experimente <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+K</kbd> para buscar!
+            </p>
+            <div class="flex space-x-3">
+              <button phx-click="hide_shortcuts_tour" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                Pular
+              </button>
+              <button phx-click="show_shortcuts_help" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                Ver Todos
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Modal de Encerrar Tratativa -->
+    <%= if @show_close_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_close_modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
+          <!-- Header do modal -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">Encerrar Tratativa</h3>
+            <button phx-click="hide_close_modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Conteúdo do modal -->
+          <div class="p-6">
+            <form phx-submit="close_treaty" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Motivo do encerramento</label>
+                <select name="close_reason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" required>
+                  <option value="">Selecione um motivo</option>
+                  <option value="resolved">Resolvido</option>
+                  <option value="cancelled">Cancelado</option>
+                  <option value="duplicate">Duplicado</option>
+                  <option value="invalid">Inválido</option>
+                  <option value="other">Outro</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Notas de resolução</label>
+                <textarea name="resolution_notes" rows="3" placeholder="Descreva como a tratativa foi resolvida..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"></textarea>
+              </div>
+
+              <div class="flex space-x-3 pt-4">
+                <button type="button" phx-click="hide_close_modal" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  Encerrar Tratativa
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Modal de Rating -->
+    <%= if @show_rating_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_rating_modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
+          <!-- Header do modal -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">Avaliar Tratativa</h3>
+            <button phx-click="hide_rating_modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Conteúdo do modal -->
+          <div class="p-6">
+            <form phx-submit="add_rating" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Avaliação</label>
+                <div class="flex space-x-1">
+                  <%= for i <- 1..5 do %>
+                    <button type="button" phx-click="update_rating_value" phx-value-value={i} class={"w-8 h-8 rounded-full transition-colors #{if @rating_value >= i, do: "text-yellow-400", else: "text-gray-300"}"}>
+                      <svg class="w-full h-full" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Comentário (opcional)</label>
+                <textarea name="comment" rows="3" placeholder="Deixe um comentário sobre a tratativa..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"></textarea>
+              </div>
+
+              <div class="flex space-x-3 pt-4">
+                <button type="button" phx-click="hide_rating_modal" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                  Avaliar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Modal de Atividades -->
+    <%= if @show_activities_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_activities_modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+          <!-- Header do modal -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-900">Histórico de Atividades</h3>
+            <button phx-click="hide_activities_modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Conteúdo do modal -->
+          <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <%= if Enum.empty?(@treaty_activities) do %>
+              <div class="text-center py-8">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <p class="text-sm text-gray-500">Nenhuma atividade registrada</p>
+              </div>
+            <% else %>
+              <div class="space-y-4">
+                <%= for activity <- @treaty_activities do %>
+                  <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium text-gray-900"><%= activity.description %></p>
+                        <span class="text-xs text-gray-500"><%= format_time(activity.activity_at) %></span>
+                      </div>
+                      <%= if activity.user do %>
+                        <p class="text-xs text-gray-500">por <%= activity.user.name || activity.user.username %></p>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 
   # --- Funções Utilitárias ---
+
+  defp apply_search_filters(messages, query, filters) do
+    messages
+    |> filter_by_text(query)
+    |> filter_by_date_range(filters.date_from, filters.date_to)
+    |> filter_by_user(filters.user_filter)
+    |> filter_by_content_type(filters.content_type)
+  end
+
+  defp filter_by_text(messages, query) when query == "" or is_nil(query), do: messages
+  defp filter_by_text(messages, query) do
+    query_lower = String.downcase(query)
+    Enum.filter(messages, fn message ->
+      String.contains?(String.downcase(message.text || ""), query_lower)
+    end)
+  end
+
+  defp filter_by_date_range(messages, nil, nil), do: messages
+  defp filter_by_date_range(messages, date_from, date_to) do
+    Enum.filter(messages, fn message ->
+      message_date = message.inserted_at || message.timestamp
+      case message_date do
+        nil -> false
+        dt ->
+          date_from_ok = if date_from, do: DateTime.compare(dt, date_from) != :lt, else: true
+          date_to_ok = if date_to, do: DateTime.compare(dt, date_to) != :gt, else: true
+          date_from_ok && date_to_ok
+      end
+    end)
+  end
+
+  defp filter_by_user(messages, nil), do: messages
+  defp filter_by_user(messages, user_filter) do
+    Enum.filter(messages, fn message ->
+      String.contains?(String.downcase(message.sender_name || ""), String.downcase(user_filter))
+    end)
+  end
+
+  defp filter_by_content_type(messages, "all"), do: messages
+  defp filter_by_content_type(messages, "text") do
+    Enum.filter(messages, fn message ->
+      is_nil(message.attachments) || length(message.attachments) == 0
+    end)
+  end
+  defp filter_by_content_type(messages, "images") do
+    Enum.filter(messages, fn message ->
+      message.attachments &&
+      Enum.any?(message.attachments, fn att -> att.file_type == "image" end)
+    end)
+  end
+
+  defp parse_date(""), do: nil
+  defp parse_date(date_string) when is_binary(date_string) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+      {:error, _} -> nil
+    end
+  end
+  defp parse_date(_), do: nil
 
   defp extract_users_from_presences(presences) when is_map(presences) do
     presences
@@ -1346,8 +2228,7 @@ defmodule AppWeb.ChatLive do
       with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.pagination_config()[:default_limit], current_count) do
         send(self(), {:older_messages_loaded, older_messages, has_more})
       else
-        {:error, reason} ->
-          Logger.error("Failed to load older messages: #{inspect(reason)}")
+        {:error, _reason} ->
           send(self(), {:older_messages_loaded, [], false})
       end
     end)
@@ -1366,10 +2247,11 @@ defmodule AppWeb.ChatLive do
     base_classes = "px-2.5 py-1 text-xs font-semibold rounded-full border shadow-sm transition-all duration-200"
 
     case status do
-      "ativo" -> "#{base_classes} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-      "pendente" -> "#{base_classes} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-      "cancelado" -> "#{base_classes} bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-      "concluído" -> "#{base_classes} bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+      "active" -> "#{base_classes} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+      "inactive" -> "#{base_classes} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+      "cancelled" -> "#{base_classes} bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+      "completed" -> "#{base_classes} bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+      "closed" -> "#{base_classes} bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
       _ -> "#{base_classes} bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
     end
   end
@@ -1425,5 +2307,71 @@ defmodule AppWeb.ChatLive do
       %DateTime{} = dt -> DateTime.to_date(dt)
       _ -> Date.utc_today()
     end
+  end
+
+  defp render_message(message, index, message_list, user_object) do
+    is_current_user = case user_object do
+      nil -> false
+      user -> user.id == message.sender_id
+    end
+
+    previous_message = if index > 0, do: Enum.at(message_list, index - 1), else: nil
+    show_date_separator = should_show_date_separator(message, previous_message)
+
+    assigns = %{
+      message: message,
+      index: index,
+      message_list: message_list,
+      user_object: user_object,
+      is_current_user: is_current_user,
+      show_date_separator: show_date_separator
+    }
+
+    ~H"""
+    <%= if @show_date_separator do %>
+      <!-- Separador de Data -->
+      <div class="flex items-center justify-center my-4">
+        <div class="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full shadow-sm border border-gray-200">
+          <%= format_date_separator(@message.timestamp || @message.inserted_at) %>
+        </div>
+      </div>
+    <% end %>
+    <div class={"flex mb-3 animate-slide-in " <> if(@is_current_user, do: "justify-end", else: "justify-start")}
+         role="article"
+         aria-label={"Mensagem de " <> @message.sender_name}>
+      <div class={
+        "relative max-w-[90%] sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg " <>
+        if(@is_current_user,
+          do: "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-lg",
+          else: "bg-white text-gray-900 rounded-bl-lg border border-gray-200 shadow-sm hover:border-gray-300")
+      }>
+        <%= if not @is_current_user do %>
+          <div class="text-sm font-semibold text-gray-700 mb-1"><%= @message.sender_name %></div>
+        <% end %>
+        <div class="text-sm break-words leading-relaxed"><%= format_message_with_mentions(@message.text) %></div>
+        <%= if @message.attachments && length(@message.attachments) > 0 do %>
+          <div class="mt-2 space-y-2">
+            <%= for attachment <- @message.attachments do %>
+              <%= if attachment.file_type == "image" do %>
+                <img src={attachment.file_url}
+                     class="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
+                     phx-click="show_image"
+                     phx-value-url={attachment.file_url}
+                     alt={attachment.original_filename} />
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+        <div class="flex items-center justify-end mt-1 space-x-1">
+          <span class={"text-xs " <> if(@is_current_user, do: "text-white/70", else: "text-gray-400")}><%= format_time(@message.inserted_at) %></span>
+          <%= if @is_current_user do %>
+            <svg class="w-2.5 h-2.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
   end
 end

@@ -7,10 +7,10 @@ import Config
 # Run `mix help test` for more information.
 config :app, App.Repo,
   username: "postgres",
-  password: "password",
+  password: "1234",
   hostname: "localhost",
-  port: 5433,
-  database: "chat_app_test#{System.get_env("MIX_TEST_PARTITION")}",
+  port: 5436,
+  database: "chat_app_test",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 

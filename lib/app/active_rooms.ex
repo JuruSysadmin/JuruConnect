@@ -4,7 +4,6 @@ defmodule App.ActiveRooms do
   """
 
   use GenServer
-  require Logger
 
   @topic "active_rooms"
 
@@ -206,16 +205,13 @@ defmodule App.ActiveRooms do
     Float.round(total_users / total_rooms, 1)
   end
 
-  defp log_user_joined(user_name, treaty_id, user_count) do
-    Logger.info("User #{user_name} joined room #{treaty_id}. Total users: #{user_count}")
+  defp log_user_joined(_user_name, _treaty_id, _user_count) do
   end
 
-  defp log_user_left(treaty_id, remaining_count) do
-    Logger.info("User left room #{treaty_id}. Remaining users: #{remaining_count}")
+  defp log_user_left(_treaty_id, _remaining_count) do
   end
 
-  defp log_room_removed(treaty_id) do
-    Logger.info("Room #{treaty_id} removed - no users left")
+  defp log_room_removed(_treaty_id) do
   end
 
   defp broadcast_room_update(room_key, room_data) do

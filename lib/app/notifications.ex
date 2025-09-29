@@ -4,11 +4,9 @@ defmodule App.Notifications do
   """
 
   alias App.Accounts
-  alias App.Chat
   alias App.Notifications.Notification
   alias App.Repo
   import Ecto.Query
-  require Logger
 
   @doc """
   Sends notification when a new message is received.
@@ -27,10 +25,8 @@ defmodule App.Notifications do
       {:error, :self_message} ->
         {:ok, :no_notification_needed}
       {:error, :user_not_found} ->
-        Logger.warning("Usuário não encontrado para notificação: #{current_user_id}")
         {:ok, :user_not_found}
       {:error, reason} ->
-        Logger.error("Erro ao enviar notificação: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -111,10 +107,8 @@ defmodule App.Notifications do
       {:ok, :mention_sent}
     else
       {:error, :user_not_found} ->
-        Logger.warning("Usuário mencionado não encontrado: #{user_id}")
         {:error, :user_not_found}
       {:error, reason} ->
-        Logger.error("Erro ao enviar notificação de menção: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -271,7 +265,6 @@ defmodule App.Notifications do
 
     # Skip notification if treaty doesn't exist
     if is_nil(treaty_id) do
-      Logger.warning("Treaty não encontrado para notificação offline: #{message.treaty_id}")
       {:ok, :treaty_not_found}
     else
       notification_attrs = %{
@@ -291,21 +284,13 @@ defmodule App.Notifications do
 
       case Notification.create_changeset(notification_attrs) |> Repo.insert() do
         {:ok, notification} ->
-          Logger.info("Notificação salva para usuário offline: #{user_id}")
           {:ok, notification}
         {:error, changeset} ->
-          Logger.error("Erro ao salvar notificação: #{inspect(changeset.errors)}")
           {:error, changeset}
       end
     end
   end
 
-  defp get_treaty_code(treaty_id) do
-    case App.Treaties.get_treaty(treaty_id) do
-      {:ok, treaty} -> treaty.treaty_code
-      {:error, _} -> "Tratativa"
-    end
-  end
 
   defp get_treaty_id_from_code(treaty_code) do
     case App.Treaties.get_treaty(treaty_code) do
@@ -320,7 +305,6 @@ defmodule App.Notifications do
 
     # Skip notification if treaty doesn't exist
     if is_nil(treaty_id) do
-      Logger.warning("Treaty não encontrado para notificação: #{message.treaty_id}")
       {:ok, :treaty_not_found}
     else
       notification_attrs = %{
@@ -341,10 +325,8 @@ defmodule App.Notifications do
 
       case Notification.create_changeset(notification_attrs) |> Repo.insert() do
         {:ok, notification} ->
-          Logger.info("Notificação de menção salva para usuário: #{user_id}")
           {:ok, notification}
         {:error, changeset} ->
-          Logger.error("Erro ao salvar notificação de menção: #{inspect(changeset.errors)}")
           {:error, changeset}
       end
     end

@@ -2,7 +2,6 @@ defmodule AppWeb.NotificationController do
   use AppWeb, :controller
 
   alias App.Notifications
-  alias App.Notifications.Notification
 
   action_fallback AppWeb.FallbackController
 

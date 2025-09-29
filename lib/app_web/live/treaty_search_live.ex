@@ -42,17 +42,13 @@ defmodule AppWeb.TreatySearchLive do
 
   @impl true
   def handle_event("search", %{"treaty_id" => treaty_id}, socket) do
-    require Logger
-    Logger.info("Search event triggered with treaty_id: #{treaty_id}")
 
     socket = assign(socket, :loading, true)
 
     case App.Treaties.get_treaty(treaty_id) do
-      {:ok, treaty} ->
-        Logger.info("Treaty found: #{inspect(treaty.treaty_code)}")
+      {:ok, _treaty} ->
         {:noreply, push_navigate(socket, to: "/chat/#{treaty_id}")}
-      {:error, reason} ->
-        Logger.warning("Treaty not found: #{treaty_id}, reason: #{inspect(reason)}")
+      {:error, _reason} ->
         {:noreply, assign(socket,
           error: "Tratativa não encontrada. Crie uma nova tratativa abaixo.",
           treaty_id: treaty_id,
@@ -124,18 +120,6 @@ defmodule AppWeb.TreatySearchLive do
   end
 
   @impl true
-  def handle_info({:room_updated, _room_key, _room_data}, socket) do
-    active_rooms = safely_get_active_rooms()
-    {:noreply, assign(socket, :active_rooms, active_rooms)}
-  end
-
-  @impl true
-  def handle_info({:room_removed, _room_key}, socket) do
-    active_rooms = safely_get_active_rooms()
-    {:noreply, assign(socket, :active_rooms, active_rooms)}
-  end
-
-  @impl true
   def handle_event("toggle_notifications", _params, socket) do
     {:noreply, assign(socket, :show_notifications, !socket.assigns.show_notifications)}
   end
@@ -178,6 +162,18 @@ defmodule AppWeb.TreatySearchLive do
             {:noreply, socket}
         end
     end
+  end
+
+  @impl true
+  def handle_info({:room_updated, _room_key, _room_data}, socket) do
+    active_rooms = safely_get_active_rooms()
+    {:noreply, assign(socket, :active_rooms, active_rooms)}
+  end
+
+  @impl true
+  def handle_info({:room_removed, _room_key}, socket) do
+    active_rooms = safely_get_active_rooms()
+    {:noreply, assign(socket, :active_rooms, active_rooms)}
   end
 
   @impl true
@@ -228,7 +224,7 @@ defmodule AppWeb.TreatySearchLive do
               </div>
               <div class="ml-4">
                 <h1 class="text-xl font-semibold text-gray-900">JuruConnect</h1>
-                <p class="text-sm text-gray-500">Sistema de Tratativas</p>
+                <p class="text-sm text-gray-500">Resolução de Tratativas</p>
               </div>
             </div>
             <%= if @token do %>
