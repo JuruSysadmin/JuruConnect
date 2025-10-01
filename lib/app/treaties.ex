@@ -118,7 +118,7 @@ defmodule App.Treaties do
     with {:ok, rating} <- create_rating(rating_attrs) do
       # Registrar atividade de rating
       record_activity(treaty_id, user_id, "rated",
-        "Avaliação #{rating} estrelas adicionada", %{rating: rating})
+        "Avaliação '#{rating}' adicionada", %{rating: rating})
 
       {:ok, rating}
     end
@@ -145,6 +145,7 @@ defmodule App.Treaties do
   @doc """
   Busca ratings de uma tratativa.
   """
+  def get_treaty_ratings(treaty_id) when is_nil(treaty_id), do: []
   def get_treaty_ratings(treaty_id) do
     from(r in TreatyRating,
       where: r.treaty_id == ^treaty_id,
@@ -157,15 +158,34 @@ defmodule App.Treaties do
   @doc """
   Calcula a média de ratings de uma tratativa.
   """
+  def get_treaty_average_rating(treaty_id) when is_nil(treaty_id), do: 0.0
   def get_treaty_average_rating(treaty_id) do
-    from(r in TreatyRating,
+    # Buscar todos os ratings da tratativa
+    ratings = from(r in TreatyRating,
       where: r.treaty_id == ^treaty_id,
-      select: avg(r.rating)
-    )
-    |> Repo.one()
-    |> case do
-      nil -> 0.0
-      avg -> Float.round(avg, 1)
+      select: r.rating
+    ) |> Repo.all()
+
+    case ratings do
+      [] -> 0.0
+      ratings_list ->
+        # Converter ratings textuais para valores numéricos
+        numeric_ratings = Enum.map(ratings_list, fn
+          "péssimo" -> 1
+          "ruim" -> 2
+          "bom" -> 3
+          "excelente" -> 4
+          _ -> 0
+        end)
+
+        # Calcular média
+        if length(numeric_ratings) > 0 do
+          sum = Enum.sum(numeric_ratings)
+          count = length(numeric_ratings)
+          Float.round(sum / count, 1)
+        else
+          0.0
+        end
     end
   end
 
@@ -189,7 +209,9 @@ defmodule App.Treaties do
   @doc """
   Busca atividades de uma tratativa.
   """
-  def get_treaty_activities(treaty_id, limit \\ 50) do
+  def get_treaty_activities(treaty_id, limit \\ 50)
+  def get_treaty_activities(treaty_id, _limit) when is_nil(treaty_id), do: []
+  def get_treaty_activities(treaty_id, limit) do
     from(a in TreatyActivity,
       where: a.treaty_id == ^treaty_id,
       order_by: [desc: a.activity_at],
@@ -202,34 +224,54 @@ defmodule App.Treaties do
   @doc """
   Busca estatísticas de uma tratativa.
   """
-  def get_treaty_stats(treaty_id) do
-    # Contar mensagens
-    message_count = from(m in App.Chat.Message,
-      where: m.treaty_id == ^treaty_id,
-      select: count()
-    ) |> Repo.one()
-
-    # Contar ratings
-    rating_count = from(r in TreatyRating,
-      where: r.treaty_id == ^treaty_id,
-      select: count()
-    ) |> Repo.one()
-
-    # Média de ratings
-    average_rating = get_treaty_average_rating(treaty_id)
-
-    # Contar atividades
-    activity_count = from(a in TreatyActivity,
-      where: a.treaty_id == ^treaty_id,
-      select: count()
-    ) |> Repo.one()
-
+  def get_treaty_stats(treaty_id) when is_nil(treaty_id) do
     %{
-      message_count: message_count,
-      rating_count: rating_count,
-      average_rating: average_rating,
-      activity_count: activity_count
+      message_count: 0,
+      rating_count: 0,
+      average_rating: 0.0,
+      activity_count: 0
     }
+  end
+  def get_treaty_stats(treaty_id) do
+    # Buscar a tratativa para obter o treaty_code
+    treaty = Repo.get(Treaty, treaty_id)
+
+    if treaty do
+      # Contar mensagens usando o treaty_code
+      message_count = from(m in App.Chat.Message,
+        where: m.treaty_id == ^treaty.treaty_code,
+        select: count()
+      ) |> Repo.one() || 0
+
+      # Contar ratings usando o UUID
+      rating_count = from(r in TreatyRating,
+        where: r.treaty_id == ^treaty_id,
+        select: count()
+      ) |> Repo.one() || 0
+
+      # Média de ratings
+      average_rating = get_treaty_average_rating(treaty_id)
+
+      # Contar atividades usando o UUID
+      activity_count = from(a in TreatyActivity,
+        where: a.treaty_id == ^treaty_id,
+        select: count()
+      ) |> Repo.one() || 0
+
+      %{
+        message_count: message_count,
+        rating_count: rating_count,
+        average_rating: average_rating,
+        activity_count: activity_count
+      }
+    else
+      %{
+        message_count: 0,
+        rating_count: 0,
+        average_rating: 0.0,
+        activity_count: 0
+      }
+    end
   end
 
 
@@ -251,6 +293,201 @@ defmodule App.Treaties do
 
   defp maybe_limit(query, nil), do: query
   defp maybe_limit(query, limit), do: from(t in query, limit: ^limit)
+
+  @doc """
+  Calcula estatísticas gerais das tratativas para o dashboard administrativo.
+  """
+  def get_admin_dashboard_stats do
+    %{
+      total_treaties: get_total_treaties_count(),
+      active_treaties: get_active_treaties_count(),
+      closed_treaties: get_closed_treaties_count(),
+      average_resolution_time: get_average_resolution_time(),
+      most_common_close_reasons: get_most_common_close_reasons(),
+      reopen_rate: get_reopen_rate(),
+      treaties_by_status: get_treaties_by_status(),
+      recent_activities: get_recent_activities(10)
+    }
+  end
+
+  @doc """
+  Retorna estatísticas resumidas para exibição na home (apenas para admins).
+  """
+  def get_home_summary_stats do
+    %{
+      total_treaties: get_total_treaties_count(),
+      active_treaties: get_active_treaties_count(),
+      closed_treaties: get_closed_treaties_count(),
+      reopen_rate: get_reopen_rate(),
+      recent_activities_count: get_recent_activities_count(5)
+    }
+  end
+
+  @doc """
+  Retorna estatísticas específicas do usuário para exibição na home.
+  """
+  def get_user_home_summary_stats(user_id) do
+    %{
+      user_total_treaties: get_user_treaties_count(user_id),
+      user_active_treaties: get_user_active_treaties_count(user_id),
+      user_closed_treaties: get_user_closed_treaties_count(user_id),
+      user_reopen_rate: get_user_reopen_rate(user_id)
+    }
+  end
+
+  @doc """
+  Conta atividades recentes (últimas 24h).
+  """
+  def get_recent_activities_count(_limit \\ 5) do
+    yesterday = DateTime.utc_now() |> DateTime.add(-24, :hour)
+
+    from(a in TreatyActivity,
+      where: a.activity_at >= ^yesterday,
+      select: count()
+    ) |> Repo.one() || 0
+  end
+
+  @doc """
+  Conta tratativas criadas pelo usuário.
+  """
+  def get_user_treaties_count(user_id) do
+    from(t in Treaty, where: t.created_by == ^user_id, select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Conta tratativas ativas criadas pelo usuário.
+  """
+  def get_user_active_treaties_count(user_id) do
+    from(t in Treaty, where: t.created_by == ^user_id and t.status == "active", select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Conta tratativas encerradas criadas pelo usuário.
+  """
+  def get_user_closed_treaties_count(user_id) do
+    from(t in Treaty, where: t.created_by == ^user_id and t.status == "closed", select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Calcula a taxa de reabertura das tratativas do usuário.
+  """
+  def get_user_reopen_rate(user_id) do
+    user_closed = get_user_closed_treaties_count(user_id)
+
+    if user_closed == 0 do
+      0.0
+    else
+      user_reopened = from(a in TreatyActivity,
+        join: t in Treaty, on: a.treaty_id == t.id,
+        where: a.activity_type == "reopened" and t.created_by == ^user_id,
+        select: fragment("COUNT(DISTINCT ?)", a.treaty_id)
+      ) |> Repo.one() || 0
+
+      Float.round((user_reopened / user_closed) * 100, 2)
+    end
+  end
+
+  @doc """
+  Calcula o tempo médio de resolução das tratativas encerradas.
+  """
+  def get_average_resolution_time do
+    from(t in Treaty,
+      where: t.status == "closed" and not is_nil(t.closed_at) and not is_nil(t.inserted_at),
+      select: avg(fragment("EXTRACT(EPOCH FROM (? - ?))", t.closed_at, t.inserted_at))
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0.0
+      %Decimal{} = seconds ->
+        seconds_float = Decimal.to_float(seconds)
+        Float.round(seconds_float / 3600, 2) # Converter para horas
+      seconds when is_number(seconds) -> Float.round(seconds / 3600, 2) # Converter para horas
+      _ -> 0.0
+    end
+  end
+
+  @doc """
+  Retorna os motivos mais comuns de encerramento.
+  """
+  def get_most_common_close_reasons(limit \\ 5) do
+    from(t in Treaty,
+      where: t.status == "closed" and not is_nil(t.close_reason),
+      group_by: t.close_reason,
+      select: %{
+        reason: t.close_reason,
+        count: count()
+      },
+      order_by: [desc: count()],
+      limit: ^limit
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Calcula a taxa de reabertura das tratativas.
+  """
+  def get_reopen_rate do
+    total_closed = get_closed_treaties_count()
+
+    if total_closed == 0 do
+      0.0
+    else
+      reopened_count = from(a in TreatyActivity,
+        where: a.activity_type == "reopened",
+        select: fragment("COUNT(DISTINCT ?)", a.treaty_id)
+      ) |> Repo.one() || 0
+
+      Float.round((reopened_count / total_closed) * 100, 2)
+    end
+  end
+
+  @doc """
+  Conta o total de tratativas.
+  """
+  def get_total_treaties_count do
+    from(t in Treaty, select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Conta tratativas ativas.
+  """
+  def get_active_treaties_count do
+    from(t in Treaty, where: t.status == "active", select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Conta tratativas encerradas.
+  """
+  def get_closed_treaties_count do
+    from(t in Treaty, where: t.status == "closed", select: count()) |> Repo.one() || 0
+  end
+
+  @doc """
+  Retorna distribuição de tratativas por status.
+  """
+  def get_treaties_by_status do
+    from(t in Treaty,
+      group_by: t.status,
+      select: %{
+        status: t.status,
+        count: count()
+      },
+      order_by: [asc: t.status]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Retorna atividades recentes do sistema.
+  """
+  def get_recent_activities(limit \\ 20) do
+    from(a in TreatyActivity,
+      order_by: [desc: a.activity_at],
+      limit: ^limit,
+      preload: [:treaty, :user]
+    )
+    |> Repo.all()
+  end
 
   @doc """
   Cria um via tuple para o Registry do chat.

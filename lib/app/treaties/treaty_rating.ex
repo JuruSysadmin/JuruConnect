@@ -6,7 +6,7 @@ defmodule App.Treaties.TreatyRating do
   @foreign_key_type :binary_id
 
   schema "treaty_ratings" do
-    field :rating, :integer
+    field :rating, :string
     field :comment, :string
     field :rated_at, :utc_datetime
 
@@ -24,7 +24,7 @@ defmodule App.Treaties.TreatyRating do
     rating
     |> cast(attrs, [:treaty_id, :user_id, :rating, :comment, :rated_at])
     |> validate_required([:treaty_id, :user_id, :rating, :rated_at])
-    |> validate_inclusion(:rating, 1..5)
+    |> validate_inclusion(:rating, ["péssimo", "ruim", "bom", "excelente"])
     |> validate_length(:comment, max: 1000)
     |> unique_constraint([:treaty_id, :user_id])
     |> foreign_key_constraint(:treaty_id)

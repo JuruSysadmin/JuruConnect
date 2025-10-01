@@ -39,16 +39,29 @@ defmodule AppWeb.Router do
   scope "/", AppWeb do
     pipe_through :browser
 
-    live "/", TreatySearchLive
     live "/login", UserSessionLive.Index, :new
     get "/auth/set-token", PageController, :set_token
     get "/auth/set-token-and-redirect", PageController, :set_token_and_redirect
+    get "/logout", PageController, :logout
+  end
+
+  scope "/", AppWeb do
+    pipe_through [:browser, :auth]
+
+    live "/", TreatySearchLive
   end
 
   scope "/", AppWeb do
     pipe_through [:iframe, :auth]
 
     live "/chat/:treaty_id", ChatLive
+  end
+
+  # Admin routes
+  scope "/admin", AppWeb do
+    pipe_through [:browser, :auth]
+
+    live "/dashboard", AdminDashboardLive
   end
 
   # Rota específica para iframes com autenticação

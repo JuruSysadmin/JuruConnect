@@ -17,6 +17,11 @@ defmodule App.ChatConfig do
   def max_message_limit, do: 100
 
   @doc """
+  Retorna o comprimento máximo permitido para uma mensagem.
+  """
+  def max_message_length, do: security_config().max_message_length
+
+  @doc """
   Retorna o nome de usuário padrão quando não é possível determinar o nome real.
   """
   def default_username, do: "Usuário"

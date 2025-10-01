@@ -21,14 +21,15 @@ import "phoenix_html"
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-import ChatHook from './hooks/chat_hook.js'
+import ChatCompositeHook from './hooks/chat_composite_hook.js'
 import ImageUploadHook from './hooks/image_upload_hook.js'
-import NotificationComponent from './components/notification_component.js'
+import RatingHook from './hooks/rating_hook.js'
 
 let Hooks = {}
 
-Hooks.ChatHook = ChatHook
+Hooks.ChatCompositeHook = ChatCompositeHook
 Hooks.ImageUploadHook = ImageUploadHook
+Hooks.RatingHook = RatingHook
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

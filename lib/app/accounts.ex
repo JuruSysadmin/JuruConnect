@@ -34,6 +34,22 @@ defmodule App.Accounts do
   @doc """
   Gets a single user.
 
+  Returns nil if the User does not exist.
+
+  ## Examples
+
+      iex> get_user("123")
+      %User{}
+
+      iex> get_user("456")
+      nil
+
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
+  Gets a single user.
+
   Raises `Ecto.NoResultsError` if the User does not exist.
 
   ## Examples
@@ -240,5 +256,19 @@ defmodule App.Accounts do
     UserOrderHistory
     |> where(user_id: ^user_id)
     |> Repo.delete_all()
+  end
+
+  @doc """
+  Verifica se um usuário é administrador.
+  """
+  def is_admin?(%User{role: "admin"}), do: true
+  def is_admin?(_), do: false
+
+  @doc """
+  Verifica se um usuário pode encerrar uma tratativa.
+  Um usuário pode encerrar se for o criador da tratativa ou se for administrador.
+  """
+  def can_close_treaty?(%User{} = user, %App.Treaties.Treaty{} = treaty) do
+    is_admin?(user) or user.id == treaty.created_by
   end
 end

@@ -272,12 +272,13 @@ defmodule AppWeb.ChatLive do
     |> assign(:search_results, [])
     |> assign(:search_active, false)
     |> assign(:show_close_modal, false)
-    |> assign(:show_rating_modal, false)
     |> assign(:show_activities_modal, false)
     |> assign(:close_reason, "")
     |> assign(:resolution_notes, "")
-    |> assign(:rating_value, 5)
+    |> assign(:rating_value, "")
+    |> assign(:can_close_treaty, false)
     |> assign(:rating_comment, "")
+    |> update_can_close_treaty()
   end
 
   # --- Processamento de Mensagens ---
@@ -328,6 +329,15 @@ defmodule AppWeb.ChatLive do
     end
 
     {:noreply, assign(socket, :message, message)}
+  end
+
+  @impl true
+  def handle_event("typing", _params, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.broadcast(App.PubSub, socket.assigns.topic, {:typing_start, socket.assigns.current_user})
+    end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -594,6 +604,14 @@ defmodule AppWeb.ChatLive do
     case Tags.add_tag_to_treaty(socket.assigns.treaty_id, tag_id, user_id) do
       {:ok, _treaty_tag} ->
         treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+
+        # Broadcast para todos os usuários no chat
+        Phoenix.PubSub.broadcast(
+          App.PubSub,
+          socket.assigns.topic,
+          {:treaty_tags_updated, treaty_tags}
+        )
+
         {:noreply,
           socket
           |> assign(:treaty_tags, treaty_tags)
@@ -625,6 +643,14 @@ defmodule AppWeb.ChatLive do
     case Tags.remove_tag_from_treaty(socket.assigns.treaty_id, tag_id) do
       {count, nil} when count > 0 ->
         treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+
+        # Broadcast para todos os usuários no chat
+        Phoenix.PubSub.broadcast(
+          App.PubSub,
+          socket.assigns.topic,
+          {:treaty_tags_updated, treaty_tags}
+        )
+
         {:noreply,
           socket
           |> assign(:treaty_tags, treaty_tags)
@@ -660,11 +686,39 @@ defmodule AppWeb.ChatLive do
       |> assign(:show_close_modal, false)
       |> assign(:close_reason, "")
       |> assign(:resolution_notes, "")
+      |> assign(:rating_value, "")
+      |> assign(:rating_comment, "")
     }
   end
 
   @impl true
-  def handle_event("close_treaty", %{"close_reason" => reason, "resolution_notes" => notes}, socket) do
+  def handle_event("update_rating_value", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :rating_value, value)}
+  end
+
+  @impl true
+  def handle_event("update_close_reason", %{"close_reason" => reason}, socket) do
+    {:noreply, assign(socket, :close_reason, reason)}
+  end
+
+  @impl true
+  def handle_event("update_resolution_notes", %{"resolution_notes" => notes}, socket) do
+    {:noreply, assign(socket, :resolution_notes, notes)}
+  end
+
+  @impl true
+  def handle_event("update_rating_comment", %{"rating_comment" => comment}, socket) do
+    {:noreply, assign(socket, :rating_comment, comment)}
+  end
+
+
+  @impl true
+  def handle_event("close_treaty", _params, socket) do
+    # Ler valores dos campos do DOM
+    reason = socket.assigns.close_reason || ""
+    notes = socket.assigns.resolution_notes || ""
+    rating = socket.assigns.rating_value || ""
+    rating_comment = socket.assigns.rating_comment || ""
     case socket.assigns.user_object do
       nil ->
         {:noreply,
@@ -678,32 +732,85 @@ defmodule AppWeb.ChatLive do
         }
 
       user ->
-        close_attrs = %{
-          close_reason: reason,
-          resolution_notes: notes
-        }
+        # Validar se uma avaliação foi selecionada
+        if rating == "" do
+          {:noreply,
+            socket
+            |> push_event("show-toast", %{
+              type: "error",
+              title: "Avaliação obrigatória",
+              message: "Por favor, selecione uma avaliação antes de encerrar a tratativa.",
+              duration: 5000
+            })
+          }
+        else
+          # Verificar permissão para encerrar a tratativa
+          if App.Accounts.can_close_treaty?(user, socket.assigns.treaty) do
+          close_attrs = %{
+            close_reason: reason,
+            resolution_notes: notes
+          }
 
-        case App.Treaties.close_treaty(socket.assigns.treaty, user.id, close_attrs) do
+          case App.Treaties.close_treaty(socket.assigns.treaty, user.id, close_attrs) do
           {:ok, updated_treaty} ->
-            # Recarregar dados da tratativa
-            treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
-            treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
-
-            {:noreply,
-              socket
-              |> assign(:treaty, updated_treaty)
-              |> assign(:treaty_activities, treaty_activities)
-              |> assign(:treaty_stats, treaty_stats)
-              |> assign(:show_close_modal, false)
-              |> assign(:close_reason, "")
-              |> assign(:resolution_notes, "")
-              |> push_event("show-toast", %{
-                type: "success",
-                title: "Tratativa encerrada!",
-                message: "A tratativa foi encerrada com sucesso.",
-                duration: 3000
-              })
+            # Adicionar avaliação automaticamente após o encerramento
+            rating_attrs = %{
+              rating: rating,
+              comment: rating_comment,
+              rated_at: DateTime.utc_now()
             }
+
+            case App.Treaties.add_rating(updated_treaty.id, user.id, rating_attrs) do
+              {:ok, _rating} ->
+                # Recarregar dados da tratativa
+                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+                treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
+                treaty_ratings = App.Treaties.get_treaty_ratings(updated_treaty.id)
+
+                {:noreply,
+                  socket
+                  |> assign(:treaty, updated_treaty)
+                  |> assign(:treaty_activities, treaty_activities)
+                  |> assign(:treaty_stats, treaty_stats)
+                  |> assign(:treaty_ratings, treaty_ratings)
+                  |> assign(:show_close_modal, false)
+                  |> assign(:close_reason, "")
+                  |> assign(:resolution_notes, "")
+                  |> assign(:rating_value, "")
+                  |> assign(:rating_comment, "")
+                  |> update_can_close_treaty()
+                  |> push_event("show-toast", %{
+                    type: "success",
+                    title: "Tratativa encerrada e avaliada!",
+                    message: "A tratativa foi encerrada e avaliada com sucesso.",
+                    duration: 3000
+                  })
+                }
+
+              {:error, _changeset} ->
+                # Tratativa foi encerrada mas a avaliação falhou
+                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+                treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
+
+                {:noreply,
+                  socket
+                  |> assign(:treaty, updated_treaty)
+                  |> assign(:treaty_activities, treaty_activities)
+                  |> assign(:treaty_stats, treaty_stats)
+                  |> assign(:show_close_modal, false)
+                  |> assign(:close_reason, "")
+                  |> assign(:resolution_notes, "")
+                  |> assign(:rating_value, "")
+                  |> assign(:rating_comment, "")
+                  |> update_can_close_treaty()
+                  |> push_event("show-toast", %{
+                    type: "warning",
+                    title: "Tratativa encerrada!",
+                    message: "A tratativa foi encerrada, mas houve um problema ao registrar a avaliação.",
+                    duration: 5000
+                  })
+                }
+            end
 
           {:error, _changeset} ->
             {:noreply,
@@ -715,6 +822,18 @@ defmodule AppWeb.ChatLive do
                 duration: 5000
               })
             }
+          end
+        else
+          {:noreply,
+            socket
+            |> push_event("show-toast", %{
+              type: "error",
+              title: "Acesso negado",
+              message: "Apenas o criador da tratativa ou administradores podem encerrá-la.",
+              duration: 5000
+            })
+          }
+        end
         end
     end
   end
@@ -734,7 +853,9 @@ defmodule AppWeb.ChatLive do
         }
 
       user ->
-        case App.Treaties.reopen_treaty(socket.assigns.treaty, user.id) do
+        # Verificar permissão para reabrir a tratativa
+        if App.Accounts.can_close_treaty?(user, socket.assigns.treaty) do
+          case App.Treaties.reopen_treaty(socket.assigns.treaty, user.id) do
           {:ok, updated_treaty} ->
             # Recarregar dados da tratativa
             treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
@@ -745,6 +866,7 @@ defmodule AppWeb.ChatLive do
               |> assign(:treaty, updated_treaty)
               |> assign(:treaty_activities, treaty_activities)
               |> assign(:treaty_stats, treaty_stats)
+              |> update_can_close_treaty()
               |> push_event("show-toast", %{
                 type: "success",
                 title: "Tratativa reaberta!",
@@ -763,78 +885,22 @@ defmodule AppWeb.ChatLive do
                 duration: 5000
               })
             }
+          end
+        else
+          {:noreply,
+            socket
+            |> push_event("show-toast", %{
+              type: "error",
+              title: "Acesso negado",
+              message: "Apenas o criador da tratativa ou administradores podem reabri-la.",
+              duration: 5000
+            })
+          }
         end
     end
   end
 
-  @impl true
-  def handle_event("show_rating_modal", _params, socket) do
-    {:noreply, assign(socket, :show_rating_modal, true)}
-  end
 
-  @impl true
-  def handle_event("hide_rating_modal", _params, socket) do
-    {:noreply,
-      socket
-      |> assign(:show_rating_modal, false)
-      |> assign(:rating_value, 5)
-      |> assign(:rating_comment, "")
-    }
-  end
-
-  @impl true
-  def handle_event("add_rating", %{"rating" => rating, "comment" => comment}, socket) do
-    case socket.assigns.user_object do
-      nil ->
-        {:noreply,
-          socket
-          |> push_event("show-toast", %{
-            type: "error",
-            title: "Erro",
-            message: "Você precisa estar logado para avaliar tratativas.",
-            duration: 5000
-          })
-        }
-
-      user ->
-        rating_int = String.to_integer(rating)
-
-        case App.Treaties.add_rating(socket.assigns.treaty.id, user.id, rating_int, comment) do
-          {:ok, _rating} ->
-            # Recarregar dados de ratings e estatísticas
-            treaty_ratings = App.Treaties.get_treaty_ratings(socket.assigns.treaty.id)
-            treaty_activities = App.Treaties.get_treaty_activities(socket.assigns.treaty.id, 20)
-            treaty_stats = App.Treaties.get_treaty_stats(socket.assigns.treaty.id)
-
-            {:noreply,
-              socket
-              |> assign(:treaty_ratings, treaty_ratings)
-              |> assign(:treaty_activities, treaty_activities)
-              |> assign(:treaty_stats, treaty_stats)
-              |> assign(:show_rating_modal, false)
-              |> assign(:rating_value, 5)
-              |> assign(:rating_comment, "")
-              |> push_event("show-toast", %{
-                type: "success",
-                title: "Avaliação adicionada!",
-                message: "Sua avaliação foi registrada com sucesso.",
-                duration: 3000
-              })
-            }
-
-          {:error, _changeset} ->
-            {:noreply,
-              socket
-              |> push_event("show-toast", %{
-                type: "error",
-                title: "Erro ao avaliar",
-                message: "Não foi possível registrar sua avaliação. Tente novamente.",
-                duration: 5000
-              })
-            }
-        end
-    end
-  end
 
   @impl true
   def handle_event("show_activities_modal", _params, socket) do
@@ -856,10 +922,6 @@ defmodule AppWeb.ChatLive do
     {:noreply, assign(socket, :resolution_notes, notes)}
   end
 
-  @impl true
-  def handle_event("update_rating_value", %{"value" => rating}, socket) do
-    {:noreply, assign(socket, :rating_value, String.to_integer(rating))}
-  end
 
   @impl true
   def handle_event("update_rating_comment", %{"value" => comment}, socket) do
@@ -869,7 +931,8 @@ defmodule AppWeb.ChatLive do
   defp validate_message_input(socket, trimmed_text) do
     with {:ok, _} <- validate_message_not_empty(trimmed_text, socket),
          {:ok, _} <- validate_message_length(trimmed_text),
-         {:ok, _} <- validate_connection(socket) do
+         {:ok, _} <- validate_connection(socket),
+         {:ok, _} <- validate_treaty_status(socket) do
       {:ok, :valid}
     else
       {:error, reason} -> {:error, reason}
@@ -899,6 +962,25 @@ defmodule AppWeb.ChatLive do
     end
   end
 
+  defp validate_treaty_status(socket) do
+    case socket.assigns.treaty.status do
+      "closed" -> {:error, "Esta tratativa está encerrada. Não é possível enviar mensagens."}
+      _ -> {:ok, :valid}
+    end
+  end
+
+  defp can_close_treaty?(socket) do
+    case socket.assigns.user_object do
+      nil -> false
+      user -> App.Accounts.can_close_treaty?(user, socket.assigns.treaty)
+    end
+  end
+
+  defp update_can_close_treaty(socket) do
+    can_close = can_close_treaty?(socket)
+    assign(socket, :can_close_treaty, can_close)
+  end
+
   defp process_message_send(socket, trimmed_text) do
     file_info = handle_image_upload(socket)
     {user_id, _user_name} = get_user_info_for_message(socket)
@@ -909,12 +991,6 @@ defmodule AppWeb.ChatLive do
           socket
           |> assign(:message, "")
           |> assign(:message_error, nil)
-          |> push_event("show-toast", %{
-            type: "success",
-            title: "Mensagem enviada!",
-            message: "Sua mensagem foi enviada com sucesso.",
-            duration: 2000
-          })
         }
       {:error, _changeset} ->
         {:noreply,
@@ -1073,6 +1149,11 @@ defmodule AppWeb.ChatLive do
     }
   end
 
+  @impl true
+  def handle_info({:treaty_tags_updated, treaty_tags}, socket) do
+    {:noreply, assign(socket, :treaty_tags, treaty_tags)}
+  end
+
   @doc """
   Atualiza informações de presença do usuário quando usuários entram ou saem do chat.
 
@@ -1150,7 +1231,7 @@ defmodule AppWeb.ChatLive do
     ~H"""
     <div id="chat-container"
          class="min-h-screen w-full bg-gray-50 font-sans antialiased flex flex-col lg:flex-row overflow-hidden m-0 p-0 relative"
-         phx-hook="ChatHook,KeyboardShortcutsHook,ToastNotificationHook,LoadingStatesHook"
+         phx-hook="ChatCompositeHook"
          role="main">
 
 
@@ -1219,32 +1300,26 @@ defmodule AppWeb.ChatLive do
               </svg>
             </button>
 
-            <!-- Botão de rating -->
-            <button phx-click="show_rating_modal" class="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
-                    aria-label="Avaliar tratativa"
-                    title="Avaliar tratativa">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-              </svg>
-            </button>
 
             <!-- Botão de encerrar/reabrir tratativa -->
-            <%= if @treaty.status == "closed" do %>
-              <button phx-click="reopen_treaty" class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                      aria-label="Reabrir tratativa"
-                      title="Reabrir tratativa">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-              </button>
-            <% else %>
-              <button phx-click="show_close_modal" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                      aria-label="Encerrar tratativa"
-                      title="Encerrar tratativa">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
+            <%= if @can_close_treaty do %>
+              <%= if @treaty.status == "closed" do %>
+                <button phx-click="reopen_treaty" class="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                        aria-label="Reabrir tratativa"
+                        title="Reabrir tratativa">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
+              <% else %>
+                <button phx-click="show_close_modal" class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        aria-label="Encerrar tratativa"
+                        title="Encerrar tratativa">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              <% end %>
             <% end %>
 
             <button phx-click="toggle_search" class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -1439,6 +1514,27 @@ defmodule AppWeb.ChatLive do
                 <%= render_message(message, index, @search_results, @user_object) %>
               <% end %>
             <% else %>
+          <!-- Banner de tratativa encerrada -->
+          <%= if @treaty.status == "closed" do %>
+            <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 rounded-r-lg shadow-sm">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-amber-700">
+                    <strong>Esta tratativa está encerrada.</strong> Não é possível enviar novas mensagens.
+                    <%= if @treaty.close_reason do %>
+                      Motivo: <%= @treaty.close_reason %>.
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
           <%= if Enum.empty?(@messages) do %>
             <div class="flex flex-col items-center justify-center h-full text-center py-6 animate-fade-in">
               <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-3 shadow-sm animate-bounce">
@@ -1477,35 +1573,6 @@ defmodule AppWeb.ChatLive do
               </button>
                 </div>
 
-            <!-- Seção de Estatísticas -->
-            <div class="p-4 border-b border-gray-200">
-              <h3 class="text-sm font-semibold text-gray-900 mb-3">Estatísticas</h3>
-              <div class="space-y-2">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-600">Mensagens</span>
-                  <span class="font-medium text-gray-900"><%= @treaty_stats.message_count %></span>
-                </div>
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-600">Avaliações</span>
-                  <span class="font-medium text-gray-900"><%= @treaty_stats.rating_count %></span>
-                </div>
-                <%= if @treaty_stats.average_rating > 0 do %>
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="text-gray-600">Média</span>
-                    <div class="flex items-center space-x-1">
-                      <span class="font-medium text-gray-900"><%= @treaty_stats.average_rating %></span>
-                      <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
-                    </div>
-                  </div>
-                <% end %>
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-600">Atividades</span>
-                  <span class="font-medium text-gray-900"><%= @treaty_stats.activity_count %></span>
-                </div>
-              </div>
-            </div>
 
             <!-- Seção de Tags -->
             <div class="p-4 border-b border-gray-200">
@@ -1611,7 +1678,7 @@ defmodule AppWeb.ChatLive do
             <% end %>
           </div>
 
-          <form phx-submit="send_message" phx-drop-target={@uploads.image.ref} class="flex items-end space-x-2 sm:space-x-3 transition-all duration-200" role="form" aria-label="Enviar mensagem">
+          <form phx-submit="send_message" phx-drop-target={if @treaty.status != "closed", do: @uploads.image.ref, else: nil} class="flex items-end space-x-2 sm:space-x-3 transition-all duration-200" role="form" aria-label="Enviar mensagem">
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
               <!-- Drag and drop overlay -->
@@ -1689,10 +1756,10 @@ defmodule AppWeb.ChatLive do
                 name="message"
                 value={@message}
                 placeholder="Digite uma mensagem ou arraste uma imagem aqui..."
-                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-base focus:outline-none"
+                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-base focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
                 autocomplete="off"
                 maxlength={ChatConfig.security_config()[:max_message_length]}
-                disabled={not @connected}
+                disabled={not @connected or @treaty.status == "closed"}
                 phx-change="update_message"
                 aria-describedby="message-help"
                 aria-invalid={if @message_error, do: "true", else: "false"}
@@ -1710,11 +1777,11 @@ defmodule AppWeb.ChatLive do
                   <!-- Sugestões serão inseridas aqui via JavaScript -->
                 </div>
               </div>
-              <label for="image-upload" class="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Anexar arquivo" title="Anexar arquivo">
+              <label for="image-upload" class={"absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-all duration-200 rounded-lg hover:bg-blue-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 " <> if(@treaty.status == "closed", do: "cursor-not-allowed opacity-50", else: "cursor-pointer")} aria-label="Anexar arquivo" title="Anexar arquivo">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
-                <.live_file_input upload={@uploads.image} id="image-upload" class="hidden" phx-change="validate" phx-upload="upload" />
+                <.live_file_input upload={@uploads.image} id="image-upload" class="hidden" phx-change="validate" phx-upload="upload" disabled={@treaty.status == "closed"} />
                 <!-- Input separado para drag & drop -->
                 <input
                   id="drag-drop-input"
@@ -1723,13 +1790,14 @@ defmodule AppWeb.ChatLive do
                   class="hidden"
                   phx-hook="ImageUploadHook"
                   multiple={false}
+                  disabled={@treaty.status == "closed"}
                 />
               </label>
             </div>
 
             <button
               type="submit"
-              disabled={String.trim(@message) == "" && @uploads.image.entries == []}
+              disabled={String.trim(@message) == "" && @uploads.image.entries == [] or @treaty.status == "closed"}
               class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed phx-submit-loading:opacity-75 text-base min-w-[60px]"
               aria-label="Enviar mensagem"
               aria-describedby="send-button-help"
@@ -1997,10 +2065,10 @@ defmodule AppWeb.ChatLive do
     <!-- Modal de Encerrar Tratativa -->
     <%= if @show_close_modal do %>
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_close_modal">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
+        <div id="close-modal" class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation" phx-hook="RatingHook">
           <!-- Header do modal -->
           <div class="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 class="text-xl font-bold text-gray-900">Encerrar Tratativa</h3>
+            <h3 class="text-xl font-bold text-gray-900">Encerrar e Avaliar Tratativa</h3>
             <button phx-click="hide_close_modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -2009,11 +2077,14 @@ defmodule AppWeb.ChatLive do
           </div>
 
           <!-- Conteúdo do modal -->
-          <div class="p-6">
-            <form phx-submit="close_treaty" class="space-y-4">
+          <div class="p-6 space-y-6">
+            <!-- Seção de Encerramento -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Encerramento</h4>
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Motivo do encerramento</label>
-                <select name="close_reason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" required>
+                <select phx-change="update_close_reason" phx-value-field="close_reason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" required>
                   <option value="">Selecione um motivo</option>
                   <option value="resolved">Resolvido</option>
                   <option value="cancelled">Cancelado</option>
@@ -2025,71 +2096,62 @@ defmodule AppWeb.ChatLive do
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Notas de resolução</label>
-                <textarea name="resolution_notes" rows="3" placeholder="Descreva como a tratativa foi resolvida..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"></textarea>
+                <textarea phx-change="update_resolution_notes" phx-value-field="resolution_notes" rows="3" placeholder="Descreva como a tratativa foi resolvida..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"></textarea>
               </div>
+            </div>
 
-              <div class="flex space-x-3 pt-4">
-                <button type="button" phx-click="hide_close_modal" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  Cancelar
-                </button>
-                <button type="submit" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                  Encerrar Tratativa
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    <% end %>
+            <!-- Seção de Avaliação -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Avaliação</h4>
 
-    <!-- Modal de Rating -->
-    <%= if @show_rating_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_rating_modal">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
-          <!-- Header do modal -->
-          <div class="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 class="text-xl font-bold text-gray-900">Avaliar Tratativa</h3>
-            <button phx-click="hide_rating_modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Conteúdo do modal -->
-          <div class="p-6">
-            <form phx-submit="add_rating" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Avaliação</label>
-                <div class="flex space-x-1">
-                  <%= for i <- 1..5 do %>
-                    <button type="button" phx-click="update_rating_value" phx-value-value={i} class={"w-8 h-8 rounded-full transition-colors #{if @rating_value >= i, do: "text-yellow-400", else: "text-gray-300"}"}>
-                      <svg class="w-full h-full" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Como você avalia esta tratativa? <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button"
+                            data-rating="péssimo"
+                            class={"px-3 py-2 text-sm font-medium rounded-lg border transition-colors #{if @rating_value == "péssimo", do: "bg-blue-600 text-white border-blue-600", else: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}"}>
+                      Péssimo
                     </button>
-                  <% end %>
+                    <button type="button"
+                            data-rating="ruim"
+                            class={"px-3 py-2 text-sm font-medium rounded-lg border transition-colors #{if @rating_value == "ruim", do: "bg-blue-600 text-white border-blue-600", else: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}"}>
+                      Ruim
+                    </button>
+                    <button type="button"
+                            data-rating="bom"
+                            class={"px-3 py-2 text-sm font-medium rounded-lg border transition-colors #{if @rating_value == "bom", do: "bg-blue-600 text-white border-blue-600", else: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}"}>
+                      Bom
+                    </button>
+                    <button type="button"
+                            data-rating="excelente"
+                            class={"px-3 py-2 text-sm font-medium rounded-lg border transition-colors #{if @rating_value == "excelente", do: "bg-blue-600 text-white border-blue-600", else: "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"}"}>
+                      Excelente
+                    </button>
                 </div>
+                <%= if @rating_value == "" do %>
+                  <p class="text-red-500 text-xs mt-1">Por favor, selecione uma avaliação</p>
+                <% end %>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Comentário (opcional)</label>
-                <textarea name="comment" rows="3" placeholder="Deixe um comentário sobre a tratativa..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"></textarea>
+                <textarea phx-change="update_rating_comment" phx-value-field="rating_comment" rows="2" placeholder="Deixe um comentário sobre sua experiência..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"></textarea>
               </div>
+            </div>
 
-              <div class="flex space-x-3 pt-4">
-                <button type="button" phx-click="hide_rating_modal" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  Cancelar
-                </button>
-                <button type="submit" class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                  Avaliar
-                </button>
-              </div>
-            </form>
+            <div class="flex space-x-3 pt-4">
+              <button type="button" phx-click="hide_close_modal" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                Cancelar
+              </button>
+              <button type="button" phx-click="close_treaty" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                Encerrar e Avaliar
+              </button>
+            </div>
           </div>
         </div>
       </div>
     <% end %>
+
 
     <!-- Modal de Atividades -->
     <%= if @show_activities_modal do %>

@@ -14,12 +14,19 @@ defmodule AppWeb.PageController do
   def set_token(conn, %{"token" => token}) do
     conn
     |> put_session(:user_token, token)
-    |> redirect(to: "/buscar-tratativa")
+    |> redirect(to: "/")
   end
 
   def set_token_and_redirect(conn, %{"token" => token, "redirect" => redirect_path}) do
     conn
     |> put_session(:user_token, token)
     |> redirect(to: redirect_path)
+  end
+
+  def logout(conn, _params) do
+    conn
+    |> clear_session()
+    |> put_flash(:info, "Logout realizado com sucesso!")
+    |> redirect(to: "/login")
   end
 end

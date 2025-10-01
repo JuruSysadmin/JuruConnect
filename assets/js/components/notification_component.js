@@ -98,10 +98,17 @@ class NotificationComponent {
   showDesktopNotification(data) {
     const notification = new Notification(data.title, {
       body: data.body,
-      icon: '/images/notification-icon.svg', // Use static icon
+      icon: data.icon || '/images/notification-icon.svg',
       tag: data.tag || 'chat-notification',
       data: data.data || {}
     });
+
+    // Tocar som específico da notificação se fornecido
+    if (data.sound) {
+      this.playSpecificSound(data.sound);
+    } else {
+      this.playNotificationSound();
+    }
 
     // Lidar com clique na notificação
     notification.onclick = () => {
@@ -140,6 +147,15 @@ class NotificationComponent {
 
     // Tocar som de notificação
     const soundFile = this.getNotificationSound();
+    this.playSpecificSound(soundFile);
+  }
+
+  playSpecificSound(soundFile) {
+    // Verificar se som está habilitado nas configurações
+    if (!this.isSoundEnabled()) {
+      return;
+    }
+
     const audio = new Audio(soundFile);
     audio.volume = this.getNotificationVolume();
     
@@ -161,7 +177,7 @@ class NotificationComponent {
    */
   getNotificationSound() {
     const config = this.getNotificationConfig();
-    return config.soundFile || '/sounds/notification.mp3';
+    return config.soundFile || '/sounds/16451.mp3';
   }
 
   /**

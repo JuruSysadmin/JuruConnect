@@ -11,6 +11,7 @@ defmodule App.Treaties.Treaty do
     field :description, :string
     field :status, :string, default: "active"
     field :priority, :string, default: "normal"
+    field :category, :string, default: "COMERCIAL"
 
     # Campos de encerramento
     field :closed_at, :utc_datetime
@@ -41,7 +42,7 @@ defmodule App.Treaties.Treaty do
   """
   def changeset(treaty, attrs) do
     treaty
-    |> cast(attrs, [:treaty_code, :title, :description, :status, :priority, :created_by, :store_id, :closed_at, :closed_by, :close_reason, :resolution_notes])
+    |> cast(attrs, [:treaty_code, :title, :description, :status, :priority, :category, :created_by, :store_id, :closed_at, :closed_by, :close_reason, :resolution_notes])
     |> validate_required([:title, :description, :created_by, :store_id])
     |> validate_length(:treaty_code, min: 1, max: 50)
     |> validate_length(:title, min: 1, max: 200)
@@ -49,6 +50,7 @@ defmodule App.Treaties.Treaty do
     |> validate_length(:resolution_notes, max: 2000)
     |> validate_inclusion(:status, ["active", "inactive", "completed", "cancelled", "closed"])
     |> validate_inclusion(:priority, ["low", "normal", "high", "urgent"])
+    |> validate_inclusion(:category, ["FINANCEIRO", "COMERCIAL", "LOGISTICA"])
     |> validate_inclusion(:close_reason, ["resolved", "cancelled", "duplicate", "invalid", "other"])
     |> unique_constraint(:treaty_code)
   end
@@ -61,6 +63,7 @@ defmodule App.Treaties.Treaty do
     |> changeset(attrs)
     |> put_change(:status, "active")
     |> put_change(:priority, "normal")
+    |> put_change(:category, Map.get(attrs, :category, "COMERCIAL"))
     |> generate_treaty_code()
   end
 

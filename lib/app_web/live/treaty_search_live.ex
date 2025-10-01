@@ -17,6 +17,13 @@ defmodule AppWeb.TreatySearchLive do
     # Load notifications for authenticated user
     {notifications, unread_count} = load_user_notifications(current_user)
 
+    # Carregar estatísticas resumidas para administradores
+    summary_stats = if current_user && current_user.role == "admin" do
+      App.Treaties.get_user_home_summary_stats(current_user.id)
+    else
+      nil
+    end
+
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, "active_rooms")
       if current_user do
@@ -36,7 +43,8 @@ defmodule AppWeb.TreatySearchLive do
       active_tab: "create",
       notifications: notifications,
       unread_notification_count: unread_count,
-      show_notifications: false
+      show_notifications: false,
+      summary_stats: summary_stats
     )}
   end
 
@@ -58,7 +66,7 @@ defmodule AppWeb.TreatySearchLive do
   end
 
   @impl true
-  def handle_event("create_treaty", %{"title" => title, "description" => description}, socket) do
+  def handle_event("create_treaty", %{"title" => title, "description" => description, "category" => category}, socket) do
     socket = assign(socket, :loading, true)
 
     # Verificar se o usuário está autenticado
@@ -74,6 +82,7 @@ defmodule AppWeb.TreatySearchLive do
         treaty_attrs = %{
           title: title,
           description: description,
+          category: category,
           created_by: user.id,
           store_id: user.store_id
         }
@@ -117,6 +126,11 @@ defmodule AppWeb.TreatySearchLive do
         # Atualizar a lista de tratativas vazia
         {:noreply, assign(socket, :treaty_history, [])}
     end
+  end
+
+  @impl true
+  def handle_event("logout", _params, socket) do
+    {:noreply, push_navigate(socket, to: "/logout")}
   end
 
   @impl true
@@ -325,8 +339,19 @@ defmodule AppWeb.TreatySearchLive do
                   </div>
                 <% end %>
 
-                <div class="text-sm text-gray-600">
-                  Bem-vindo, <%= if @user_object, do: @user_object.name, else: "Usuário" %>
+                <div class="flex items-center space-x-4">
+                  <div class="text-sm text-gray-600">
+                    Bem-vindo, <%= if @user_object, do: @user_object.name, else: "Usuário" %>
+                  </div>
+                  <button
+                    phx-click="logout"
+                    class="inline-flex items-center px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    title="Sair"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                  </button>
                 </div>
               </div>
             <% end %>
@@ -350,6 +375,90 @@ defmodule AppWeb.TreatySearchLive do
             </li>
           </ol>
         </nav>
+
+        <!-- User Summary Cards -->
+        <%= if @summary_stats do %>
+          <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-gray-900">Minhas Tratativas</h2>
+              <a
+                href="/admin/dashboard"
+                class="text-sm text-purple-600 hover:text-purple-800 font-medium"
+              >
+                Ver dashboard completo →
+              </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Total Tratativas -->
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Total</p>
+                    <p class="text-lg font-semibold text-gray-900"><%= @summary_stats.user_total_treaties %></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tratativas Ativas -->
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Ativas</p>
+                    <p class="text-lg font-semibold text-gray-900"><%= @summary_stats.user_active_treaties %></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tratativas Encerradas -->
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Encerradas</p>
+                    <p class="text-lg font-semibold text-gray-900"><%= @summary_stats.user_closed_treaties %></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Taxa de Reabertura -->
+              <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Reabertura</p>
+                    <p class="text-lg font-semibold text-gray-900"><%= @summary_stats.user_reopen_rate %>%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
 
         <!-- Grid Responsivo -->
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
@@ -402,6 +511,22 @@ defmodule AppWeb.TreatySearchLive do
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"
                         required
                       ></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                      <label for="treaty_category" class="block text-sm font-medium text-gray-700">
+                        Categoria *
+                      </label>
+                      <select
+                        id="treaty_category"
+                        name="category"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        required
+                      >
+                        <option value="COMERCIAL">Comercial</option>
+                        <option value="FINANCEIRO">Financeiro</option>
+                        <option value="LOGISTICA">Logística</option>
+                      </select>
                     </div>
 
                     <div class="flex justify-end pt-4">

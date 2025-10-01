@@ -39,7 +39,7 @@ defmodule App.Notifications do
   end
 
   defp fetch_user_by_id(user_id) do
-    case Accounts.get_user!(user_id) do
+    case Accounts.get_user(user_id) do
       nil -> {:error, :user_not_found}
       user -> {:ok, user}
     end
@@ -250,6 +250,7 @@ defmodule App.Notifications do
         title: title,
         body: body,
         icon: "/images/notification-icon.svg",
+        sound: "/sounds/16451.mp3",
         tag: "chat-notification",
         data: %{
           treaty_id: message.treaty_id,
@@ -260,10 +261,7 @@ defmodule App.Notifications do
   end
 
   defp save_offline_notification(user_id, message) do
-    # Get the actual treaty ID (binary_id) from treaty_code
     treaty_id = get_treaty_id_from_code(message.treaty_id)
-
-    # Skip notification if treaty doesn't exist
     if is_nil(treaty_id) do
       {:ok, :treaty_not_found}
     else
