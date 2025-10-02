@@ -4,7 +4,6 @@ defmodule App.Chat.Room do
   alias App.ChatConfig
   alias App.DateTimeHelper
 
-  # Client API
   def start_link(treaty_id) do
     GenServer.start_link(__MODULE__, treaty_id, name: via_tuple(treaty_id))
   end
@@ -13,22 +12,17 @@ defmodule App.Chat.Room do
     {:via, Registry, {App.ChatRegistry, treaty_id}}
   end
 
-  # GenServer Callbacks
   @impl true
   def init(treaty_id) do
-    # Load messages when the room starts, using the configured limit
     {:ok, messages, _has_more} = Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit())
-    # The state includes the treaty_id, the list of messages, and users who are currently typing.
     {:ok, %{treaty_id: treaty_id, messages: messages, typing_users: MapSet.new(), last_activity: DateTimeHelper.now()}}
   end
 
   @impl true
   def handle_cast({:new_message, %{text: text, user_id: user_id, treaty_id: treaty_id} = message_params}, state)
       when is_binary(text) and is_binary(user_id) and is_binary(treaty_id) do
-    # Obter o nome do usuário
     sender_name = get_username_by_id(user_id) || ChatConfig.default_username()
 
-    # Preparar os parâmetros completos para a mensagem
     complete_params = %{
       text: text,
       sender_id: user_id,
@@ -38,26 +32,16 @@ defmodule App.Chat.Room do
       timestamp: Map.get(message_params, :timestamp, DateTimeHelper.now())
     }
 
-    # Log dos parâmetros para debug
-
-
-    # Persist the message to the database with the generated ID
     case Chat.create_message(complete_params) do
       {:ok, message} ->
-
-        # Broadcast the new message to all LiveView subscribers via PubSub
         broadcast_message(state.treaty_id, message)
-
-        # Add the new message to the local state (optional, but good for consistency)
         new_messages = [message | state.messages]
+
+
         new_state = %{state | messages: new_messages, last_activity: DateTimeHelper.now()}
         {:noreply, new_state}
 
       {:error, _changeset} ->
-        # Log the error if the message couldn't be saved
-
-        # Mesmo se falhar ao salvar no banco, vamos transmitir a mensagem para os clientes
-        # com um ID temporário para garantir que ela apareça no frontend
         temp_message = %{
           id: "temp-#{System.system_time(:millisecond)}",
           text: text,
@@ -69,7 +53,6 @@ defmodule App.Chat.Room do
         }
 
         broadcast_message(state.treaty_id, temp_message)
-
         {:noreply, %{state | last_activity: DateTimeHelper.now()}}
     end
   end
@@ -92,12 +75,9 @@ defmodule App.Chat.Room do
 
   @impl true
   def handle_cast({:join, _user_data}, state) do
-    # Quando um usuário entra, podemos querer enviar o estado atual de digitação
-    # para ele, ou apenas registrar a entrada.
     {:noreply, %{state | last_activity: DateTimeHelper.now()}}
   end
 
-  # Adicionar função para verificar inatividade
   @impl true
   def handle_info(:check_inactivity, state) do
     timeout_minutes = ChatConfig.room_inactivity_timeout()
@@ -107,7 +87,6 @@ defmodule App.Chat.Room do
     if diff > timeout_minutes do
       {:stop, :normal, state}
     else
-      # Agendar próxima verificação
       Process.send_after(self(), :check_inactivity, :timer.minutes(5))
       {:noreply, state}
     end
@@ -118,21 +97,16 @@ defmodule App.Chat.Room do
     :ok
   end
 
-  # Broadcast message to LiveView subscribers
   defp broadcast_message(treaty_id, message) do
     topic = "treaty:#{treaty_id}"
-
-    # Broadcast via PubSub for LiveView subscribers
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message})
   end
 
   defp broadcast_typing_users(treaty_id, typing_users) do
     topic = "treaty:#{treaty_id}"
-    # We convert the Set to a List for JSON serialization
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:typing_users, %{users: MapSet.to_list(typing_users)}})
   end
 
-  # Helper para obter o nome do usuário pelo ID
   defp get_username_by_id(user_id) when is_binary(user_id) do
     try do
       user = App.Accounts.get_user!(user_id)

@@ -139,6 +139,9 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
         # Processar notificações
         process_message_notifications(message_with_attachments, treaty_id)
 
+        # Verificar se há comandos de IA e processar assincronamente
+        process_ai_command_if_needed(message_with_attachments, treaty_id)
+
         {:ok, message_with_attachments}
       {:error, changeset} ->
         {:error, changeset}
@@ -251,5 +254,101 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
   def delete_message_attachments(message_id) do
     from(ma in MessageAttachment, where: ma.message_id == ^message_id)
     |> Repo.delete_all()
+  end
+
+  # --- AI Command Processing ---
+
+  defp process_ai_command_if_needed(message, treaty_id) do
+    # Verificar se é um comando de IA
+    if App.Services.GeminiService.is_ai_command?(message.text) do
+      # Processar de forma assíncrona sem criar referência que retorna ao LiveView
+      Task.start(fn ->
+        case App.Services.GeminiService.extract_question(message.text) do
+          {:ok, question, command_type} ->
+            # Determinar contexto baseado no tipo de tratativa/sala
+            context = determine_context(treaty_id)
+
+            case App.Services.GeminiService.generate_response(question, context) do
+              {:ok, ai_response} ->
+                send_ai_response(treaty_id, ai_response, command_type)
+              {:error, error_msg} ->
+                send_ai_error(treaty_id, error_msg)
+            end
+
+          {:error, _} ->
+            # Não é um comando de IA válido, ignorar
+            :ok
+        end
+      end)
+    end
+  end
+
+  defp determine_context(_treaty_id) do
+    # Aqui você pode implementar lógica para determinar o contexto
+    # baseado no tipo de tratativa, categoria, etc.
+    # Por enquanto, vamos usar contexto geral
+    "geral"
+  end
+
+  defp send_ai_response(treaty_id, response, _command_type) do
+    ai_message = %{
+      id: "ai-#{System.system_time(:millisecond)}",
+      text: "🤖 *Assistente IA:*\n\n#{response}",
+      sender_id: "ai_assistant",
+      sender_name: "Assistente IA",
+      treaty_id: treaty_id,
+      tipo: "ai_response",
+      inserted_at: DateTime.utc_now()
+    }
+
+    # Salvar a resposta da IA no banco de dados
+    case create_message(%{
+      text: ai_message.text,
+      sender_id: ai_message.sender_id,
+      sender_name: ai_message.sender_name,
+      treaty_id: ai_message.treaty_id,
+      tipo: ai_message.tipo,
+      timestamp: ai_message.inserted_at
+    }) do
+      {:ok, saved_message} ->
+        # Publicar via PubSub para atualizar a interface
+        topic = "treaty:#{treaty_id}"
+        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, saved_message})
+
+      {:error, _changeset} ->
+        # Se falhar ao salvar, pelo menos fazer broadcast
+        topic = "treaty:#{treaty_id}"
+        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, ai_message})
+    end
+  end
+
+  defp send_ai_error(treaty_id, error_msg) do
+    error_message = %{
+      id: "ai-error-#{System.system_time(:millisecond)}",
+      text: "🤖 *Erro no Assistente IA:*\n\n#{error_msg}",
+      sender_id: "ai_assistant",
+      sender_name: "Assistente IA",
+      treaty_id: treaty_id,
+      tipo: "ai_error",
+      inserted_at: DateTime.utc_now()
+    }
+
+    # Tentar salvar o erro no banco, mas não bloquear se falhar
+    case create_message(%{
+      text: error_message.text,
+      sender_id: error_message.sender_id,
+      sender_name: error_message.sender_name,
+      treaty_id: error_message.treaty_id,
+      tipo: error_message.tipo,
+      timestamp: error_message.inserted_at
+    }) do
+      {:ok, saved_message} ->
+        topic = "treaty:#{treaty_id}"
+        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, saved_message})
+
+      {:error, _changeset} ->
+        topic = "treaty:#{treaty_id}"
+        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, error_message})
+    end
   end
 end

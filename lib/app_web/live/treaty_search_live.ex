@@ -7,42 +7,62 @@ defmodule AppWeb.TreatySearchLive do
   """
   @impl true
   def mount(_params, session, socket) do
-    user_token = session["user_token"]
-    {current_user, recent_treaties} = load_user_and_history(user_token)
-    treaties_with_tags = enrich_treaties_with_tags(current_user, recent_treaties)
+    try do
+      user_token = session["user_token"]
+      {current_user, recent_treaties} = load_user_and_history(user_token)
+      treaties_with_tags = enrich_treaties_with_tags(current_user, recent_treaties)
 
-    active_rooms = safely_get_active_rooms()
+      active_rooms = safely_get_active_rooms()
 
-    {notifications, unread_count} = load_user_notifications(current_user)
+      {notifications, unread_count} = safely_load_user_notifications(current_user)
 
-    summary_stats = if current_user && current_user.role == "admin" do
-      App.Treaties.get_user_home_summary_stats(current_user.id)
-    else
-      nil
-    end
-
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(App.PubSub, "active_rooms")
-      if current_user do
-        Phoenix.PubSub.subscribe(App.PubSub, "user:#{current_user.id}")
+      summary_stats = if current_user && current_user.role == "admin" do
+        safely_get_summary_stats(current_user.id)
+      else
+        nil
       end
-    end
 
-    {:ok, assign(socket,
-      treaty_id: "",
-      error: nil,
-      token: user_token,
-      user_object: current_user,
-      treaty_history: treaties_with_tags,
-      active_rooms: active_rooms,
-      search_focused: false,
-      loading: false,
-      active_tab: "create",
-      notifications: notifications,
-      unread_notification_count: unread_count,
-      show_notifications: false,
-      summary_stats: summary_stats
-    )}
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(App.PubSub, "active_rooms")
+        if current_user do
+          Phoenix.PubSub.subscribe(App.PubSub, "user:#{current_user.id}")
+        end
+      end
+
+      {:ok, assign(socket,
+        treaty_id: "",
+        error: nil,
+        token: user_token,
+        user_object: current_user,
+        treaty_history: treaties_with_tags,
+        active_rooms: active_rooms,
+        search_focused: false,
+        loading: false,
+        active_tab: "create",
+        notifications: notifications,
+        unread_notification_count: unread_count,
+        show_notifications: false,
+        summary_stats: summary_stats
+      )}
+    rescue
+      _error ->
+        # Socket básico em caso de erro
+        {:ok, assign(socket,
+          treaty_id: "",
+          error: nil,
+          token: session["user_token"] || nil,
+          user_object: nil,
+          treaty_history: [],
+          active_rooms: [],
+          search_focused: false,
+          loading: false,
+          active_tab: "create",
+          notifications: [],
+          unread_notification_count: 0,
+          show_notifications: false,
+          summary_stats: nil
+        )}
+    end
   end
 
   @impl true
@@ -195,9 +215,7 @@ defmodule AppWeb.TreatySearchLive do
           )}
       end
     rescue
-      error ->
-        require Logger
-        Logger.warning("Error handling notification refresh: #{inspect(error)}")
+      _error ->
         {:noreply, socket}
     end
   end
@@ -216,9 +234,7 @@ defmodule AppWeb.TreatySearchLive do
           )}
       end
     rescue
-      error ->
-        require Logger
-        Logger.warning("Error handling desktop notification refresh: #{inspect(error)}")
+      _error ->
         {:noreply, socket}
     end
   end
@@ -264,10 +280,13 @@ defmodule AppWeb.TreatySearchLive do
                         </span>
                       <% end %>
                     </button>
+                  </div>
 
+
+                  <div class="relative">
                     <!-- Notification Dropdown -->
                     <%= if @show_notifications do %>
-                      <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      <div class="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                         <div class="p-4 border-b border-gray-200">
                           <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-gray-900">Notificações</h3>
@@ -391,7 +410,7 @@ defmodule AppWeb.TreatySearchLive do
                 Ver dashboard completo →
               </a>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <!-- Total Tratativas -->
               <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div class="flex items-center">
@@ -464,15 +483,15 @@ defmodule AppWeb.TreatySearchLive do
         <% end %>
 
         <!-- Grid Responsivo -->
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <!-- Seção Principal - Responsiva -->
-          <div class="xl:col-span-8">
+          <div class="lg:col-span-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div class="px-6 py-4 border-b border-gray-200">
+              <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">Gerenciar Tratativas</h2>
                 <p class="text-sm text-gray-600 mt-1">Busque uma tratativa existente ou crie uma nova</p>
               </div>
-              <div class="p-6">
+              <div class="p-4 sm:p-6">
 
                 <!-- Tabs para alternar entre criar e buscar -->
                 <div class="border-b border-gray-200 mb-6">
@@ -497,7 +516,7 @@ defmodule AppWeb.TreatySearchLive do
                         id="treaty_title"
                         name="title"
                         placeholder="Ex: Negociação de Contrato"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm placeholder-gray-400 transition-all"
                         required
                       />
                     </div>
@@ -505,13 +524,13 @@ defmodule AppWeb.TreatySearchLive do
                     <div class="space-y-2">
                       <label for="treaty_description" class="block text-sm font-medium text-gray-700">
                         Descrição *
-                      </label>
+                          </label>
                       <textarea
                         id="treaty_description"
                         name="description"
                         rows="4"
                         placeholder="Descreva os detalhes da tratativa..."
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm resize-none transition-all"
                         required
                       ></textarea>
                     </div>
@@ -523,7 +542,7 @@ defmodule AppWeb.TreatySearchLive do
                       <select
                         id="treaty_category"
                         name="category"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
                         required
                       >
                         <option value="COMERCIAL">Comercial</option>
@@ -532,20 +551,20 @@ defmodule AppWeb.TreatySearchLive do
                       </select>
                     </div>
 
-                    <div class="flex justify-end pt-4">
+                    <div class="flex justify-end pt-6">
                       <button
                         type="submit"
                         disabled={@loading}
-                        class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="inline-flex items-center px-8 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group"
                       >
                         <%= if @loading do %>
-                          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2-647z"></path>
                           </svg>
                           Criando...
                         <% else %>
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" pointLinecap="round" stroke-linejoin="round" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                           </svg>
                           Criar Tratativa
@@ -556,10 +575,10 @@ defmodule AppWeb.TreatySearchLive do
                 </div>
 
                 <!-- Formulário de Busca -->
-                <div class={"space-y-6 #{if @active_tab != "search", do: "hidden"}"}>
-                  <form phx-submit="search" class="space-y-6">
-                    <div class="space-y-2">
-                      <label for="treaty_id" class="block text-sm font-medium text-gray-700">
+                <div class={"space-y-8 #{if @active_tab != "search", do: "hidden"}"}>
+                  <form phx-submit="search" class="space-y-8">
+                    <div class="space-y-3">
+                      <label for="treaty_id" class="block text-sm font-bold text-gray-800">
                         Código da Tratativa *
                       </label>
                       <div class="relative">
@@ -568,10 +587,10 @@ defmodule AppWeb.TreatySearchLive do
                           name="treaty_id"
                           value={@treaty_id}
                           placeholder="Ex: TRT001234"
-                          class="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          class="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm placeholder-gray-400 bg-white/50 backdrop-blur-sm transition-all"
                           required
                         />
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                           </svg>
@@ -579,20 +598,20 @@ defmodule AppWeb.TreatySearchLive do
                       </div>
                     </div>
 
-                    <div class="flex justify-end pt-4">
+                    <div class="flex justify-end pt-6">
                       <button
                         type="submit"
                         disabled={@loading}
-                        class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="inline-flex items-center px-8 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 group"
                       >
                         <%= if @loading do %>
-                          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2-647z"></path>
                           </svg>
                           Buscando...
                         <% else %>
-                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                           </svg>
                           Buscar Tratativa
@@ -628,10 +647,10 @@ defmodule AppWeb.TreatySearchLive do
           </div>
 
           <!-- Sidebar - Responsiva -->
-          <div class="xl:col-span-4 space-y-6">
+          <div class="lg:col-span-4 space-y-6">
             <!-- Salas Ativas -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div class="px-6 py-4 border-b border-gray-200">
+              <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center">
                   <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
                     <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -641,7 +660,7 @@ defmodule AppWeb.TreatySearchLive do
                   <h3 class="text-lg font-semibold text-gray-900">Salas Ativas</h3>
                 </div>
               </div>
-              <div class="p-6">
+              <div class="p-4 sm:p-6">
                 <%= if @active_rooms && length(@active_rooms) > 0 do %>
                   <div class="space-y-3">
                     <%= for room <- @active_rooms do %>
@@ -689,7 +708,7 @@ defmodule AppWeb.TreatySearchLive do
 
             <!-- Histórico Recente -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div class="px-6 py-4 border-b border-gray-200">
+              <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center">
                     <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
@@ -712,7 +731,7 @@ defmodule AppWeb.TreatySearchLive do
                   <% end %>
                 </div>
               </div>
-              <div class="p-6">
+              <div class="p-4 sm:p-6">
                 <%= if @user_object && @treaty_history && length(@treaty_history) > 0 do %>
                   <div class="space-y-3">
                     <%= for history_item <- @treaty_history do %>
@@ -854,10 +873,19 @@ defmodule AppWeb.TreatySearchLive do
       unread_count = App.Notifications.get_unread_count(user.id)
       {notifications, unread_count}
     rescue
-      error ->
-        require Logger
-        Logger.warning("Failed to load notifications for user #{user.id}: #{inspect(error)}")
+      _error ->
         {[], 0}
+    end
+  end
+
+  defp safely_get_summary_stats(user_id) do
+    try do
+      App.Treaties.get_user_home_summary_stats(user_id)
+    rescue
+      _error ->
+        nil
+    catch
+      :exit, _ -> nil
     end
   end
 

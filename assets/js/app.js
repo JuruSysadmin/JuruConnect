@@ -24,14 +24,13 @@ import topbar from "../vendor/topbar"
 import ChatCompositeHook from './hooks/chat_composite_hook.js'
 import ImageUploadHook from './hooks/image_upload_hook.js'
 import RatingHook from './hooks/rating_hook.js'
-import ThemeHook from './hooks/theme_hook.js'
+import NotificationComponent from './components/notification_component.js'
 
 let Hooks = {}
 
 Hooks.ChatCompositeHook = ChatCompositeHook
 Hooks.ImageUploadHook = ImageUploadHook
 Hooks.RatingHook = RatingHook
-Hooks.ThemeHook = ThemeHook
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
@@ -52,4 +51,11 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
+
+// Add notification sound event listener
+document.addEventListener('play-notification-sound', () => {
+  if (window.notificationComponent) {
+    window.notificationComponent.playNotificationSound()
+  }
+})
 

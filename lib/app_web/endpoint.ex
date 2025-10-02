@@ -9,8 +9,8 @@ defmodule AppWeb.Endpoint do
     key: "_app_key",
     signing_salt: "tdnofqF8",
     http_only: true,
-    secure: Mix.env() == :prod,
-    same_site: "Strict"
+    secure: false, # Disabled for HTTP development
+    same_site: "Lax" # Changed from Strict to Lax to avoid session conflicts
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

@@ -20,7 +20,6 @@ defmodule App.Jobs.MediaProcessingJob do
 
   use Oban.Worker, queue: :media, max_attempts: 3
 
-  require Logger
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{
@@ -32,12 +31,10 @@ defmodule App.Jobs.MediaProcessingJob do
     "user_id" => user_id,
     "message_id" => message_id
   }}) do
-    Logger.info("Iniciando processamento de mídia: #{original_filename}")
 
     # Processar upload no MinIO
     case App.MinIOUpload.upload_file(file_path, original_filename) do
       {:ok, url} ->
-        Logger.info("Upload concluído: #{url}")
 
         # Criar anexo na mensagem
         attachment_data = %{
@@ -50,7 +47,6 @@ defmodule App.Jobs.MediaProcessingJob do
 
         case App.Chat.create_image_attachment(message_id, user_id, attachment_data) do
           {:ok, _attachment} ->
-            Logger.info("Anexo criado com sucesso para mensagem #{message_id}")
 
             # Notificar via PubSub que o upload foi concluído
             notify_upload_complete(treaty_id, message_id, url)
@@ -61,19 +57,16 @@ defmodule App.Jobs.MediaProcessingJob do
             :ok
 
           {:error, reason} ->
-            Logger.error("Erro ao criar anexo: #{inspect(reason)}")
             {:error, reason}
         end
 
       {:error, reason} ->
-        Logger.error("Erro no upload para MinIO: #{inspect(reason)}")
         {:error, reason}
     end
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) do
-    Logger.error("Argumentos inválidos para MediaProcessingJob: #{inspect(args)}")
+  def perform(%Oban.Job{args: _args}) do
     {:error, "Argumentos inválidos"}
   end
 
@@ -95,9 +88,9 @@ defmodule App.Jobs.MediaProcessingJob do
   defp cleanup_temp_file(file_path) do
     case File.rm(file_path) do
       :ok ->
-        Logger.debug("Arquivo temporário removido: #{file_path}")
-      {:error, reason} ->
-        Logger.warning("Erro ao remover arquivo temporário #{file_path}: #{inspect(reason)}")
+        :ok
+      {:error, _reason} ->
+        :ok
     end
   end
 end

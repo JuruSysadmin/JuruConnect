@@ -33,6 +33,7 @@ defmodule App.Treaties.Treaty do
     # Relacionamentos com ratings e atividades
     has_many :ratings, App.Treaties.TreatyRating
     has_many :activities, App.Treaties.TreatyActivity
+    has_many :reminders, App.Treaties.TreatyReminder
 
     timestamps(type: :utc_datetime)
   end

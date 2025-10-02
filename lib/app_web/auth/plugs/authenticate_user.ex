@@ -25,6 +25,14 @@ defmodule AppWeb.Auth.Plugs.AuthenticateUser do
             else
               conn
             end
+            # Armazenar user data na sessão para LiveView acessar
+            conn = put_session(conn, :current_user, %{
+              "id" => user.id,
+              "name" => user.name,
+              "username" => user.username,
+              "role" => user.role,
+              "store_id" => user.store_id
+            })
             assign(conn, :current_user, user)
 
           {:error, _reason} ->

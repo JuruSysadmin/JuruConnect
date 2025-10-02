@@ -1,4 +1,4 @@
- defmodule App.MixProject do
+  defmodule App.MixProject do
   use Mix.Project
 
   def project do
@@ -77,7 +77,8 @@
       {:bandit, "~> 1.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:timex, "~> 3.7"},
-      {:oban, "~> 2.18"}
+      {:oban, "~> 2.18"},
+      {:oban_web, "~> 2.11"},
     ]
   end
 

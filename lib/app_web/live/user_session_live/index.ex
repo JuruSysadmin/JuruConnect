@@ -17,6 +17,24 @@ defmodule AppWeb.UserSessionLive.Index do
 
   use AppWeb, :live_view
 
+  # Temporarily disabled to fix stale error
+  # def on_mount(:default, _params, session, socket) do
+  #   case session["user_token"] do
+  #     nil ->
+  #       {:cont, socket}
+  #
+  #     token ->
+  #       case AppWeb.Auth.Guardian.resource_from_token(token) do
+  #         {:ok, _user, _claims} ->
+  #           # Safe redirect using history.replace to avoid WebSocket reconnect
+  #           {:halt, push_patch(socket, to: "/")}
+  #
+  #         {:error, _reason} ->
+  #           {:cont, socket}
+  #       end
+  #   end
+  # end
+
   def mount(_params, _session, socket) do
     changeset = login_changeset()
 

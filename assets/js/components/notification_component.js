@@ -153,14 +153,25 @@ class NotificationComponent {
   playSpecificSound(soundFile) {
     // Verificar se som está habilitado nas configurações
     if (!this.isSoundEnabled()) {
+      console.log('Som de notificação está desabilitado nas configurações');
       return;
     }
 
+    console.log('Tentando tocar som:', soundFile);
     const audio = new Audio(soundFile);
     audio.volume = this.getNotificationVolume();
     
+    // Adicionar listeners para debug
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Som carregado e pronto para tocar');
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Erro ao carregar som:', e);
+    });
+    
     audio.play().catch(error => {
-      console.log('Erro ao tocar som de notificação:', error);
+      console.error('Erro ao tocar som de notificação:', error);
     });
   }
 
@@ -177,7 +188,7 @@ class NotificationComponent {
    */
   getNotificationSound() {
     const config = this.getNotificationConfig();
-    return config.soundFile || '/sounds/16451.mp3';
+    return config.soundFile || `${window.location.origin}/sounds/notification.mp3`;
   }
 
   /**

@@ -1,8 +1,8 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
   <!-- Background decorative elements -->
   <div class="absolute inset-0 overflow-hidden">
-    <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-600/20 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute -top-20 -right-20 xs:-top-32 xs:-right-32 sm:-top-40 sm:-right-40 w-40 h-40 xs:w-64 xs:h-64 sm:w-80 sm:h-80 bg-gradient-to-br from-blue-400/20 to-indigo-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-20 -left-20 xs:-bottom-32 xs:-left-32 sm:-bottom-40 sm:-left-40 w-40 h-40 xs:w-64 xs:h-64 sm:w-80 sm:h-80 bg-gradient-to-tr from-indigo-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
   </div>
   
   <!-- Hero Section -->
@@ -20,25 +20,25 @@
         </div>
         
         <!-- Main heading -->
-        <h1 class="text-4xl font-bold mb-4 sm:text-6xl sm:mb-6 lg:text-7xl bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+        <h1 class="text-3xl font-bold mb-3 xs:text-4xl xs:mb-4 sm:text-5xl sm:mb-6 md:text-6xl md:mb-6 lg:text-7xl bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
           JuruConnect
         </h1>
         
         <!-- Subtitle -->
-        <p class="text-blue-100 text-lg mb-6 sm:text-2xl sm:mb-8 font-medium">
+        <p class="text-blue-100 text-base mb-4 xs:text-lg xs:mb-6 sm:text-xl sm:mb-8 md:text-2xl font-medium">
           <%= gettext("Treaty Chat System") %>
         </p>
         
         <!-- Description -->
-        <p class="text-blue-200 text-base max-w-2xl mx-auto sm:text-xl leading-relaxed">
+        <p class="text-blue-200 text-sm max-w-xl mx-auto xs:text-base xs:max-w-2xl sm:text-lg md:text-xl leading-relaxed">
           <%= gettext("Connect with your clients quickly and efficiently through chats organized by treaty") %>
         </p>
         
         <!-- CTA Button -->
-        <div class="mt-10">
+        <div class="mt-8 xs:mt-10">
           <a
             href="/"
-            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
+            class="inline-flex items-center px-6 py-3 xs:px-8 xs:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-base xs:text-lg font-semibold rounded-xl xs:rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
           >
             <%= gettext("Get Started") %>
             <svg class="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,9 +51,9 @@
   </div>
 
   <!-- Features Section -->
-  <div class="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+  <div class="relative max-w-7xl mx-auto px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:px-8">
     <!-- Section Header -->
-    <div class="text-center mb-16">
+    <div class="text-center mb-12 md:mb-16">
       <h2 class="text-3xl font-bold text-gray-900 mb-4 sm:text-4xl">
         <%= gettext("Why Choose JuruConnect?") %>
       </h2>
@@ -63,45 +63,45 @@
     </div>
 
     <!-- Feature Cards -->
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 xs:gap-8 sm:gap-8 md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
       <!-- Feature 1: Real-time Communication -->
-      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+      <div class="group relative bg-white rounded-2xl xs:rounded-3xl shadow-lg border border-gray-100 p-6 xs:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         <div class="relative">
-          <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 xs:w-16 xs:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl xs:rounded-2xl flex items-center justify-center mx-auto mb-4 xs:mb-6 shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
+            <svg class="w-6 h-6 xs:w-8 xs:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Real-time Communication") %></h3>
+          <h3 class="text-lg xs:text-xl font-bold text-gray-900 mb-3 xs:mb-4"><%= gettext("Real-time Communication") %></h3>
           <p class="text-gray-600 leading-relaxed"><%= gettext("Instant communication with your clients through real-time messages") %></p>
         </div>
       </div>
 
       <!-- Feature 2: Organized by Treaty -->
-      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+      <div class="group relative bg-white rounded-2xl xs:rounded-3xl shadow-lg border border-gray-100 p-6 xs:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         <div class="relative">
-          <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-green-500/25 transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 xs:w-16 xs:h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl xs:rounded-2xl flex items-center justify-center mx-auto mb-4 xs:mb-6 shadow-lg group-hover:shadow-green-500/25 transition-all duration-300">
+            <svg class="w-6 h-6 xs:w-8 xs:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Organized by Treaty") %></h3>
+          <h3 class="text-lg xs:text-xl font-bold text-gray-900 mb-3 xs:mb-4"><%= gettext("Organized by Treaty") %></h3>
           <p class="text-gray-600 leading-relaxed"><%= gettext("Each conversation is organized by treaty for easy tracking") %></p>
         </div>
       </div>
 
       <!-- Feature 3: Intuitive Interface -->
-      <div class="group relative bg-white rounded-3xl shadow-lg border border-gray-100 p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
+      <div class="group relative bg-white rounded-2xl xs:rounded-3xl shadow-lg border border-gray-100 p-6 xs:p-8 text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-violet-50 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         <div class="relative">
-          <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 xs:w-16 xs:h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl xs:rounded-2xl flex items-center justify-center mx-auto mb-4 xs:mb-6 shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
+            <svg class="w-6 h-6 xs:w-8 xs:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-4"><%= gettext("Intuitive Interface") %></h3>
+          <h3 class="text-lg xs:text-xl font-bold text-gray-900 mb-3 xs:mb-4"><%= gettext("Intuitive Interface") %></h3>
           <p class="text-gray-600 leading-relaxed"><%= gettext("Intuitive interface that allows quick responses and efficient service") %></p>
         </div>
       </div>
@@ -110,31 +110,31 @@
   <!-- CTA Section -->
   <div class="relative bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white">
     <div class="absolute inset-0 bg-black/20"></div>
-    <div class="relative max-w-7xl mx-auto px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+    <div class="relative max-w-7xl mx-auto px-4 py-16 xs:px-4 xs:py-20 sm:px-6 sm:py-24 lg:px-8">
       <div class="text-center">
         <div class="max-w-3xl mx-auto">
           <!-- Icon -->
-          <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/20">
-            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-16 h-16 xs:w-20 xs:h-20 bg-white/10 backdrop-blur-sm rounded-2xl xs:rounded-3xl flex items-center justify-center mx-auto mb-6 xs:mb-8 border border-white/20">
+            <svg class="w-8 h-8 xs:w-10 xs:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </div>
           
           <!-- Heading -->
-          <h2 class="text-3xl font-bold mb-6 sm:text-4xl lg:text-5xl">
+          <h2 class="text-2xl font-bold mb-4 xs:text-3xl xs:mb-6 sm:text-4xl lg:text-5xl">
             <%= gettext("Ready to Get Started?") %>
           </h2>
           
           <!-- Description -->
-          <p class="text-blue-100 text-lg mb-10 sm:text-xl leading-relaxed max-w-2xl mx-auto">
+          <p class="text-blue-100 text-base mb-8 xs:text-lg xs:mb-10 sm:text-xl leading-relaxed max-w-xl xs:max-w-2xl mx-auto">
             <%= gettext("Enter the treaty code to access the corresponding chat and start talking with your clients") %>
           </p>
           
           <!-- CTA Button -->
-          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div class="flex flex-col xs:flex-row gap-3 xs:gap-4 justify-center items-center">
             <a
               href="/"
-              class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-semibold rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
+              class="inline-flex items-center px-6 py-3 xs:px-8 xs:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-base xs:text-lg font-semibold rounded-xl xs:rounded-2xl hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300/50 transition-all duration-300 shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 hover:-translate-y-1"
             >
               <%= gettext("Search Treaty") %>
               <svg class="w-5 h-5 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,7 +142,7 @@
               </svg>
             </a>
             
-            <div class="text-blue-200 text-sm">
+            <div class="text-blue-200 text-xs xs:text-sm">
               <%= gettext("No account required") %>
             </div>
           </div>

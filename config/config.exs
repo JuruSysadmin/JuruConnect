@@ -83,8 +83,7 @@ config :app, Oban,
   plugins: [
     Oban.Plugins.Pruner,
     Oban.Plugins.Cron,
-    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
-    {Oban.Plugins.Repeater, interval: :timer.seconds(30)}
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
   ],
   queues: [
     default: 10,
@@ -104,6 +103,10 @@ config :app, Oban,
            port: 9000,
            region: "us-east-1"
          ]
+
+# Gemini API configuration
+config :app, App.Services.GeminiService,
+  api_key: "AIzaSyBgeJuyCTTobJw7TVbAnLtfb4gUdADoRsI"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

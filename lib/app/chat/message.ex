@@ -26,7 +26,7 @@ defmodule App.Chat.Message do
     |> validate_required([:sender_name, :treaty_id])
     |> validate_length(:text, max: 2000)
     |> validate_length(:sender_name, min: 1, max: 100)
-    |> validate_inclusion(:tipo, ["mensagem", "sistema", "notificacao"])
+    |> validate_inclusion(:tipo, ["mensagem", "sistema", "notificacao", "ai_response", "ai_error"])
     |> put_timestamp()
   end
 

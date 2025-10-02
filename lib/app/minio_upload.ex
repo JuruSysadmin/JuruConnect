@@ -5,8 +5,6 @@ defmodule App.MinIOUpload do
   Salva arquivos no bucket 'juruconnect' e retorna URLs públicas.
   """
 
-  require Logger
-
   @bucket "juruconnect"
   @max_file_size 5_000_000 # 5MB
   @allowed_extensions ~w(.jpg .jpeg .png .gif .webp)

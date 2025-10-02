@@ -1,8 +1,10 @@
 defmodule AppWeb.Router do
   use AppWeb, :router
 
+  import Oban.Web.Router
+
   # CSP mais permissivo para iframes
-  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors *;"
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://10.1.1.168:4000 ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors *;"
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -46,10 +48,9 @@ defmodule AppWeb.Router do
   end
 
   scope "/", AppWeb do
-    pipe_through [:browser, :auth]
+    pipe_through :browser
 
     live "/", TreatySearchLive
-    live "/theme-settings", ThemeSettingsLive
   end
 
   scope "/", AppWeb do
@@ -63,6 +64,9 @@ defmodule AppWeb.Router do
     pipe_through [:browser, :auth]
 
     live "/dashboard", AdminDashboardLive
+
+    # Oban Web Dashboard for monitoring jobs
+    oban_dashboard("/jobs")
   end
 
   # Rota específica para iframes com autenticação
