@@ -62,8 +62,9 @@
       {:plug_cowboy, "~> 2.5"},
       {:cors_plug, "~> 3.0"},
       {:guardian, "~> 2.3"},
-      # {:ex_aws, "~> 2.5"},
-      # {:ex_aws_s3, "~> 2.5"},
+      {:ex_aws, "~> 2.5"},
+      {:ex_aws_s3, "~> 2.5"},
+      {:mime, "~> 2.0"},
       {:hackney, "~> 1.9"},
       {:finch, "~> 0.13"},
       {:httpoison, "~> 2.0"},
@@ -75,7 +76,8 @@
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:timex, "~> 3.7"}
+      {:timex, "~> 3.7"},
+      {:oban, "~> 2.18"}
     ]
   end
 

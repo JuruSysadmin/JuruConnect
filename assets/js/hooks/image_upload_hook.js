@@ -54,45 +54,37 @@ const ImageUploadHook = {
   setupFileInput() {
     // Listen for file input changes (when user clicks to select file)
     this.el.addEventListener('change', (e) => {
-      console.log('File input changed, files:', e.target.files.length);
       if (e.target.files.length > 0) {
-        const file = e.target.files[0];
-        console.log('File selected:', file.name, 'size:', file.size, 'type:', file.type);
+        const files = Array.from(e.target.files);
         
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          this.showError('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+        // Validate files
+        const validFiles = files.filter(file => {
+          if (!file.type.startsWith('image/')) {
+            this.showError('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+            return false;
+          }
+          
+          if (file.size > 5 * 1024 * 1024) {
+            this.showError('Arquivo muito grande. Máximo permitido: 5MB');
+            return false;
+          }
+          
+          return true;
+        });
+        
+        if (validFiles.length === 0) {
           e.target.value = ''; // Clear the input
           return;
         }
         
-        if (file.size > 5 * 1024 * 1024) {
-          this.showError('Arquivo muito grande. Máximo permitido: 5MB');
-          e.target.value = ''; // Clear the input
-          return;
-        }
+        // Transfer files to LiveView input
+        this.transferFilesToLiveView(validFiles);
         
-        // Transfer file to LiveView input
-        this.transferFileToLiveView(file);
-        
-        console.log('File validation passed, LiveView should show preview');
       }
     });
   },
 
-  transferFileToLiveView(file) {
-    // Debug: log all file inputs
-    const allInputs = document.querySelectorAll('input[type="file"]');
-    console.log('All file inputs found:', allInputs.length);
-    allInputs.forEach((input, index) => {
-      console.log(`Input ${index}:`, {
-        id: input.id,
-        name: input.name,
-        className: input.className,
-        attributes: Array.from(input.attributes).map(attr => `${attr.name}="${attr.value}"`).join(', ')
-      });
-    });
-
+  transferFilesToLiveView(files) {
     // Try different selectors for LiveView input
     let liveViewInput = document.querySelector('input[data-phx-upload]');
     if (!liveViewInput) {
@@ -107,9 +99,11 @@ const ImageUploadHook = {
     }
 
     if (liveViewInput) {
-      // Create a new FileList with the file
+      // Create a new FileList with all files
       const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
+      files.forEach(file => {
+        dataTransfer.items.add(file);
+      });
       
       // Set the files to the LiveView input
       liveViewInput.files = dataTransfer.files;
@@ -118,10 +112,12 @@ const ImageUploadHook = {
       const changeEvent = new Event('change', { bubbles: true });
       liveViewInput.dispatchEvent(changeEvent);
       
-      console.log('File transferred to LiveView input:', liveViewInput.id || liveViewInput.className);
-    } else {
-      console.log('LiveView input not found with any selector');
     }
+  },
+
+  transferFileToLiveView(file) {
+    // Keep this method for backward compatibility
+    this.transferFilesToLiveView([file]);
   },
 
   preventDefaults(e) {
@@ -180,24 +176,33 @@ const ImageUploadHook = {
       });
 
       if (imageFiles.length > 0) {
-        // Use the first image file
-        const file = imageFiles[0];
-        
-        // Check file size (5MB limit)
-        if (file.size > 5 * 1024 * 1024) {
+        // Validate all image files
+        const validFiles = imageFiles.filter(file => {
+          if (file.size > 5 * 1024 * 1024) {
+            this.showError('Arquivo muito grande. Máximo permitido: 5MB');
+            return false;
+          }
+          return true;
+        });
+
+        if (validFiles.length === 0) {
           this.hideDragOverlay();
-          this.showError('Arquivo muito grande. Máximo permitido: 5MB');
           return;
+        }
+
+        // Limit to 3 files maximum
+        const filesToUpload = validFiles.slice(0, 3);
+        
+        if (validFiles.length > 3) {
+          this.showError('Máximo de 3 imagens permitidas. Apenas as primeiras 3 serão enviadas.');
         }
 
         // Show success animation before hiding
         this.showSuccessAnimation();
         
-        // Transfer file to LiveView input
-        this.transferFileToLiveView(file);
+        // Transfer files to LiveView input
+        this.transferFilesToLiveView(filesToUpload);
         
-        // Debug: log that change event was dispatched
-        console.log('Change event dispatched for file:', file.name);
       } else {
         this.hideDragOverlay();
         this.showError('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');

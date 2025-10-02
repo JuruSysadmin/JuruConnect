@@ -67,7 +67,7 @@ defmodule App.Chat do
   Lista mensagens para uma tratativa (treaty_id), com limite e offset opcional.
   """
   def list_messages_for_treaty(treaty_id, limit \\ 50, offset \\ 0)
-      when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
+when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
     messages = Message
     |> where([m], m.treaty_id == ^treaty_id)
     |> order_by([m], asc: m.timestamp)
@@ -105,17 +105,31 @@ defmodule App.Chat do
 
     case create_message(params) do
       {:ok, message} ->
-        # Criar anexo se houver arquivo
+        # Processar uploads assíncronos se houver arquivos
         if file_info do
-          case create_image_attachment(message.id, sender_id, file_info) do
-            {:ok, _attachment} ->
-              :ok
-            {:error, _changeset} ->
-              :ok
-          end
+          # Handle both single file and multiple files
+          files = if is_list(file_info), do: file_info, else: [file_info]
+
+          Enum.each(files, fn file ->
+            if file && file.pending_upload do
+              # Enviar job para Oban para processamento assíncrono
+              job_args = %{
+                "file_path" => file.temp_path,
+                "original_filename" => file.original_filename,
+                "file_size" => file.file_size,
+                "mime_type" => file.mime_type,
+                "treaty_id" => treaty_id,
+                "user_id" => sender_id,
+                "message_id" => message.id
+              }
+
+              App.Jobs.MediaProcessingJob.new(job_args)
+              |> Oban.insert()
+            end
+          end)
         end
 
-        # Carregar anexos para a mensagem
+        # Carregar anexos para a mensagem (pode estar vazio se uploads estão pendentes)
         message_with_attachments = %{message | attachments: get_message_attachments(message.id)}
 
         # Publicar a mensagem via PubSub

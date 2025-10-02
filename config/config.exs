@@ -73,6 +73,34 @@ config :timex, :timezone, "America/Sao_Paulo"
 # Configure Gettext for Portuguese Brazilian
 config :app, AppWeb.Gettext, default_locale: "pt_BR"
 
+# Configure Oban
+config :app, Oban,
+  repo: App.Repo,
+  plugins: [
+    Oban.Plugins.Pruner,
+    Oban.Plugins.Cron,
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
+    {Oban.Plugins.Repeater, interval: :timer.seconds(30)}
+  ],
+  queues: [
+    default: 10,
+    mailers: 20,
+    media: 5,
+    scheduled: 5
+  ]
+
+# Configure ExAws for MinIO
+       config :ex_aws,
+         access_key_id: "minio",
+         secret_access_key: "minio123",
+         region: "us-east-1",
+         s3: [
+           scheme: "http://",
+           host: "10.1.1.168",
+           port: 9000,
+           region: "us-east-1"
+         ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

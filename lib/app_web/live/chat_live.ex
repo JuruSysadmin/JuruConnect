@@ -55,6 +55,9 @@ defmodule AppWeb.ChatLive do
     is_connected = connected?(socket)
     connection_status = if is_connected, do: "Conectado", else: "Desconectado"
 
+    # Carregar tema do usuário
+    user_theme = load_user_theme(authenticated_user)
+
     socket = socket
     |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
     |> load_initial_data(treaty_id, topic)
@@ -64,9 +67,10 @@ defmodule AppWeb.ChatLive do
     |> assign(:user_object, authenticated_user)
     |> assign(:token, session["user_token"])
     |> assign(:topic, topic)
+    |> assign(:user_theme, user_theme)
     |> assign_connection_state(is_connected, connection_status)
     |> assign_ui_state()
-    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1, max_file_size: 5_000_000, auto_upload: true)
+    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 3, max_file_size: 5_000_000, auto_upload: true)
 
     {:ok, socket}
   end
@@ -88,6 +92,7 @@ defmodule AppWeb.ChatLive do
     treaty_tags = Tags.get_treaty_tags(treaty_id)
     current_presences = Presence.list(topic)
     online_users = extract_users_from_presences(current_presences)
+
 
     # Carregar dados de ratings, atividades e estatísticas
     treaty_ratings = App.Treaties.get_treaty_ratings(treaty_data.id)
@@ -1012,21 +1017,43 @@ defmodule AppWeb.ChatLive do
     case entries do
       [] -> nil
       [_entry | _] ->
+        # Processar arquivos e enviar para Oban
         consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
-          with {:ok, url} <- App.ImageUpload.upload_image(path, entry.client_name) do
-            {:ok, %__MODULE__{
-              filename: Path.basename(url),
-              original_filename: entry.client_name,
-              file_size: entry.client_size,
-              mime_type: entry.client_type,
-              file_url: url
-            }}
-          else
-            {:error, _reason} ->
-              {:ok, nil}
-          end
+          # Copiar arquivo para local temporário
+          temp_path = create_temp_file(path, entry.client_name)
+
+          # Enviar job para Oban (será processado após a mensagem ser criada)
+          {:ok, %{
+            temp_path: temp_path,
+            original_filename: entry.client_name,
+            file_size: entry.client_size,
+            mime_type: entry.client_type,
+            pending_upload: true
+          }}
         end)
-        |> List.first()
+        |> Enum.filter(&(&1 != nil))
+    end
+  end
+
+  # Cria arquivo temporário para processamento assíncrono
+  defp create_temp_file(source_path, original_name) do
+    # Criar diretório temporário se não existir
+    temp_dir = Path.join(System.tmp_dir(), "juruconnect_uploads")
+    File.mkdir_p!(temp_dir)
+
+    # Gerar nome único para arquivo temporário
+    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
+    unique_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    extension = Path.extname(original_name)
+    temp_filename = "upload_#{timestamp}_#{unique_id}#{extension}"
+    temp_path = Path.join(temp_dir, temp_filename)
+
+    # Copiar arquivo para local temporário
+    case File.cp(source_path, temp_path) do
+      :ok -> temp_path
+      {:error, _reason} ->
+        # Fallback: usar o arquivo original se não conseguir copiar
+        source_path
     end
   end
 
@@ -1062,6 +1089,37 @@ defmodule AppWeb.ChatLive do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:upload_complete, %{message_id: message_id, file_url: file_url}}, socket) do
+    # Atualizar mensagem com anexo quando upload for concluído
+    socket = socket
+    |> update(:messages, fn messages ->
+      Enum.map(messages, fn msg ->
+        if msg.id == message_id do
+          # Recarregar anexos da mensagem
+          %{msg | attachments: App.Chat.get_message_attachments(message_id)}
+        else
+          msg
+        end
+      end)
+    end)
+    |> push_event("upload-complete", %{message_id: message_id, file_url: file_url})
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:wallpaper_applied, %{wallpaper_url: url}}, socket) do
+    # Recarregar tema do usuário quando papel de parede for aplicado
+    user_theme = load_user_theme(socket.assigns.user_object)
+
+    socket = socket
+    |> assign(:user_theme, user_theme)
+    |> push_event("theme-updated", %{wallpaper_url: url})
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -1789,7 +1847,7 @@ defmodule AppWeb.ChatLive do
                   accept="image/*"
                   class="hidden"
                   phx-hook="ImageUploadHook"
-                  multiple={false}
+                  multiple={true}
                   disabled={@treaty.status == "closed"}
                 />
               </label>
@@ -2436,4 +2494,14 @@ defmodule AppWeb.ChatLive do
     </div>
     """
   end
+
+  # Carrega o tema do usuário
+  defp load_user_theme(nil), do: nil
+  defp load_user_theme(user) when is_map(user) do
+    case App.Themes.get_user_theme(user.id) do
+      {:ok, theme} -> theme
+      {:error, _reason} -> nil
+    end
+  end
+  defp load_user_theme(_), do: nil
 end

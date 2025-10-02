@@ -17,6 +17,8 @@ defmodule App.Application do
       {App.ActiveRooms, []},
       # Start the Finch HTTP client for sending emails
       {Finch, name: App.Finch},
+      # Start Oban for background jobs
+      {Oban, Application.get_env(:app, Oban)},
 
       # Start a worker by calling: App.Worker.start_link(arg)
       # {App.Worker, arg},

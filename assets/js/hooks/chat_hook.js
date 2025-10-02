@@ -1,7 +1,5 @@
 const ChatHook = {
   mounted() {
-    console.log('ChatHook mounted - autocomplete system initialized');
-    console.log('Hook element:', this.el);
     // Instant scroll on initial load
     this.scrollToBottom(false);
     this.setupEventListeners();
@@ -70,17 +68,13 @@ const ChatHook = {
 
     // Handle mention suggestions
     this.handleEvent("show-user-suggestions", (data) => {
-      console.log('show-user-suggestions event received:', data);
       this.showMentionSuggestions(data.users, data.query);
     });
 
     // Handle input changes for real-time validation and mention autocomplete
     const messageInput = this.el.querySelector('#message-input');
-    console.log('Message input found:', messageInput);
     if (messageInput) {
-      console.log('Setting up input event listeners for autocomplete');
       messageInput.addEventListener('input', (e) => {
-        console.log('Input event triggered:', e.target.value);
         this.validateMessage(e.target.value);
         this.handleMentionAutocomplete(e.target.value);
       });
@@ -176,43 +170,33 @@ const ChatHook = {
 
   // Mention autocomplete methods
   handleMentionAutocomplete(text) {
-    console.log('handleMentionAutocomplete called with:', text);
     const mentionMatch = text.match(/@(\w*)$/);
     if (mentionMatch) {
       const query = mentionMatch[1];
-      console.log('Mention match found, query:', query);
       if (query.length >= 1) {
-        console.log('Pushing search_users event with query:', query);
         this.pushEvent('search_users', { query: query });
       } else {
-        console.log('Query too short, hiding suggestions');
         this.hideMentionSuggestions();
       }
     } else {
-      console.log('No mention match, hiding suggestions');
       this.hideMentionSuggestions();
     }
   },
 
     showMentionSuggestions(users, query) {
-    console.log('showMentionSuggestions called with:', users, query);
     const suggestionsContainer = this.el.querySelector('#mention-suggestions');
     const suggestionsList = this.el.querySelector('#mention-suggestions-list');
 
-    console.log('Found elements:', { suggestionsContainer, suggestionsList });
 
     if (!suggestionsContainer || !suggestionsList) {
-      console.log('Missing elements, returning');
       return;
     }
 
     if (users.length === 0) {
-      console.log('No users found, hiding suggestions');
       this.hideMentionSuggestions();
       return;
     }
 
-    console.log('Creating suggestions for users:', users);
     suggestionsList.innerHTML = '';
 
     users.forEach((user, index) => {
@@ -235,7 +219,6 @@ const ChatHook = {
       suggestionsList.appendChild(suggestionItem);
     });
 
-    console.log('Showing suggestions container');
     suggestionsContainer.classList.remove('hidden');
     suggestionsContainer.style.display = 'block';
     suggestionsContainer.style.zIndex = 9999;
@@ -350,12 +333,10 @@ const ChatHook = {
 
   // Drag and Drop functionality
   setupDragAndDrop() {
-    console.log('Setting up drag and drop...');
     const form = this.el.querySelector('form');
     const messageInput = this.el.querySelector('#message-input');
     const imageUpload = this.el.querySelector('#image-upload');
 
-    console.log('Elements found:', { form, messageInput, imageUpload });
 
     if (!form || !messageInput || !imageUpload) {
       console.error('Required elements for drag and drop not found');
@@ -370,21 +351,18 @@ const ChatHook = {
     // Highlight drop area when item is dragged over it
     ['dragenter', 'dragover'].forEach(eventName => {
       form.addEventListener(eventName, (e) => {
-        console.log('Drag event on form:', eventName);
         this.highlightDropArea(form, true);
       }, false);
     });
 
     ['dragleave', 'drop'].forEach(eventName => {
       form.addEventListener(eventName, (e) => {
-        console.log('Drag event on form:', eventName);
         this.highlightDropArea(form, false);
       }, false);
     });
 
     // Handle dropped files
     form.addEventListener('drop', (e) => {
-      console.log('Drop event on form');
       this.handleDroppedFiles(e, imageUpload);
     }, false);
   },
@@ -416,7 +394,6 @@ const ChatHook = {
   },
 
   handleDroppedFiles(e, imageUpload) {
-    console.log('handleDroppedFiles called');
     const dt = e.dataTransfer;
     const files = dt.files;
 

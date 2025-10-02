@@ -24,12 +24,14 @@ import topbar from "../vendor/topbar"
 import ChatCompositeHook from './hooks/chat_composite_hook.js'
 import ImageUploadHook from './hooks/image_upload_hook.js'
 import RatingHook from './hooks/rating_hook.js'
+import ThemeHook from './hooks/theme_hook.js'
 
 let Hooks = {}
 
 Hooks.ChatCompositeHook = ChatCompositeHook
 Hooks.ImageUploadHook = ImageUploadHook
 Hooks.RatingHook = RatingHook
+Hooks.ThemeHook = ThemeHook
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

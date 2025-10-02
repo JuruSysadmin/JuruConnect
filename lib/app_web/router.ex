@@ -49,6 +49,7 @@ defmodule AppWeb.Router do
     pipe_through [:browser, :auth]
 
     live "/", TreatySearchLive
+    live "/theme-settings", ThemeSettingsLive
   end
 
   scope "/", AppWeb do
