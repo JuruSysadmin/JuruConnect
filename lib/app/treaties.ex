@@ -31,6 +31,16 @@ defmodule App.Treaties do
   end
 
   @doc """
+  Busca uma tratativa pelo ID.
+  """
+  def get_treaty_by_id(id) when is_binary(id) do
+    case Repo.get(Treaty, id) do
+      nil -> {:error, :not_found}
+      treaty -> {:ok, treaty}
+    end
+  end
+
+  @doc """
   Busca uma tratativa pelo código ou cria uma nova se não existir.
   """
   def get_or_create_treaty(treaty_code, attrs \\ %{}) when is_binary(treaty_code) do

@@ -312,7 +312,7 @@ defmodule AppWeb.TreatySearchLive do
                                       <%= if notification.treaty_id do %>
                                         <div class="mt-2">
                                           <a
-                                            href={"/chat/#{notification.treaty_id}"}
+                                            href={"/chat/#{get_treaty_code_from_notification(notification)}"}
                                             phx-click="mark_notification_read"
                                             phx-value-id={notification.id}
                                             class="text-xs text-blue-600 hover:text-blue-800"
@@ -858,6 +858,24 @@ defmodule AppWeb.TreatySearchLive do
         require Logger
         Logger.warning("Failed to load notifications for user #{user.id}: #{inspect(error)}")
         {[], 0}
+    end
+  end
+
+  defp get_treaty_code_from_notification(notification) do
+    try do
+      case notification.metadata do
+        %{"treaty_code" => treaty_code} when not is_nil(treaty_code) ->
+          treaty_code
+        %{:treaty_code => treaty_code} when not is_nil(treaty_code) ->
+          treaty_code
+        _ ->
+          case App.Treaties.get_treaty_by_id(notification.treaty_id) do
+            {:ok, treaty} -> treaty.treaty_code
+            {:error, _} -> notification.treaty_id
+          end
+      end
+    rescue
+      _ -> notification.treaty_id
     end
   end
 end
