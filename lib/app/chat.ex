@@ -265,10 +265,8 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
       Task.start(fn ->
         case App.Services.GeminiService.extract_question(message.text) do
           {:ok, question, command_type} ->
-            # Determinar contexto baseado no tipo de tratativa/sala
-            context = determine_context(treaty_id)
-
-            case App.Services.GeminiService.generate_response(question, context) do
+            # Passar o treaty_id para o GeminiService obter dados do pedido
+            case App.Services.GeminiService.generate_response(question, treaty_id) do
               {:ok, ai_response} ->
                 send_ai_response(treaty_id, ai_response, command_type)
               {:error, error_msg} ->
@@ -283,12 +281,6 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
     end
   end
 
-  defp determine_context(_treaty_id) do
-    # Aqui você pode implementar lógica para determinar o contexto
-    # baseado no tipo de tratativa, categoria, etc.
-    # Por enquanto, vamos usar contexto geral
-    "geral"
-  end
 
   defp send_ai_response(treaty_id, response, _command_type) do
     ai_message = %{

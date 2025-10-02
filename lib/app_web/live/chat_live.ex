@@ -1460,7 +1460,7 @@ defmodule AppWeb.ChatLive do
          role="main">
 
       <!-- Área principal do chat -->
-      <main class="flex-1 h-full flex flex-col bg-white min-w-0 lg:border-l border-gray-200 max-w-none m-0 p-0 shadow-sm" role="main" aria-label="Área de chat">
+      <main class="flex-1 h-full flex flex-col bg-white min-w-0 lg:border-l border-gray-200 max-w-none m-0 p-0 shadow-sm overflow-hidden" role="main" aria-label="Área de chat">
         <!-- Header do Chat -->
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex-shrink-0 shadow-sm sticky top-0 z-10">
           <div class="flex items-center w-full">
@@ -1671,7 +1671,7 @@ defmodule AppWeb.ChatLive do
         <!-- Messages Container -->
         <div class="flex-1 flex overflow-hidden">
           <div id="messages"
-               class="flex-1 overflow-y-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 bg-gradient-to-b from-gray-50/50 to-white scroll-smooth min-h-0"
+               class="flex-1 overflow-y-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 bg-gradient-to-b from-gray-50/50 to-white scroll-smooth min-h-0 break-all"
                role="log"
                aria-live="polite"
                aria-label="Mensagens do chat">
@@ -2553,7 +2553,7 @@ defmodule AppWeb.ChatLive do
          role="article"
          aria-label={"Mensagem de " <> @message.sender_name}>
       <div class={
-        "relative max-w-[90%] sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl px-2.5 sm:px-3 py-2 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg " <>
+        "relative flex-shrink-0 max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] xl:max-w-[45%] px-2.5 sm:px-3 py-2 rounded-xl shadow-md transition-all duration-200 hover:shadow-lg " <>
         if(@is_current_user,
           do: "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-lg",
           else: "bg-white text-gray-900 rounded-bl-lg border border-gray-200 shadow-sm hover:border-gray-300")
@@ -2561,7 +2561,7 @@ defmodule AppWeb.ChatLive do
         <%= if not @is_current_user do %>
           <div class="text-xs font-semibold text-gray-700 mb-0.5"><%= @message.sender_name %></div>
         <% end %>
-        <div class="text-sm break-words leading-relaxed"><%= format_message_with_mentions(@message.text) %></div>
+        <div class="text-sm break-words leading-relaxed hyphens-auto overflow-wrap-anywhere"><%= format_message_with_mentions(@message.text) %></div>
         <%= if @message.attachments && length(@message.attachments) > 0 do %>
           <div class="mt-1.5 space-y-1.5">
             <%= for attachment <- @message.attachments do %>
