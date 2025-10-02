@@ -11,32 +11,49 @@ defmodule AppWeb.ThemeSettingsLive do
 
   use AppWeb, :live_view
   alias App.Themes
-  alias App.Themes.UserTheme
 
   @impl true
   def mount(_params, session, socket) do
-    user = get_user_from_session(session)
+    try do
+      user = get_user_from_session(session)
 
-    if user do
-      {:ok, theme} = Themes.get_user_theme(user.id)
+      if user do
+        theme = case Themes.get_user_theme(user.id) do
+          {:ok, theme} -> theme
+          {:error, _reason} -> Themes.UserTheme.default_theme(user.id)
+        end
 
-      socket = socket
-      |> assign(:user, user)
-      |> assign(:theme, theme)
-      |> assign(:preset_themes, Themes.list_preset_themes())
-      |> assign(:show_color_picker, false)
-      |> assign(:show_wallpaper_upload, false)
-      |> assign(:uploading_wallpaper, false)
-      |> allow_upload(:wallpaper,
-        accept: ~w(.jpg .jpeg .png .gif .webp),
-        max_entries: 1,
-        max_file_size: 10_000_000, # 10MB
-        auto_upload: false
-      )
+        socket = socket
+        |> assign(:user, user)
+        |> assign(:theme, theme)
+        |> assign(:preset_themes, safely_get_preset_themes())
+        |> assign(:show_color_picker, false)
+        |> assign(:show_wallpaper_upload, false)
+        |> assign(:uploading_wallpaper, false)
+        |> allow_upload(:wallpaper,
+          accept: ~w(.jpg .jpeg .png .gif .webp),
+          max_entries: 1,
+          max_file_size: 10_000_000, # 10MB
+          auto_upload: false
+        )
 
-      {:ok, socket}
-    else
-      {:ok, redirect(socket, to: "/login")}
+        {:ok, socket}
+      else
+        {:ok, redirect(socket, to: "/login")}
+      end
+    rescue
+      error ->
+        require Logger
+        Logger.error("Theme settings mount error: #{inspect(error)}")
+        {:ok, redirect(socket, to: "/login")}
+    end
+  end
+
+  defp safely_get_preset_themes do
+    try do
+      Themes.list_preset_themes()
+    rescue
+      _ -> [:light, :dark]
     end
   end
 
@@ -198,5 +215,17 @@ defmodule AppWeb.ThemeSettingsLive do
       :ok -> temp_path
       {:error, _reason} -> source_path
     end
+  end
+
+  defp format_file_size(bytes) when bytes >= 1_048_576 do
+    "#{Float.round(bytes / 1_048_576, 1)} MB"
+  end
+
+  defp format_file_size(bytes) when bytes >= 1024 do
+    "#{Float.round(bytes / 1024, 1)} KB"
+  end
+
+  defp format_file_size(bytes) do
+    "#{bytes} bytes"
   end
 end

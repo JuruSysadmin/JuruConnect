@@ -199,7 +199,7 @@
                               <%= entry.client_name %>
                             </p>
                             <p class="text-sm text-gray-500">
-                              <%= Number.Human.number_to_human_size(entry.client_size) %>
+                              <%= format_file_size(entry.client_size) %>
                             </p>
                           </div>
                         </div>

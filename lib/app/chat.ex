@@ -148,9 +148,14 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
 
   defp get_sender_name(nil), do: "Usuário Anônimo"
   defp get_sender_name(sender_id) when is_binary(sender_id) do
-    case App.Accounts.get_user!(sender_id) do
-      %{name: name} when not is_nil(name) -> name
-      %{username: username} when not is_nil(username) -> username
+    try do
+      case App.Accounts.get_user!(sender_id) do
+        %{name: name} when not is_nil(name) -> name
+        %{username: username} when not is_nil(username) -> username
+        _ -> "Usuário"
+      end
+    rescue
+      Ecto.NoResultsError -> "Usuário Removido"
       _ -> "Usuário"
     end
   end

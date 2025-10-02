@@ -20,7 +20,11 @@ config :app, AppWeb.Endpoint,
     layout: false
   ],
   pubsub_server: App.PubSub,
-  live_view: [signing_salt: "rdThFUm0"]
+  live_view: [
+    signing_salt: "rdThFUm0",
+    # Prevenir restart loops configurando limites de restart
+    crash_when_mount_fails: false
+  ]
 
 # Configures the mailer
 #

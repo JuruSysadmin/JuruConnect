@@ -49,30 +49,50 @@ defmodule AppWeb.ChatLive do
   """
   @impl true
   def mount(%{"treaty_id" => treaty_id} = _params, session, socket) do
-    topic = "treaty:#{treaty_id}"
-    {current_user_name, authenticated_user} = resolve_user_identity(socket, session)
+    try do
+      topic = "treaty:#{treaty_id}"
+      {current_user_name, authenticated_user} = resolve_user_identity(socket, session)
 
-    is_connected = connected?(socket)
-    connection_status = if is_connected, do: "Conectado", else: "Desconectado"
+      is_connected = connected?(socket)
+      connection_status = if is_connected, do: "Conectado", else: "Desconectado"
 
-    # Carregar tema do usuário
-    user_theme = load_user_theme(authenticated_user)
+      # Carregar tema do usuário com segurança
+      user_theme = safely_load_user_theme(authenticated_user)
 
-    socket = socket
-    |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
-    |> load_initial_data(treaty_id, topic)
-    |> handle_authenticated_user_actions(authenticated_user, treaty_id)
-    |> assign(:treaty_id, treaty_id)
-    |> assign(:current_user, current_user_name)
-    |> assign(:user_object, authenticated_user)
-    |> assign(:token, session["user_token"])
-    |> assign(:topic, topic)
-    |> assign(:user_theme, user_theme)
-    |> assign_connection_state(is_connected, connection_status)
-    |> assign_ui_state()
-    |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 3, max_file_size: 5_000_000, auto_upload: true)
+      socket = socket
+      |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
+      |> load_initial_data(treaty_id, topic)
+      |> handle_authenticated_user_actions(authenticated_user, treaty_id)
+      |> assign(:treaty_id, treaty_id)
+      |> assign(:current_user, current_user_name)
+      |> assign(:user_object, authenticated_user)
+      |> assign(:token, session["user_token"])
+      |> assign(:topic, topic)
+      |> assign(:user_theme, user_theme)
+      |> assign_connection_state(is_connected, connection_status)
+      |> assign_ui_state()
+      |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 3, max_file_size: 5_000_000, auto_upload: true)
 
-    {:ok, socket}
+      {:ok, socket}
+    rescue
+      error ->
+        # Log o erro mas não faça crash do processo
+        require Logger
+        Logger.error("LiveView mount error for treaty #{treaty_id}: #{inspect(error)}")
+
+        # Criar socket básico sem funcionalidades avançadas
+        socket = socket
+        |> assign(:treaty_id, treaty_id)
+        |> assign(:current_user, "Usuario")
+        |> assign(:user_object, nil)
+        |> assign(:token, session["user_token"])
+        |> assign(:topic, "treaty:#{treaty_id}")
+        |> assign(:user_theme, nil)
+        |> assign(:loading_error, true)
+        |> assign_ui_state()
+
+        {:ok, socket}
+    end
   end
 
   # --- Funções Auxiliares para Mount ---
@@ -87,29 +107,47 @@ defmodule AppWeb.ChatLive do
   end
 
   defp load_initial_data(socket, treaty_id, topic) do
-    treaty_data = fetch_treaty_with_fallback(treaty_id)
-    {message_history, has_more_messages} = load_paginated_messages(treaty_id)
-    treaty_tags = Tags.get_treaty_tags(treaty_id)
-    current_presences = Presence.list(topic)
-    online_users = extract_users_from_presences(current_presences)
+    try do
+      treaty_data = fetch_treaty_with_fallback(treaty_id)
+      {message_history, has_more_messages} = safely_load_paginated_messages(treaty_id)
+      treaty_tags = safely_get_treaty_tags(treaty_id)
+      current_presences = safely_get_presences(topic)
+      online_users = extract_users_from_presences(current_presences || %{})
 
+      # Carregar dados de ratings, atividades e estatísticas com segurança
+      treaty_ratings = safely_get_treaty_ratings(treaty_data.id)
+      treaty_activities = safely_get_treaty_activities(treaty_data.id, 20)
+      treaty_stats = safely_get_treaty_stats(treaty_data.id)
 
-    # Carregar dados de ratings, atividades e estatísticas
-    treaty_ratings = App.Treaties.get_treaty_ratings(treaty_data.id)
-    treaty_activities = App.Treaties.get_treaty_activities(treaty_data.id, 20)
-    treaty_stats = App.Treaties.get_treaty_stats(treaty_data.id)
+      socket
+      |> assign(:treaty, treaty_data)
+      |> assign(:messages, message_history)
+      |> assign(:has_more_messages, has_more_messages)
+      |> assign(:treaty_tags, treaty_tags)
+      |> assign(:presences, current_presences || %{})
+      |> assign(:users_online, online_users)
+      |> assign(:message_count, length(message_history))
+      |> assign(:treaty_ratings, treaty_ratings)
+      |> assign(:treaty_activities, treaty_activities)
+      |> assign(:treaty_stats, treaty_stats)
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Failed to load initial data for treaty #{treaty_id}: #{inspect(error)}")
 
-    socket
-    |> assign(:treaty, treaty_data)
-    |> assign(:messages, message_history)
-    |> assign(:has_more_messages, has_more_messages)
-    |> assign(:treaty_tags, treaty_tags)
-    |> assign(:presences, current_presences)
-    |> assign(:users_online, online_users)
-    |> assign(:message_count, length(message_history))
-    |> assign(:treaty_ratings, treaty_ratings)
-    |> assign(:treaty_activities, treaty_activities)
-    |> assign(:treaty_stats, treaty_stats)
+        # Dados básicos de fallback
+        socket
+        |> assign(:treaty, %{treaty_code: treaty_id, status: "Indisponível", title: "Não carregado"})
+        |> assign(:messages, [])
+        |> assign(:has_more_messages, false)
+        |> assign(:treaty_tags, [])
+        |> assign(:presences, %{})
+        |> assign(:users_online, [])
+        |> assign(:message_count, 0)
+        |> assign(:treaty_ratings, [])
+        |> assign(:treaty_activities, [])
+        |> assign(:treaty_stats, %{})
+    end
   end
 
   defp handle_authenticated_user_actions(socket, authenticated_user, treaty_id) do
@@ -231,9 +269,70 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  defp load_paginated_messages(treaty_id) when is_binary(treaty_id) do
-    case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit()) do
-      {:ok, messages, has_more} -> {messages, has_more}
+  # Funções de segurança para evitar crashes
+  defp safely_load_user_theme(nil), do: nil
+  defp safely_load_user_theme(user) when is_map(user) do
+    try do
+      case App.Themes.get_user_theme(user.id) do
+        {:ok, theme} -> theme
+        {:error, _reason} -> nil
+      end
+    rescue
+      _ -> nil
+    end
+  end
+  defp safely_load_user_theme(_), do: nil
+
+  defp safely_load_paginated_messages(treaty_id) when is_binary(treaty_id) do
+    try do
+      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit()) do
+        {:ok, messages, has_more} -> {messages, has_more}
+      end
+    rescue
+      _ -> {[], false}
+    end
+  end
+
+  defp safely_get_treaty_tags(treaty_id) do
+    try do
+      Tags.get_treaty_tags(treaty_id)
+    rescue
+      _ -> []
+    end
+  end
+
+  defp safely_get_presences(topic) do
+    try do
+      Presence.list(topic)
+    rescue
+      _ -> %{}
+    end
+  end
+
+  defp safely_get_treaty_ratings(nil), do: []
+  defp safely_get_treaty_ratings(treaty_id) do
+    try do
+      App.Treaties.get_treaty_ratings(treaty_id)
+    rescue
+      _ -> []
+    end
+  end
+
+  defp safely_get_treaty_activities(nil, _limit), do: []
+  defp safely_get_treaty_activities(treaty_id, limit) do
+    try do
+      App.Treaties.get_treaty_activities(treaty_id, limit)
+    rescue
+      _ -> []
+    end
+  end
+
+  defp safely_get_treaty_stats(nil), do: %{}
+  defp safely_get_treaty_stats(treaty_id) do
+    try do
+      App.Treaties.get_treaty_stats(treaty_id)
+    rescue
+      _ -> %{}
     end
   end
 
@@ -1079,47 +1178,80 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:new_message, msg}, socket) do
-    if msg.treaty_id == socket.assigns.treaty_id do
-      socket = socket
-      |> update(:messages, fn current_messages -> current_messages ++ [msg] end)
-      |> update(:message_count, fn count -> count + 1 end)
-      |> push_event("scroll-to-bottom", %{})
+    try do
+      # Validação de estrutura da mensagem
+      if msg && Map.get(msg, :treaty_id) == socket.assigns.treaty_id do
+        socket = socket
+        |> update(:messages, fn current_messages ->
+          current_messages ++ [msg]
+        end)
+        |> update(:message_count, fn count -> count + 1 end)
+        |> push_event("scroll-to-bottom", %{})
 
-      {:noreply, socket}
-    else
-      {:noreply, socket}
+        {:noreply, socket}
+      else
+        {:noreply, socket}
+      end
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Error handling new message: #{inspect(error)}")
+        {:noreply, socket}
     end
   end
 
   @impl true
   def handle_info({:upload_complete, %{message_id: message_id, file_url: file_url}}, socket) do
-    # Atualizar mensagem com anexo quando upload for concluído
-    socket = socket
-    |> update(:messages, fn messages ->
-      Enum.map(messages, fn msg ->
-        if msg.id == message_id do
-          # Recarregar anexos da mensagem
-          %{msg | attachments: App.Chat.get_message_attachments(message_id)}
-        else
-          msg
-        end
+    try do
+      # Atualizar mensagem com anexo quando upload for concluído
+      updated_socket = socket
+      |> update(:messages, fn messages ->
+        Enum.map(messages, fn msg ->
+          if msg.id == message_id do
+            # Safely recarregar anexos da mensagem
+            try do
+              attachments = App.Chat.get_message_attachments(message_id)
+              %{msg | attachments: attachments}
+            rescue
+              _ -> msg  # Se falhar, mantém mensagem sem anexos
+            end
+          else
+            msg
+          end
+        end)
       end)
-    end)
-    |> push_event("upload-complete", %{message_id: message_id, file_url: file_url})
+      |> push_event("upload-complete", %{message_id: message_id, file_url: file_url})
 
-    {:noreply, socket}
+      {:noreply, updated_socket}
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Error handling upload complete: #{inspect(error)}")
+        {:noreply, socket}
+    end
   end
 
   @impl true
   def handle_info({:wallpaper_applied, %{wallpaper_url: url}}, socket) do
-    # Recarregar tema do usuário quando papel de parede for aplicado
-    user_theme = load_user_theme(socket.assigns.user_object)
+    try do
+      # Safely recarregar tema do usuário quando papel de parede for aplicado
+      user_theme = if socket.assigns.user_object do
+        safely_load_user_theme(socket.assigns.user_object)
+      else
+        nil
+      end
 
-    socket = socket
-    |> assign(:user_theme, user_theme)
-    |> push_event("theme-updated", %{wallpaper_url: url})
+      socket = socket
+      |> assign(:user_theme, user_theme)
+      |> push_event("theme-updated", %{wallpaper_url: url})
 
-    {:noreply, socket}
+      {:noreply, socket}
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Error handling wallpaper applied: #{inspect(error)}")
+        {:noreply, socket}
+    end
   end
 
   @impl true

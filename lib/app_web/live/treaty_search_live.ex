@@ -11,13 +11,10 @@ defmodule AppWeb.TreatySearchLive do
     {current_user, recent_treaties} = load_user_and_history(user_token)
     treaties_with_tags = enrich_treaties_with_tags(current_user, recent_treaties)
 
-    # Safely get active rooms with fallback
     active_rooms = safely_get_active_rooms()
 
-    # Load notifications for authenticated user
     {notifications, unread_count} = load_user_notifications(current_user)
 
-    # Carregar estatísticas resumidas para administradores
     summary_stats = if current_user && current_user.role == "admin" do
       App.Treaties.get_user_home_summary_stats(current_user.id)
     else
@@ -69,7 +66,6 @@ defmodule AppWeb.TreatySearchLive do
   def handle_event("create_treaty", %{"title" => title, "description" => description, "category" => category}, socket) do
     socket = assign(socket, :loading, true)
 
-    # Verificar se o usuário está autenticado
     case socket.assigns.user_object do
       nil ->
         {:noreply, assign(socket,
@@ -78,7 +74,6 @@ defmodule AppWeb.TreatySearchLive do
         )}
 
       user ->
-        # Criar a tratativa
         treaty_attrs = %{
           title: title,
           description: description,
@@ -120,10 +115,8 @@ defmodule AppWeb.TreatySearchLive do
         {:noreply, socket}
 
       user ->
-        # Limpar o histórico do usuário
         App.Accounts.clear_user_order_history(user.id)
 
-        # Atualizar a lista de tratativas vazia
         {:noreply, assign(socket, :treaty_history, [])}
     end
   end
@@ -146,7 +139,6 @@ defmodule AppWeb.TreatySearchLive do
       user ->
         case App.Notifications.mark_notifications_as_read(user.id, notification_id) do
           {:ok, _count} ->
-            # Update notifications and unread count
             {notifications, unread_count} = load_user_notifications(user)
             {:noreply, assign(socket,
               notifications: notifications,
@@ -166,7 +158,6 @@ defmodule AppWeb.TreatySearchLive do
       user ->
         case App.Notifications.mark_all_notifications_as_read(user.id) do
           {:ok, _count} ->
-            # Update notifications and unread count
             {notifications, unread_count} = load_user_notifications(user)
             {:noreply, assign(socket,
               notifications: notifications,
@@ -192,31 +183,43 @@ defmodule AppWeb.TreatySearchLive do
 
   @impl true
   def handle_info({:notification, _type, _notification_data}, socket) do
-    # Refresh notifications when new ones arrive
-    case socket.assigns.user_object do
-      nil ->
+    try do
+      case socket.assigns.user_object do
+        nil ->
+          {:noreply, socket}
+        user ->
+          {notifications, unread_count} = safely_load_user_notifications(user)
+          {:noreply, assign(socket,
+            notifications: notifications,
+            unread_notification_count: unread_count
+          )}
+      end
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Error handling notification refresh: #{inspect(error)}")
         {:noreply, socket}
-      user ->
-        {notifications, unread_count} = load_user_notifications(user)
-        {:noreply, assign(socket,
-          notifications: notifications,
-          unread_notification_count: unread_count
-        )}
     end
   end
 
   @impl true
   def handle_info({:desktop_notification, _notification_data}, socket) do
-    # Refresh notifications when desktop notifications are sent
-    case socket.assigns.user_object do
-      nil ->
+    try do
+      case socket.assigns.user_object do
+        nil ->
+          {:noreply, socket}
+        user ->
+          {notifications, unread_count} = safely_load_user_notifications(user)
+          {:noreply, assign(socket,
+            notifications: notifications,
+            unread_notification_count: unread_count
+          )}
+      end
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Error handling desktop notification refresh: #{inspect(error)}")
         {:noreply, socket}
-      user ->
-        {notifications, unread_count} = load_user_notifications(user)
-        {:noreply, assign(socket,
-          notifications: notifications,
-          unread_notification_count: unread_count
-        )}
     end
   end
 
@@ -818,8 +821,6 @@ defmodule AppWeb.TreatySearchLive do
   defp pluralize(1), do: ""
   defp pluralize(_), do: "s"
 
-  # Private helper functions
-
   defp safely_get_active_rooms do
     case Process.whereis(App.ActiveRooms) do
       nil ->
@@ -844,5 +845,19 @@ defmodule AppWeb.TreatySearchLive do
     notifications = App.Notifications.get_user_notifications(user.id, 10)
     unread_count = App.Notifications.get_unread_count(user.id)
     {notifications, unread_count}
+  end
+
+  defp safely_load_user_notifications(nil), do: {[], 0}
+  defp safely_load_user_notifications(user) do
+    try do
+      notifications = App.Notifications.get_user_notifications(user.id, 10)
+      unread_count = App.Notifications.get_unread_count(user.id)
+      {notifications, unread_count}
+    rescue
+      error ->
+        require Logger
+        Logger.warning("Failed to load notifications for user #{user.id}: #{inspect(error)}")
+        {[], 0}
+    end
   end
 end
