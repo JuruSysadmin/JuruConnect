@@ -48,7 +48,7 @@ defmodule AppWeb.Router do
   end
 
   scope "/", AppWeb do
-    pipe_through :browser
+    pipe_through [:browser, :auth]
 
     live "/", TreatySearchLive
   end
@@ -64,6 +64,7 @@ defmodule AppWeb.Router do
     pipe_through [:browser, :auth]
 
     live "/dashboard", AdminDashboardLive
+    live "/sla", SLADashboardLive
 
     # Oban Web Dashboard for monitoring jobs
     oban_dashboard("/jobs")

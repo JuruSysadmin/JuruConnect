@@ -59,13 +59,8 @@ const ImageUploadHook = {
         
         // Validate files
         const validFiles = files.filter(file => {
-          if (!file.type.startsWith('image/')) {
-            this.showError('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
-            return false;
-          }
-          
-          if (file.size > 5 * 1024 * 1024) {
-            this.showError('Arquivo muito grande. Máximo permitido: 5MB');
+          if (file.size > 50 * 1024 * 1024) {
+            this.showError('Arquivo muito grande. Máximo permitido: 50MB');
             return false;
           }
           

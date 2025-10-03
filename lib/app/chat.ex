@@ -7,6 +7,7 @@ defmodule App.Chat do
   alias App.Repo
   alias App.Chat.Message
   alias App.Chat.MessageAttachment
+  alias App.Chat.MessageReadReceipt
 
   def list_recent_messages(chat_id, limit \\ 100) do
     from(m in Message,
@@ -139,9 +140,6 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
         # Processar notificações
         process_message_notifications(message_with_attachments, treaty_id)
 
-        # Verificar se há comandos de IA e processar assincronamente
-        process_ai_command_if_needed(message_with_attachments, treaty_id)
-
         {:ok, message_with_attachments}
       {:error, changeset} ->
         {:error, changeset}
@@ -256,91 +254,112 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
     |> Repo.delete_all()
   end
 
-  # --- AI Command Processing ---
+  # === FUNCTIONS FOR READ RECEIPTS ===
 
-  defp process_ai_command_if_needed(message, treaty_id) do
-    # Verificar se é um comando de IA
-    if App.Services.GeminiService.is_ai_command?(message.text) do
-      # Processar de forma assíncrona sem criar referência que retorna ao LiveView
-      Task.start(fn ->
-        case App.Services.GeminiService.extract_question(message.text) do
-          {:ok, question, command_type} ->
-            # Passar o treaty_id para o GeminiService obter dados do pedido
-            case App.Services.GeminiService.generate_response(question, treaty_id) do
-              {:ok, ai_response} ->
-                send_ai_response(treaty_id, ai_response, command_type)
-              {:error, error_msg} ->
-                send_ai_error(treaty_id, error_msg)
-            end
+  @doc """
+  Marca uma mensagem como lida por um usuário.
+  """
+  def mark_message_as_read(message_id, user_id, treaty_id) when is_binary(message_id) and is_binary(user_id) and is_binary(treaty_id) do
+    %MessageReadReceipt{}
+    |> MessageReadReceipt.create_changeset(%{
+      message_id: message_id,
+      user_id: user_id,
+      treaty_id: treaty_id
+    })
+    |> Repo.insert()
+  end
 
-          {:error, _} ->
-            # Não é um comando de IA válido, ignorar
-            :ok
-        end
+  @doc """
+  Obtém todas as confirmações de leitura para uma mensagem.
+  """
+  def get_message_read_receipts(message_id) when is_binary(message_id) do
+    MessageReadReceipt
+    |> where([rr], rr.message_id == ^message_id)
+    |> join(:inner, [rr], u in "users", on: rr.user_id == u.id)
+    |> select([rr, u], %{
+      user_id: rr.user_id,
+      user_name: u.name,
+      username: u.username,
+      read_at: rr.read_at
+    })
+    |> Repo.all()
+  end
+
+  @doc """
+  Obtém confirmações de leitura para múltiplas mensagens de uma tratativa.
+  Recebe uma lista de message_ids e retorna um mapa: %{message_id => [receipts]}
+  """
+  def get_read_receipts_for_messages(message_ids, treaty_id) when is_list(message_ids) and is_binary(treaty_id) do
+    unless Enum.empty?(message_ids) do
+      MessageReadReceipt
+      |> where([rr], rr.message_id in ^message_ids and rr.treaty_id == ^treaty_id)
+      |> join(:inner, [rr], u in "users", on: rr.user_id == u.id)
+      |> select([rr, u], %{
+        message_id: rr.message_id,
+        user_id: rr.user_id,
+        user_name: u.name,
+        username: u.username,
+        read_at: rr.read_at
+      })
+      |> Repo.all()
+      |> Enum.group_by(& &1.message_id, fn receipt ->
+        Map.delete(receipt, :message_id)
       end)
+    else
+      %{}
     end
   end
 
-
-  defp send_ai_response(treaty_id, response, _command_type) do
-    ai_message = %{
-      id: "ai-#{System.system_time(:millisecond)}",
-      text: "🤖 *Assistente IA:*\n\n#{response}",
-      sender_id: "ai_assistant",
-      sender_name: "Assistente IA",
-      treaty_id: treaty_id,
-      tipo: "ai_response",
-      inserted_at: DateTime.utc_now()
-    }
-
-    # Salvar a resposta da IA no banco de dados
-    case create_message(%{
-      text: ai_message.text,
-      sender_id: ai_message.sender_id,
-      sender_name: ai_message.sender_name,
-      treaty_id: ai_message.treaty_id,
-      tipo: ai_message.tipo,
-      timestamp: ai_message.inserted_at
-    }) do
-      {:ok, saved_message} ->
-        # Publicar via PubSub para atualizar a interface
-        topic = "treaty:#{treaty_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, saved_message})
-
-      {:error, _changeset} ->
-        # Se falhar ao salvar, pelo menos fazer broadcast
-        topic = "treaty:#{treaty_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, ai_message})
-    end
+  @doc """
+  Verifica se um usuário já leu uma mensagem específica.
+  """
+  def user_has_read_message?(message_id, user_id) when is_binary(message_id) and is_binary(user_id) do
+    MessageReadReceipt
+    |> where([rr], rr.message_id == ^message_id and rr.user_id == ^user_id)
+    |> Repo.exists?()
   end
 
-  defp send_ai_error(treaty_id, error_msg) do
-    error_message = %{
-      id: "ai-error-#{System.system_time(:millisecond)}",
-      text: "🤖 *Erro no Assistente IA:*\n\n#{error_msg}",
-      sender_id: "ai_assistant",
-      sender_name: "Assistente IA",
-      treaty_id: treaty_id,
-      tipo: "ai_error",
-      inserted_at: DateTime.utc_now()
+  @doc """
+  Obtém estatísticas de leitura para uma tratativa:
+  - Total de mensagens
+  - Mensagens lidas por usuário
+  - Taxa de leitura geral
+  """
+  def get_treaty_read_stats(treaty_id) when is_binary(treaty_id) do
+    # Total de mensagens na tratativa
+    total_messages = Message
+    |> where([m], m.treaty_id == ^treaty_id)
+    |> Repo.aggregate(:count, :id)
+
+    # Confirmações de leitura por usuário
+    read_stats = MessageReadReceipt
+    |> where([rr], rr.treaty_id == ^treaty_id)
+    |> join(:inner, [rr], u in "users", on: rr.user_id == u.id)
+    |> group_by([rr, u], [rr.user_id, u.name, u.username])
+    |> select([rr, u], %{
+      user_id: rr.user_id,
+      user_name: u.name,
+      username: u.username,
+      messages_read: count(rr.message_id)
+    })
+    |> Repo.all()
+
+    %{
+      total_messages: total_messages,
+      read_stats: read_stats,
+      reading_percentages: calculate_reading_percentages(read_stats, total_messages)
     }
+  end
 
-    # Tentar salvar o erro no banco, mas não bloquear se falhar
-    case create_message(%{
-      text: error_message.text,
-      sender_id: error_message.sender_id,
-      sender_name: error_message.sender_name,
-      treaty_id: error_message.treaty_id,
-      tipo: error_message.tipo,
-      timestamp: error_message.inserted_at
-    }) do
-      {:ok, saved_message} ->
-        topic = "treaty:#{treaty_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, saved_message})
-
-      {:error, _changeset} ->
-        topic = "treaty:#{treaty_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, error_message})
+  defp calculate_reading_percentages(read_stats, total_messages) do
+    if total_messages > 0 do
+      Enum.map(read_stats, fn stat ->
+        Map.put(stat, :percentage_read, round(stat.messages_read / total_messages * 100))
+      end)
+    else
+      Enum.map(read_stats, fn stat ->
+        Map.put(stat, :percentage_read, 0)
+      end)
     end
   end
 end

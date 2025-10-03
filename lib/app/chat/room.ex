@@ -36,8 +36,6 @@ defmodule App.Chat.Room do
       {:ok, message} ->
         broadcast_message(state.treaty_id, message)
         new_messages = [message | state.messages]
-
-
         new_state = %{state | messages: new_messages, last_activity: DateTimeHelper.now()}
         {:noreply, new_state}
 

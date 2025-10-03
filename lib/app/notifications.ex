@@ -203,7 +203,7 @@ defmodule App.Notifications do
   def extract_mentions(_), do: []
 
   defp find_mentioned_usernames(text) do
-    ~r/@(\w+)/
+    ~r/@([\w\.-]+)/
     |> Regex.scan(text)
     |> Enum.map(fn [_, username] -> username end)
     |> Enum.uniq()

@@ -104,10 +104,6 @@ config :app, Oban,
            region: "us-east-1"
          ]
 
-# Gemini API configuration
-config :app, App.Services.GeminiService,
-  api_key: "AIzaSyBgeJuyCTTobJw7TVbAnLtfb4gUdADoRsI"
-
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

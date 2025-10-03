@@ -170,7 +170,7 @@ const ChatHook = {
 
   // Mention autocomplete methods
   handleMentionAutocomplete(text) {
-    const mentionMatch = text.match(/@(\w*)$/);
+    const mentionMatch = text.match(/@([\w\.-]*)$/);
     if (mentionMatch) {
       const query = mentionMatch[1];
       if (query.length >= 1) {
@@ -245,7 +245,7 @@ const ChatHook = {
     if (!messageInput) return;
 
     const text = messageInput.value;
-    const mentionMatch = text.match(/@(\w*)$/);
+    const mentionMatch = text.match(/@([\w\.-]*)$/);
 
     if (mentionMatch) {
       const beforeMention = text.substring(0, mentionMatch.index);
@@ -400,24 +400,25 @@ const ChatHook = {
     console.log('Files dropped:', files.length);
 
     if (files.length > 0) {
-      // Check if files are images
-      const imageFiles = Array.from(files).filter(file => {
-        console.log('File type:', file.type, 'is image:', file.type.startsWith('image/'));
-        return file.type.startsWith('image/');
+      // Accept all file types
+      const validFiles = Array.from(files).filter(file => {
+        console.log('File type:', file.type, 'size:', file.size);
+        
+        // Check file size (50MB limit)
+        if (file.size > 50 * 1024 * 1024) {
+          alert('Arquivo muito grande. Máximo permitido: 50MB');
+          return false;
+        }
+        
+        return true;
       });
 
-      console.log('Image files found:', imageFiles.length);
+      console.log('Valid files found:', validFiles.length);
 
-      if (imageFiles.length > 0) {
-        // Use the first image file
-        const file = imageFiles[0];
+      if (validFiles.length > 0) {
+        // Use the first file
+        const file = validFiles[0];
         console.log('Processing file:', file.name, 'size:', file.size);
-        
-        // Check file size (5MB limit)
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Arquivo muito grande. Máximo permitido: 5MB');
-          return;
-        }
 
         // Create a new FileList with the dropped file
         const dataTransfer = new DataTransfer();
@@ -431,8 +432,6 @@ const ChatHook = {
         imageUpload.dispatchEvent(changeEvent);
 
         console.log('File dropped and added to upload input:', file.name);
-      } else {
-        alert('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
       }
     }
   }
