@@ -22,8 +22,8 @@ defmodule App.Treaties.TreatyRating do
   """
   def changeset(rating, attrs) do
     rating
-    |> cast(attrs, [:treaty_id, :user_id, :rating, :comment, :rated_at])
-    |> validate_required([:treaty_id, :user_id, :rating, :rated_at])
+    |> cast(attrs, [:treaty_id, :user_id, :rating, :comment])
+    |> validate_required([:treaty_id, :user_id, :rating])
     |> validate_inclusion(:rating, ["péssimo", "ruim", "bom", "excelente"])
     |> validate_length(:comment, max: 1000)
     |> unique_constraint([:treaty_id, :user_id])
@@ -37,6 +37,6 @@ defmodule App.Treaties.TreatyRating do
   def create_changeset(rating, attrs) do
     rating
     |> changeset(attrs)
-    |> put_change(:rated_at, DateTime.utc_now())
+    |> put_change(:rated_at, DateTime.truncate(DateTime.utc_now(), :second))
   end
 end
