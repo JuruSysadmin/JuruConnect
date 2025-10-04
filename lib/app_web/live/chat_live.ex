@@ -11,7 +11,7 @@ defmodule AppWeb.ChatLive do
   """
   use AppWeb, :live_view
   alias AppWeb.Presence
-  alias App.ChatConfig
+  alias AppWeb.ChatConfig
   alias App.Tags
   alias App.DateTimeHelper
 
@@ -50,49 +50,83 @@ defmodule AppWeb.ChatLive do
   @impl true
   def mount(%{"treaty_id" => treaty_id} = _params, session, socket) do
     try do
-      topic = "treaty:#{treaty_id}"
-      {current_user_name, authenticated_user} = resolve_user_identity(socket, session)
-
-      is_connected = connected?(socket)
-      connection_status = if is_connected, do: "Conectado", else: "Desconectado"
-
-
       socket = socket
-      |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
-      |> load_initial_data(treaty_id, topic, authenticated_user)
-      |> handle_authenticated_user_actions(authenticated_user, treaty_id)
-      |> assign(:treaty_id, treaty_id)
-      |> assign(:current_user, current_user_name)
-      |> assign(:user_object, authenticated_user)
-      |> assign(:token, session["user_token"])
-      |> assign(:topic, topic)
-      |> assign_connection_state(is_connected, connection_status)
-      |> assign_ui_state()
-      |> assign(:showing_comments, false)
-      |> allow_upload(:image, accept: ~w(.jpg .jpeg .png .gif), max_entries: 3, max_file_size: 5_000_000, auto_upload: true)
+      |> initialize_chat_session(treaty_id, session)
 
       {:ok, socket}
     rescue
       error ->
-        # Log o erro mas não faça crash do processo
         require Logger
         Logger.error("LiveView mount error for treaty #{treaty_id}: #{inspect(error)}")
-
-        # Criar socket básico sem funcionalidades avançadas
-        socket = socket
-        |> assign(:treaty_id, treaty_id)
-        |> assign(:current_user, "Usuario")
-        |> assign(:user_object, nil)
-        |> assign(:token, session["user_token"])
-        |> assign(:topic, "treaty:#{treaty_id}")
-        |> assign(:loading_error, true)
-        |> assign_ui_state()
-
-        {:ok, socket}
+        {:ok, create_error_socket(socket, treaty_id, session)}
     end
   end
 
-  # --- Funções Auxiliares para Mount ---
+  defp initialize_chat_session(socket, treaty_id, session) do
+    topic = "treaty:#{treaty_id}"
+    {current_user_name, authenticated_user} = resolve_user_identity(socket, session)
+    is_connected = connected?(socket)
+    connection_status = if is_connected, do: "Conectado", else: "Desconectado"
+
+    socket
+    |> setup_connection_if_connected(topic, current_user_name, authenticated_user, treaty_id)
+    |> load_initial_data(treaty_id, topic, authenticated_user)
+    |> handle_authenticated_user_actions(authenticated_user, treaty_id)
+    |> assign_basic_session_data(treaty_id, current_user_name, authenticated_user, session, topic)
+    |> assign_connection_state(is_connected, connection_status)
+    |> configure_upload()
+    |> assign_ui_state()
+    |> assign(:showing_comments, false)
+  end
+
+  defp assign_basic_session_data(socket, treaty_id, current_user_name, authenticated_user, session, topic) do
+    socket
+    |> assign(:treaty_id, treaty_id)
+    |> assign(:current_user, current_user_name)
+    |> assign(:user_object, authenticated_user)
+    |> assign(:token, session["user_token"])
+    |> assign(:topic, topic)
+  end
+
+  defp configure_upload(socket) do
+    allow_upload(socket, :image,
+      accept: ChatConfig.get_config_value(:upload, :allowed_image_types),
+      max_entries: ChatConfig.get_config_value(:upload, :max_entries),
+      max_file_size: ChatConfig.get_config_value(:upload, :max_file_size),
+      auto_upload: ChatConfig.get_config_value(:upload, :auto_upload)
+    )
+  end
+
+  defp create_error_socket(socket, treaty_id, session) do
+    socket
+    |> assign(:treaty_id, treaty_id)
+    |> assign(:current_user, "Usuario")
+    |> assign(:user_object, nil)
+    |> assign(:token, session["user_token"])
+    |> assign(:topic, "treaty:#{treaty_id}")
+    |> assign(:loading_error, true)
+    |> assign(:connected, false)
+    |> assign(:connection_status, "Erro de conexão")
+    |> assign_empty_data()
+    |> configure_upload()
+    |> assign_ui_state()
+  end
+
+  defp assign_empty_data(socket) do
+    socket
+    |> assign(:treaty, %{treaty_code: socket.assigns.treaty_id, status: "Indisponível", title: "Não carregado"})
+    |> assign(:messages, [])
+    |> assign(:has_more_messages, false)
+    |> assign(:treaty_tags, [])
+    |> assign(:presences, %{})
+    |> assign(:users_online, [])
+    |> assign(:message_count, 0)
+    |> assign(:treaty_ratings, [])
+    |> assign(:treaty_activities, [])
+    |> assign(:treaty_stats, %{})
+    |> assign(:treaty_comments, [])
+    |> assign(:read_receipts, %{})
+  end
 
   defp setup_connection_if_connected(socket, topic, current_user_name, authenticated_user, treaty_id) do
     if connected?(socket) do
@@ -105,55 +139,57 @@ defmodule AppWeb.ChatLive do
 
   defp load_initial_data(socket, treaty_id, topic, _authenticated_user) do
     try do
-      treaty_data = fetch_treaty_with_fallback(treaty_id)
-      {message_history, has_more_messages} = safely_load_paginated_messages(treaty_id)
-      treaty_tags = safely_get_treaty_tags(treaty_id)
-      current_presences = safely_get_presences(topic)
-      online_users = extract_users_from_presences(current_presences || %{})
-
-      # Carregar dados de ratings, atividades e estatísticas com segurança
-      treaty_ratings = safely_get_treaty_ratings(treaty_data.id)
-      treaty_activities = safely_get_treaty_activities(treaty_data.id, 20)
-      treaty_stats = safely_get_treaty_stats(treaty_data.id)
-
-      # Carregar dados de comentários
-      treaty_comments = safely_get_treaty_comments(treaty_data.id)
-
-      # Carregar confirmações de leitura
-      read_receipts = safely_get_read_receipts(message_history, treaty_id)
-
       socket
-      |> assign(:treaty, treaty_data)
-      |> assign(:messages, message_history)
-      |> assign(:has_more_messages, has_more_messages)
-      |> assign(:treaty_tags, treaty_tags)
-      |> assign(:presences, current_presences || %{})
-      |> assign(:users_online, online_users)
-      |> assign(:message_count, length(message_history))
-      |> assign(:treaty_ratings, treaty_ratings)
-      |> assign(:treaty_activities, treaty_activities)
-      |> assign(:treaty_stats, treaty_stats)
-      |> assign(:treaty_comments, treaty_comments)
-      |> assign(:read_receipts, read_receipts)
+      |> load_treaty_data(treaty_id)
+      |> load_message_data(treaty_id)
+      |> load_presence_data(topic)
+      |> load_additional_data(treaty_id)
     rescue
       error ->
         require Logger
         Logger.warning("Failed to load initial data for treaty #{treaty_id}: #{inspect(error)}")
-
-        # Dados básicos de fallback
-        socket
-        |> assign(:treaty, %{treaty_code: treaty_id, status: "Indisponível", title: "Não carregado"})
-        |> assign(:messages, [])
-        |> assign(:has_more_messages, false)
-        |> assign(:treaty_tags, [])
-        |> assign(:presences, %{})
-        |> assign(:users_online, [])
-        |> assign(:message_count, 0)
-        |> assign(:treaty_ratings, [])
-        |> assign(:treaty_activities, [])
-        |> assign(:treaty_stats, %{})
-        |> assign(:treaty_comments, [])
+        assign_empty_data(socket)
     end
+  end
+
+  defp load_treaty_data(socket, treaty_id) do
+    treaty_data = fetch_treaty_with_fallback(treaty_id)
+    assign(socket, :treaty, treaty_data)
+  end
+
+  defp load_message_data(socket, treaty_id) do
+    {message_history, has_more_messages} = safely_load_paginated_messages(treaty_id)
+    read_receipts = safely_get_read_receipts(message_history, treaty_id)
+
+    socket
+    |> assign(:messages, message_history)
+    |> assign(:has_more_messages, has_more_messages)
+    |> assign(:message_count, length(message_history))
+    |> assign(:read_receipts, read_receipts)
+  end
+
+  defp load_presence_data(socket, topic) do
+    current_presences = safely_get_presences(topic)
+    online_users = extract_users_from_presences(current_presences || %{})
+
+    socket
+    |> assign(:presences, current_presences || %{})
+    |> assign(:users_online, online_users)
+  end
+
+  defp load_additional_data(socket, treaty_id) do
+    treaty_tags = safely_get_treaty_tags(treaty_id)
+    treaty_ratings = safely_get_treaty_ratings(socket.assigns.treaty.id)
+    treaty_activities = safely_get_treaty_activities(socket.assigns.treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
+    treaty_stats = safely_get_treaty_stats(socket.assigns.treaty.id)
+    treaty_comments = safely_get_treaty_comments(socket.assigns.treaty.id)
+
+    socket
+    |> assign(:treaty_tags, treaty_tags)
+    |> assign(:treaty_ratings, treaty_ratings)
+    |> assign(:treaty_activities, treaty_activities)
+    |> assign(:treaty_stats, treaty_stats)
+    |> assign(:treaty_comments, treaty_comments)
   end
 
   defp handle_authenticated_user_actions(socket, authenticated_user, treaty_id) do
@@ -167,35 +203,48 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  # --- Autenticação e Identidade do Usuário ---
+  defp resolve_user_identity(%{assigns: %{current_user: nil}}, session) do
+    extract_user_from_session_token(session)
+  end
+
+  defp resolve_user_identity(%{assigns: %{current_user: user}}, _session) do
+    extract_user_from_socket_assigns(user)
+  end
 
   defp resolve_user_identity(socket, session) do
+    # Fallback para sockets que não têm a estrutura esperada
     case socket.assigns[:current_user] do
       nil -> extract_user_from_session_token(session)
-      %{} = user -> extract_user_from_socket_assigns(user)
+      user -> extract_user_from_socket_assigns(user)
     end
   end
 
-  defp extract_user_from_session_token(session) do
-    case session["user_token"] do
-      nil ->
-        {ChatConfig.default_username(), nil}
+  defp extract_user_from_session_token(%{"user_token" => nil}) do
+    default_username = ChatConfig.get_config_value(:ui, :default_username) || "Usuario"
+    {default_username, nil}
+  end
 
-      token when is_binary(token) ->
-        case AppWeb.Auth.Guardian.resource_from_token(token) do
-          {:ok, %{name: name} = user, _claims} when not is_nil(name) ->
-            {name, user}
+  defp extract_user_from_session_token(%{"user_token" => token}) when is_binary(token) do
+    default_username = ChatConfig.get_config_value(:ui, :default_username) || "Usuario"
 
-          {:ok, %{username: username} = user, _claims} when not is_nil(username) ->
-            {username, user}
+    case AppWeb.Auth.Guardian.resource_from_token(token) do
+      {:ok, %{name: name} = user, _claims} when not is_nil(name) ->
+        {name, user}
 
-          {:ok, user, _claims} ->
-            {ChatConfig.default_username(), user}
+      {:ok, %{username: username} = user, _claims} when not is_nil(username) ->
+        {username, user}
 
-          {:error, _reason} ->
-            {ChatConfig.default_username(), nil}
-        end
+      {:ok, user, _claims} ->
+        {default_username, user}
+
+      {:error, _reason} ->
+        {default_username, nil}
     end
+  end
+
+  defp extract_user_from_session_token(_session) do
+    default_username = ChatConfig.get_config_value(:ui, :default_username) || "Usuario"
+    {default_username, nil}
   end
 
   defp extract_user_from_socket_assigns(%{name: name} = user) when not is_nil(name) do
@@ -207,11 +256,9 @@ defmodule AppWeb.ChatLive do
   end
 
   defp extract_user_from_socket_assigns(user) do
-    default_name = ChatConfig.default_username()
+    default_name = ChatConfig.get_config_value(:ui, :default_username) || "Usuario"
     {default_name, user}
   end
-
-  # --- Configuração de Comunicação em Tempo Real ---
 
   defp setup_pubsub_subscriptions(topic, authenticated_user) do
     Phoenix.PubSub.subscribe(App.PubSub, topic)
@@ -231,7 +278,6 @@ defmodule AppWeb.ChatLive do
 
     case Presence.track(self(), topic, socket.id, user_data) do
       {:ok, _} ->
-        # Também rastrear no sistema de salas ativas
         if authenticated_user do
           case Process.whereis(App.ActiveRooms) do
             nil ->
@@ -254,10 +300,8 @@ defmodule AppWeb.ChatLive do
   defp get_user_id_for_presence(%{id: id}), do: id
 
   defp schedule_connection_status_update do
-    Process.send_after(self(), :update_connection_status, 5000)
+    Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
   end
-
-  # --- Carregamento e Gerenciamento de Dados ---
 
   defp fetch_treaty_with_fallback(treaty_id) when is_binary(treaty_id) do
     case App.Treaties.get_treaty(treaty_id) do
@@ -275,11 +319,9 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  # Funções de segurança para evitar crashes
-
   defp safely_load_paginated_messages(treaty_id) when is_binary(treaty_id) do
     try do
-      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.default_message_limit()) do
+      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:messages, :default_message_limit)) do
         {:ok, messages, has_more} -> {messages, has_more}
       end
     rescue
@@ -303,8 +345,14 @@ defmodule AppWeb.ChatLive do
     end
   end
 
+  defp get_user_initial(user) when is_binary(user) and byte_size(user) > 0 do
+    user |> String.first() |> String.upcase()
+  end
+
+  defp get_user_initial(_), do: "U"
+
   defp safely_get_treaty_ratings(nil), do: []
-  defp safely_get_treaty_ratings(treaty_id) do
+  defp safely_get_treaty_ratings(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
     try do
       App.Treaties.get_treaty_ratings(treaty_id)
     rescue
@@ -313,7 +361,7 @@ defmodule AppWeb.ChatLive do
   end
 
   defp safely_get_treaty_activities(nil, _limit), do: []
-  defp safely_get_treaty_activities(treaty_id, limit) do
+  defp safely_get_treaty_activities(treaty_id, limit) when (is_integer(treaty_id) or is_binary(treaty_id)) and is_integer(limit) do
     try do
       App.Treaties.get_treaty_activities(treaty_id, limit)
     rescue
@@ -322,7 +370,7 @@ defmodule AppWeb.ChatLive do
   end
 
   defp safely_get_treaty_stats(nil), do: %{}
-  defp safely_get_treaty_stats(treaty_id) do
+  defp safely_get_treaty_stats(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
     try do
       App.Treaties.get_treaty_stats(treaty_id)
     rescue
@@ -331,7 +379,7 @@ defmodule AppWeb.ChatLive do
   end
 
   defp safely_get_treaty_comments(nil), do: []
-  defp safely_get_treaty_comments(treaty_id) do
+  defp safely_get_treaty_comments(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
     try do
       App.TreatyComments.get_treaty_comments(treaty_id)
     rescue
@@ -350,7 +398,6 @@ defmodule AppWeb.ChatLive do
 
 
   defp format_message_with_mentions(text) when is_binary(text) do
-    # Substitui @username com menções destacadas
     text
     |> String.replace(~r/@([\w\.-]+)/, ~s(<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md text-xs font-medium">@\\1</span>))
     |> Phoenix.HTML.raw()
@@ -366,39 +413,50 @@ defmodule AppWeb.ChatLive do
 
   defp assign_ui_state(socket) do
     socket
-    |> assign(:message, "")
-    |> assign(:loading_messages, false)
-    |> assign(:message_error, nil)
-    |> assign(:modal_image_url, nil)
-    |> assign(:typing_users, [])
-    |> assign(:show_typing_indicator, false)
-    |> assign(:show_search, false)
-    |> assign(:show_tag_modal, false)
-    |> assign(:tag_search_query, "")
-    |> assign(:tag_search_results, [])
-    |> assign(:show_sidebar, false)
-    |> assign(:show_shortcuts_modal, false)
-    |> assign(:show_shortcuts_tour, false)
-    |> assign(:search_query, "")
-    |> assign(:search_filters, %{
-      date_from: nil,
-      date_to: nil,
-      user_filter: nil,
-      content_type: "all"
-    })
-    |> assign(:search_results, [])
-    |> assign(:search_active, false)
-    |> assign(:show_close_modal, false)
-    |> assign(:show_activities_modal, false)
-    |> assign(:close_reason, "")
-    |> assign(:resolution_notes, "")
-    |> assign(:rating_value, "")
-    |> assign(:can_close_treaty, false)
-    |> assign(:rating_comment, "")
+    |> assign_message_state()
+    |> assign_modal_states()
+    |> assign_form_states()
+    |> assign_animation_states()
     |> update_can_close_treaty()
   end
 
-  # --- Processamento de Mensagens ---
+  defp assign_message_state(socket) do
+    socket
+    |> assign(:message, "")
+    |> assign(:loading_messages, false)
+    |> assign(:message_error, nil)
+    |> assign(:typing_users, [])
+    |> assign(:show_typing_indicator, false)
+  end
+
+  defp assign_modal_states(socket) do
+    socket
+    |> assign(:modal_image_url, nil)
+    |> assign(:show_tag_modal, false)
+    |> assign(:show_sidebar, false)
+    |> assign(:show_close_modal, false)
+    |> assign(:show_activities_modal, false)
+  end
+
+  defp assign_form_states(socket) do
+    socket
+    |> assign(:tag_search_query, "")
+    |> assign(:tag_search_results, [])
+    |> assign(:close_reason, "")
+    |> assign(:resolution_notes, "")
+    |> assign(:rating_value, "")
+    |> assign(:rating_comment, "")
+  end
+
+  defp assign_animation_states(socket) do
+    socket
+    |> assign(:modal_animation_state, "closed")
+    |> assign(:drag_drop_state, "idle")
+    |> assign(:connection_transition_state, "stable")
+    |> assign(:button_interaction_state, %{})
+    |> assign(:skeleton_loading, false)
+    |> assign(:message_animation_queue, [])
+  end
 
   @doc """
   Processa o envio de mensagens com validação e verificações de segurança.
@@ -406,8 +464,6 @@ defmodule AppWeb.ChatLive do
   Valida o conteúdo da mensagem, lida com uploads de imagens e transmite
   a mensagem para todos os usuários conectados na sala de chat do pedido.
   """
-  # --- Event Handlers ---
-  # All handle_event/3 functions are grouped together for better organization
   @impl true
   def handle_event("send_message", %{"message" => text}, socket) do
     trimmed_text = String.trim(text)
@@ -434,6 +490,7 @@ defmodule AppWeb.ChatLive do
       {:noreply,
         socket
         |> assign(:loading_messages, true)
+        |> assign(:skeleton_loading, true)
         |> load_older_messages_async()
       }
     end
@@ -441,15 +498,12 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("update_message", %{"message" => message}, socket) do
-    # Otimização: debounce inteligente para typing indicator
     if connected?(socket) && String.length(message) > 0 do
-      # Cancelar timer anterior se existir
       if socket.assigns[:typing_timer] do
         Process.cancel_timer(socket.assigns.typing_timer)
       end
 
-      # Criar novo timer de 1000ms para evitar spam de eventos de digitação
-      timer_ref = Process.send_after(self(), :trigger_typing_start, 1000)
+      timer_ref = Process.send_after(self(), :trigger_typing_start, ChatConfig.get_config_value(:messages, :typing_indicator_delay))
 
       {:noreply, socket |> assign(:typing_timer, timer_ref) |> assign(:message, message)}
     else
@@ -475,12 +529,6 @@ defmodule AppWeb.ChatLive do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("toggle_search", _params, socket) do
-    {:noreply, assign(socket, :show_search, !socket.assigns[:show_search])}
-  end
-
-  @impl true
   def handle_event("toggle_sidebar", _params, socket) do
     {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
   end
@@ -501,55 +549,45 @@ defmodule AppWeb.ChatLive do
     }
   end
 
-  @impl true
-  def handle_event("show_shortcuts_help", _params, socket) do
-    {:noreply, assign(socket, :show_shortcuts_modal, true)}
-  end
-
-  @impl true
-  def handle_event("hide_shortcuts_help", _params, socket) do
-    {:noreply, assign(socket, :show_shortcuts_modal, false)}
-  end
-
-  # ============= EVENT HANDLERS PARA COMENTÁRIOS =============
-
-  @impl true
   def handle_event("toggle_comments", _params, socket) do
     {:noreply, assign(socket, :showing_comments, !socket.assigns.showing_comments)}
   end
 
   @impl true
-  def handle_event("create_comment", %{"content" => content, "comment_type" => comment_type}, socket) do
-    case socket.assigns.user_object do
-      nil ->
-        {:noreply, put_flash(socket, :error, "Você precisa estar logado para criar comentários")}
+  def handle_event("create_comment", %{"content" => _content, "comment_type" => _comment_type}, %{assigns: %{user_object: nil}} = socket) do
+    {:noreply, put_flash(socket, :error, "Você precisa estar logado para criar comentários")}
+  end
 
-      user ->
-        case App.TreatyComments.create_comment(%{
-          treaty_id: socket.assigns.treaty.id,
-          user_id: user.id,
-          content: content,
-          comment_type: comment_type
-        }) do
-          {:ok, _comment} ->
-            # Recarregar comentários
-            updated_comments = safely_get_treaty_comments(socket.assigns.treaty.id)
-            {:noreply,
-              socket
-              |> assign(:treaty_comments, updated_comments)
-              |> put_flash(:info, "Comentário criado com sucesso")}
+  @impl true
+  def handle_event("create_comment", %{"content" => content, "comment_type" => comment_type}, %{assigns: %{user_object: user, treaty: %{id: treaty_id}}} = socket) do
+    case App.TreatyComments.create_comment(%{
+      treaty_id: treaty_id,
+      user_id: user.id,
+      content: content,
+      comment_type: comment_type
+    }) do
+      {:ok, _comment} ->
+        updated_comments = safely_get_treaty_comments(treaty_id)
+        {:noreply,
+          socket
+          |> assign(:treaty_comments, updated_comments)
+          |> put_flash(:info, "Comentário criado com sucesso")}
 
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Erro ao criar comentário: #{"Campo obrigatório ausente"}")}
-        end
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Erro ao criar comentário: #{"Campo obrigatório ausente"}")}
     end
   end
 
   @impl true
-  def handle_event("edit_comment", %{"comment_id" => comment_id, "content" => content}, socket) do
+  def handle_event("create_comment", _params, socket) do
+    {:noreply, put_flash(socket, :error, "Tratativa não encontrada")}
+  end
+
+  @impl true
+  def handle_event("edit_comment", %{"comment_id" => comment_id, "content" => content}, %{assigns: %{treaty: %{id: treaty_id}}} = socket) do
     case App.TreatyComments.update_comment(comment_id, %{content: content}) do
       {:ok, _comment} ->
-        updated_comments = safely_get_treaty_comments(socket.assigns.treaty.id)
+        updated_comments = safely_get_treaty_comments(treaty_id)
         {:noreply,
           socket
           |> assign(:treaty_comments, updated_comments)
@@ -564,10 +602,15 @@ defmodule AppWeb.ChatLive do
   end
 
   @impl true
-  def handle_event("delete_comment", %{"comment_id" => comment_id}, socket) do
+  def handle_event("edit_comment", _params, socket) do
+    {:noreply, put_flash(socket, :error, "Tratativa não encontrada")}
+  end
+
+  @impl true
+  def handle_event("delete_comment", %{"comment_id" => comment_id}, %{assigns: %{treaty: %{id: treaty_id}}} = socket) do
     case App.TreatyComments.delete_comment(comment_id) do
       {:ok, _comment} ->
-        updated_comments = safely_get_treaty_comments(socket.assigns.treaty.id)
+        updated_comments = safely_get_treaty_comments(treaty_id)
         {:noreply,
           socket
           |> assign(:treaty_comments, updated_comments)
@@ -578,76 +621,18 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-
-
-
-
-
   @impl true
-  def handle_event("show_shortcuts_tour", _params, socket) do
-    {:noreply, assign(socket, :show_shortcuts_tour, true)}
+  def handle_event("delete_comment", _params, socket) do
+    {:noreply, put_flash(socket, :error, "Tratativa não encontrada")}
   end
 
-  @impl true
-  def handle_event("hide_shortcuts_tour", _params, socket) do
-    {:noreply, assign(socket, :show_shortcuts_tour, false)}
-  end
 
-  def handle_event("focus_search", _params, socket), do: {:noreply, socket}
-  def handle_event("blur_search", _params, socket), do: {:noreply, socket}
-  def handle_event("stopPropagation", _params, socket), do: {:noreply, socket}
 
-  @impl true
-  def handle_event("handle_keydown", %{"key" => "Backspace"}, socket) do
-    # Parar typing quando usuário para de digitar
-    if socket.assigns[:typing_timer] do
-      Process.cancel_timer(socket.assigns.typing_timer)
-    end
 
-    {:noreply,
-      socket
-      |> assign(:typing_timer, nil)
-      |> push_event("trigger-stop-typing", %{})
-    }
-  end
 
-  @impl true
-  def handle_event("handle_keydown", %{"key" => "Escape"}, socket) do
-    # ESC fecha modais e sidebar
-    {:noreply,
-      socket
-      |> assign(:show_sidebar, false)
-      |> assign(:show_search, false)
-      |> assign(:show_tag_modal, false)
-      |> assign(:show_activities_modal, false)
-      |> assign(:show_close_modal, false)
-      |> assign(:modal_image_url, nil)
-    }
-  end
 
-  @impl true
-  def handle_event("handle_keydown", %{"key" => "Enter", "ctrlKey" => true}, socket) do
-    # Ctrl+Enter envia mensagem
-    if String.trim(socket.assigns.message) != "" or length(socket.assigns.uploads.image.entries) > 0 do
-      handle_event("send_message", %{"message" => socket.assigns.message}, socket)
-    else
-      {:noreply, socket}
-    end
-  end
 
-  @impl true
-  def handle_event("handle_keydown", %{"key" => key}, socket) do
-    # Atalhos de teclado globais
-    case key do
-      "1" -> {:noreply, push_event(socket, "focus-input", %{})}
-      "2" -> {:noreply, assign(socket, :show_sidebar, !socket.assigns[:show_sidebar])}
-      "3" -> {:noreply, assign(socket, :show_tag_modal, true)}
-      "4" -> {:noreply, push_navigate(socket, to: "/")}
-      _ -> {:noreply, socket}
-    end
-  end
 
-  @impl true
   def handle_event("handle_keyup", %{"key" => key}, socket) do
     case key do
       "k" -> {:noreply, assign(socket, :show_search, true)}
@@ -657,115 +642,12 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("exit_chat", _params, socket) do
-    # Navegar de volta para a tela de busca de tratativas
     {:noreply, push_navigate(socket, to: "/")}
   end
 
-  @impl true
-  def handle_event("search_messages", %{"query" => query}, socket) do
-    filtered_messages = apply_search_filters(socket.assigns.messages, query, socket.assigns.search_filters)
 
-    {:noreply,
-      socket
-      |> assign(:search_query, query)
-      |> assign(:search_results, filtered_messages)
-      |> assign(:search_active, String.trim(query) != "")
-    }
-  end
 
-  @impl true
-  def handle_event("update_search_filters", %{"filters" => filters_json}, socket) do
-    filters = Jason.decode!(filters_json)
-    updated_filters = Map.merge(socket.assigns.search_filters, filters)
-    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
 
-    {:noreply,
-      socket
-      |> assign(:search_filters, updated_filters)
-      |> assign(:search_results, filtered_messages)
-    }
-  end
-
-  @impl true
-  def handle_event("clear_search", _params, socket) do
-    {:noreply,
-      socket
-      |> assign(:search_query, "")
-      |> assign(:search_results, [])
-      |> assign(:search_active, false)
-      |> assign(:search_filters, %{
-        date_from: nil,
-        date_to: nil,
-        user_filter: nil,
-        content_type: "all"
-      })
-    }
-  end
-
-  @impl true
-  def handle_event("update_date_from", %{"value" => date_from}, socket) do
-    updated_filters = Map.put(socket.assigns.search_filters, :date_from, parse_date(date_from))
-    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
-
-    {:noreply,
-      socket
-      |> assign(:search_filters, updated_filters)
-      |> assign(:search_results, filtered_messages)
-    }
-  end
-
-  @impl true
-  def handle_event("update_date_to", %{"value" => date_to}, socket) do
-    updated_filters = Map.put(socket.assigns.search_filters, :date_to, parse_date(date_to))
-    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
-
-    {:noreply,
-      socket
-      |> assign(:search_filters, updated_filters)
-      |> assign(:search_results, filtered_messages)
-    }
-  end
-
-  @impl true
-  def handle_event("update_user_filter", %{"value" => user_filter}, socket) do
-    updated_filters = Map.put(socket.assigns.search_filters, :user_filter, if(user_filter == "", do: nil, else: user_filter))
-    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
-
-    {:noreply,
-      socket
-      |> assign(:search_filters, updated_filters)
-      |> assign(:search_results, filtered_messages)
-    }
-  end
-
-  @impl true
-  def handle_event("update_content_type", %{"value" => content_type}, socket) do
-    updated_filters = Map.put(socket.assigns.search_filters, :content_type, content_type)
-    filtered_messages = apply_search_filters(socket.assigns.messages, socket.assigns.search_query, updated_filters)
-
-    {:noreply,
-      socket
-      |> assign(:search_filters, updated_filters)
-      |> assign(:search_results, filtered_messages)
-    }
-  end
-
-  @impl true
-  def handle_event("search_users", %{"query" => query}, socket) do
-    matching_users = socket.assigns.users_online
-    |> Enum.filter(fn username ->
-      String.contains?(String.downcase(username), String.downcase(query))
-    end)
-    |> Enum.take(5) # Limit results to prevent UI overflow
-
-    {:noreply,
-      socket
-      |> push_event("show-user-suggestions", %{
-        users: matching_users,
-        query: query
-      })
-    }
-  end
 
   @impl true
   def handle_event("cancel_upload", %{"ref" => ref}, socket) do
@@ -779,7 +661,6 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("upload", _params, socket) do
-    # O preview é exibido automaticamente pelo LiveView quando há entradas
     {:noreply, socket}
   end
 
@@ -800,8 +681,10 @@ defmodule AppWeb.ChatLive do
     {:noreply,
       socket
       |> assign(:show_tag_modal, true)
+      |> assign(:modal_animation_state, "opening")
       |> assign(:tag_search_results, all_tags)
       |> assign(:tag_search_query, "")
+      |> push_event("modal-opening", %{modal: "tag"})
     }
   end
 
@@ -809,15 +692,18 @@ defmodule AppWeb.ChatLive do
   def handle_event("hide_tag_modal", _params, socket) do
     {:noreply,
       socket
-      |> assign(:show_tag_modal, false)
-      |> assign(:tag_search_query, "")
-      |> assign(:tag_search_results, [])
+      |> assign(:modal_animation_state, "closing")
+      |> push_event("modal-closing", %{modal: "tag"})
+      |> then(fn socket ->
+        Process.send_after(self(), :close_tag_modal, 300)
+        socket
+      end)
     }
   end
 
   @impl true
   def handle_event("search_tags", %{"query" => query}, socket) do
-    if String.length(query) >= 2 do
+    if String.length(query) >= ChatConfig.get_config_value(:search, :min_search_length) do
       results = Tags.search_tags(query, socket.assigns.user_object.store_id)
       {:noreply,
         socket
@@ -835,7 +721,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("search_tags", %{"value" => query}, socket) do
-    if String.length(query) >= 2 do
+    if String.length(query) >= ChatConfig.get_config_value(:search, :min_search_length) do
       results = Tags.search_tags(query, socket.assigns.user_object.store_id)
       {:noreply,
         socket
@@ -843,7 +729,6 @@ defmodule AppWeb.ChatLive do
         |> assign(:tag_search_results, results)
       }
     else
-      # Mostrar todas as tags quando a consulta é muito curta para dar contexto aos usuários das opções disponíveis
       all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
       {:noreply,
         socket
@@ -861,7 +746,6 @@ defmodule AppWeb.ChatLive do
       {:ok, _treaty_tag} ->
         treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
 
-        # Broadcast para todos os usuários no chat
         Phoenix.PubSub.broadcast(
           App.PubSub,
           socket.assigns.topic,
@@ -878,7 +762,7 @@ defmodule AppWeb.ChatLive do
             type: "success",
             title: "Tag adicionada!",
             message: "A tag foi adicionada com sucesso à tratativa.",
-            duration: 3000
+            duration: ChatConfig.get_config_value(:notifications, :toast_duration)[:success]
           })
         }
       {:error, _changeset} ->
@@ -888,7 +772,7 @@ defmodule AppWeb.ChatLive do
             type: "error",
             title: "Erro ao adicionar tag",
             message: "Não foi possível adicionar a tag. Tente novamente.",
-            duration: 5000
+            duration: ChatConfig.get_config_value(:notifications, :toast_duration)[:error]
           })
         }
     end
@@ -900,7 +784,6 @@ defmodule AppWeb.ChatLive do
       {count, nil} when count > 0 ->
         treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
 
-        # Broadcast para todos os usuários no chat
         Phoenix.PubSub.broadcast(
           App.PubSub,
           socket.assigns.topic,
@@ -932,18 +815,24 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("show_close_modal", _params, socket) do
-    {:noreply, assign(socket, :show_close_modal, true)}
+    {:noreply,
+      socket
+      |> assign(:show_close_modal, true)
+      |> assign(:modal_animation_state, "opening")
+      |> push_event("modal-opening", %{modal: "close"})
+    }
   end
 
   @impl true
   def handle_event("hide_close_modal", _params, socket) do
     {:noreply,
       socket
-      |> assign(:show_close_modal, false)
-      |> assign(:close_reason, "")
-      |> assign(:resolution_notes, "")
-      |> assign(:rating_value, "")
-      |> assign(:rating_comment, "")
+      |> assign(:modal_animation_state, "closing")
+      |> push_event("modal-closing", %{modal: "close"})
+      |> then(fn socket ->
+        Process.send_after(self(), :close_close_modal, 300)
+        socket
+      end)
     }
   end
 
@@ -969,47 +858,41 @@ defmodule AppWeb.ChatLive do
 
 
   @impl true
-  def handle_event("close_treaty", _params, socket) do
-    # Ler valores dos campos do DOM
-    reason = socket.assigns.close_reason || ""
-    notes = socket.assigns.resolution_notes || ""
-    rating = socket.assigns.rating_value || ""
-    rating_comment = socket.assigns.rating_comment || ""
-    case socket.assigns.user_object do
-      nil ->
-        {:noreply,
-          socket
-          |> push_event("show-toast", %{
-            type: "error",
-            title: "Erro",
-            message: "Você precisa estar logado para encerrar tratativas.",
-            duration: 5000
-          })
-        }
+  def handle_event("close_treaty", _params, %{assigns: %{user_object: nil}} = socket) do
+    {:noreply,
+      socket
+      |> push_event("show-toast", %{
+        type: "error",
+        title: "Erro",
+        message: "Você precisa estar logado para encerrar tratativas.",
+        duration: 5000
+      })
+    }
+  end
 
-      user ->
-        # Validar se uma avaliação foi selecionada
-        if rating == "" do
-          {:noreply,
-            socket
-            |> push_event("show-toast", %{
-              type: "error",
-              title: "Avaliação obrigatória",
-              message: "Por favor, selecione uma avaliação antes de encerrar a tratativa.",
-              duration: 5000
-            })
-          }
-        else
-          # Verificar permissão para encerrar a tratativa
-          if App.Accounts.can_close_treaty?(user, socket.assigns.treaty) do
-          close_attrs = %{
-            close_reason: reason,
-            resolution_notes: notes
-          }
+  @impl true
+  def handle_event("close_treaty", _params, %{assigns: %{rating_value: ""}} = socket) do
+    {:noreply,
+      socket
+      |> push_event("show-toast", %{
+        type: "error",
+        title: "Avaliação obrigatória",
+        message: "Por favor, selecione uma avaliação antes de encerrar a tratativa.",
+        duration: 5000
+      })
+    }
+  end
 
-          case App.Treaties.close_treaty(socket.assigns.treaty, user.id, close_attrs) do
+  @impl true
+  def handle_event("close_treaty", _params, %{assigns: %{user_object: user, treaty: treaty, close_reason: reason, resolution_notes: notes, rating_value: rating, rating_comment: rating_comment}} = socket) do
+    if App.Accounts.can_close_treaty?(user, treaty) do
+      close_attrs = %{
+        close_reason: reason || "",
+        resolution_notes: notes || ""
+      }
+
+      case App.Treaties.close_treaty(treaty, user.id, close_attrs) do
           {:ok, updated_treaty} ->
-            # Adicionar avaliação automaticamente após o encerramento
             rating_attrs = %{
               rating: rating,
               comment: rating_comment,
@@ -1018,8 +901,7 @@ defmodule AppWeb.ChatLive do
 
             case App.Treaties.add_rating(updated_treaty.id, user.id, rating_attrs) do
               {:ok, _rating} ->
-                # Recarregar dados da tratativa
-                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
                 treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
                 treaty_ratings = App.Treaties.get_treaty_ratings(updated_treaty.id)
 
@@ -1044,8 +926,7 @@ defmodule AppWeb.ChatLive do
                 }
 
               {:error, _changeset} ->
-                # Tratativa foi encerrada mas a avaliação falhou
-                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
+                treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
                 treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
 
                 {:noreply,
@@ -1068,104 +949,122 @@ defmodule AppWeb.ChatLive do
                 }
             end
 
-          {:error, _changeset} ->
-            {:noreply,
-              socket
-              |> push_event("show-toast", %{
-                type: "error",
-                title: "Erro ao encerrar",
-                message: "Não foi possível encerrar a tratativa. Tente novamente.",
-                duration: 5000
-              })
-            }
-          end
-        else
+        {:error, _changeset} ->
           {:noreply,
             socket
             |> push_event("show-toast", %{
               type: "error",
-              title: "Acesso negado",
-              message: "Apenas o criador da tratativa ou administradores podem encerrá-la.",
+              title: "Erro ao encerrar",
+              message: "Não foi possível encerrar a tratativa. Tente novamente.",
               duration: 5000
             })
           }
-        end
-        end
+      end
+    else
+      {:noreply,
+        socket
+        |> push_event("show-toast", %{
+          type: "error",
+          title: "Acesso negado",
+          message: "Apenas o criador da tratativa ou administradores podem encerrá-la.",
+          duration: 5000
+        })
+      }
+    end
+  end
+
+  @impl true
+  def handle_event("close_treaty", _params, socket) do
+    {:noreply, put_flash(socket, :error, "Tratativa não encontrada")}
+  end
+
+  @impl true
+  def handle_event("reopen_treaty", _params, %{assigns: %{user_object: nil}} = socket) do
+    {:noreply,
+      socket
+      |> push_event("show-toast", %{
+        type: "error",
+        title: "Erro",
+        message: "Você precisa estar logado para reabrir tratativas.",
+        duration: 5000
+      })
+    }
+  end
+
+  @impl true
+  def handle_event("reopen_treaty", _params, %{assigns: %{user_object: user, treaty: treaty}} = socket) do
+    if App.Accounts.can_close_treaty?(user, treaty) do
+      case App.Treaties.reopen_treaty(treaty, user.id) do
+        {:ok, updated_treaty} ->
+          treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
+          treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
+
+          {:noreply,
+            socket
+            |> assign(:treaty, updated_treaty)
+            |> assign(:treaty_activities, treaty_activities)
+            |> assign(:treaty_stats, treaty_stats)
+            |> update_can_close_treaty()
+            |> push_event("show-toast", %{
+              type: "success",
+              title: "Tratativa reaberta!",
+              message: "A tratativa foi reaberta com sucesso.",
+              duration: 3000
+            })
+          }
+
+        {:error, _changeset} ->
+          {:noreply,
+            socket
+            |> push_event("show-toast", %{
+              type: "error",
+              title: "Erro ao reabrir",
+              message: "Não foi possível reabrir a tratativa. Tente novamente.",
+              duration: 5000
+            })
+          }
+      end
+    else
+      {:noreply,
+        socket
+        |> push_event("show-toast", %{
+          type: "error",
+          title: "Acesso negado",
+          message: "Apenas o criador da tratativa ou administradores podem reabri-la.",
+          duration: 5000
+        })
+      }
     end
   end
 
   @impl true
   def handle_event("reopen_treaty", _params, socket) do
-    case socket.assigns.user_object do
-      nil ->
-        {:noreply,
-          socket
-          |> push_event("show-toast", %{
-            type: "error",
-            title: "Erro",
-            message: "Você precisa estar logado para reabrir tratativas.",
-            duration: 5000
-          })
-        }
-
-      user ->
-        # Verificar permissão para reabrir a tratativa
-        if App.Accounts.can_close_treaty?(user, socket.assigns.treaty) do
-          case App.Treaties.reopen_treaty(socket.assigns.treaty, user.id) do
-          {:ok, updated_treaty} ->
-            # Recarregar dados da tratativa
-            treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, 20)
-            treaty_stats = App.Treaties.get_treaty_stats(updated_treaty.id)
-
-            {:noreply,
-              socket
-              |> assign(:treaty, updated_treaty)
-              |> assign(:treaty_activities, treaty_activities)
-              |> assign(:treaty_stats, treaty_stats)
-              |> update_can_close_treaty()
-              |> push_event("show-toast", %{
-                type: "success",
-                title: "Tratativa reaberta!",
-                message: "A tratativa foi reaberta com sucesso.",
-                duration: 3000
-              })
-            }
-
-          {:error, _changeset} ->
-            {:noreply,
-              socket
-              |> push_event("show-toast", %{
-                type: "error",
-                title: "Erro ao reabrir",
-                message: "Não foi possível reabrir a tratativa. Tente novamente.",
-                duration: 5000
-              })
-            }
-          end
-        else
-          {:noreply,
-            socket
-            |> push_event("show-toast", %{
-              type: "error",
-              title: "Acesso negado",
-              message: "Apenas o criador da tratativa ou administradores podem reabri-la.",
-              duration: 5000
-            })
-          }
-        end
-    end
+    {:noreply, put_flash(socket, :error, "Tratativa não encontrada")}
   end
 
 
 
   @impl true
   def handle_event("show_activities_modal", _params, socket) do
-    {:noreply, assign(socket, :show_activities_modal, true)}
+    {:noreply,
+      socket
+      |> assign(:show_activities_modal, true)
+      |> assign(:modal_animation_state, "opening")
+      |> push_event("modal-opening", %{modal: "activities"})
+    }
   end
 
   @impl true
   def handle_event("hide_activities_modal", _params, socket) do
-    {:noreply, assign(socket, :show_activities_modal, false)}
+    {:noreply,
+      socket
+      |> assign(:modal_animation_state, "closing")
+      |> push_event("modal-closing", %{modal: "activities"})
+      |> then(fn socket ->
+        Process.send_after(self(), :close_activities_modal, 300)
+        socket
+      end)
+    }
   end
 
   @impl true
@@ -1186,7 +1085,6 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("mark_messages_as_read", %{"message_ids" => message_keys}, socket) do
-    # Marcar mensagens como lidas pelo usuário atual
     case socket.assigns.user_object do
       nil ->
         {:noreply, socket}
@@ -1195,15 +1093,12 @@ defmodule AppWeb.ChatLive do
         treaty_id = socket.assigns.treaty_id
         message_ids = parse_message_ids(message_keys)
 
-        # Marcar cada mensagem como lida
         Enum.each(message_ids, fn message_id ->
           safe_mark_message_as_read(message_id, user.id, treaty_id)
         end)
 
-        # Atualizar read_receipts localmente
         updated_receipts = load_updated_read_receipts(message_ids, treaty_id, socket.assigns.read_receipts)
 
-        # Broadcast para outros usuários sobre as leituras
         broadcast_read_receipts(socket.assigns.topic, message_ids, user.id, treaty_id)
 
         {:noreply, assign(socket, :read_receipts, updated_receipts)}
@@ -1224,39 +1119,46 @@ defmodule AppWeb.ChatLive do
   defp validate_message_not_empty("", %{assigns: %{uploads: %{image: %{entries: []}}}}) do
     {:error, "Digite uma mensagem ou selecione uma imagem"}
   end
+
   defp validate_message_not_empty("", _socket), do: {:ok, :valid}
   defp validate_message_not_empty(_text, _socket), do: {:ok, :valid}
 
-  defp validate_message_length(text) when is_binary(text) do
-    max_length = ChatConfig.security_config()[:max_message_length]
+  defp validate_message_length(text) when is_binary(text) and byte_size(text) > 0 do
+    max_length = ChatConfig.get_config_value(:security, :max_message_length)
 
     case byte_size(text) > max_length do
       true -> {:error, "Mensagem muito longa"}
       false -> {:ok, :valid}
     end
   end
+
+  defp validate_message_length(text) when is_binary(text) and byte_size(text) == 0 do
+    {:ok, :valid}
+  end
+
   defp validate_message_length(_), do: {:ok, :valid}
 
   defp validate_connection(socket) do
-    case connected?(socket) do
-      true -> {:ok, :valid}
-      false -> {:error, "Conexão perdida. Tente recarregar a página."}
+    if connected?(socket) do
+      {:ok, :valid}
+    else
+      {:error, "Conexão perdida. Tente recarregar a página."}
     end
   end
 
-  defp validate_treaty_status(socket) do
-    case socket.assigns.treaty.status do
-      "closed" -> {:error, "Esta tratativa está encerrada. Não é possível enviar mensagens."}
-      _ -> {:ok, :valid}
-    end
+  defp validate_treaty_status(%{assigns: %{treaty: %{status: "closed"}}}) do
+    {:error, "Esta tratativa está encerrada. Não é possível enviar mensagens."}
   end
 
-  defp can_close_treaty?(socket) do
-    case socket.assigns.user_object do
-      nil -> false
-      user -> App.Accounts.can_close_treaty?(user, socket.assigns.treaty)
-    end
+  defp validate_treaty_status(_socket) do
+    {:ok, :valid}
   end
+
+  defp can_close_treaty?(%{assigns: %{user_object: nil}}), do: false
+  defp can_close_treaty?(%{assigns: %{user_object: user, treaty: treaty}}) do
+    App.Accounts.can_close_treaty?(user, treaty)
+  end
+  defp can_close_treaty?(_socket), do: false
 
   defp update_can_close_treaty(socket) do
     can_close = can_close_treaty?(socket)
@@ -1267,13 +1169,13 @@ defmodule AppWeb.ChatLive do
     file_info = handle_image_upload(socket)
     {user_id, _user_name} = get_user_info_for_message(socket)
 
-    case App.Chat.send_message(socket.assigns.treaty_id, user_id, trimmed_text, file_info) do
-      {:ok, _message} ->
-        {:noreply,
-          socket
-          |> assign(:message, "")
-          |> assign(:message_error, nil)
-        }
+    with {:ok, _message} <- App.Chat.send_message(socket.assigns.treaty_id, user_id, trimmed_text, file_info) do
+      {:noreply,
+        socket
+        |> assign(:message, "")
+        |> assign(:message_error, nil)
+      }
+    else
       {:error, _changeset} ->
         {:noreply,
           socket
@@ -1292,44 +1194,39 @@ defmodule AppWeb.ChatLive do
     entries = socket.assigns.uploads.image.entries
 
     case entries do
-      [] -> nil
+      [] ->
+        nil
       [_entry | _] ->
-        # Processar arquivos e enviar para Oban
-        consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
-          # Copiar arquivo para local temporário
-          temp_path = create_temp_file(path, entry.client_name)
-
-          # Enviar job para Oban (será processado após a mensagem ser criada)
-          {:ok, %{
-            temp_path: temp_path,
-            original_filename: entry.client_name,
-            file_size: entry.client_size,
-            mime_type: entry.client_type,
-            pending_upload: true
-          }}
-        end)
+        consume_uploaded_entries(socket, :image, &process_upload_entry/2)
         |> Enum.filter(&(&1 != nil))
     end
   end
 
-  # Cria arquivo temporário para processamento assíncrono
+  defp process_upload_entry(%{path: path}, entry) do
+    temp_path = create_temp_file(path, entry.client_name)
+
+    {:ok, %{
+      temp_path: temp_path,
+      original_filename: entry.client_name,
+      file_size: entry.client_size,
+      mime_type: entry.client_type,
+      pending_upload: true
+    }}
+  end
+
   defp create_temp_file(source_path, original_name) do
-    # Criar diretório temporário se não existir
-    temp_dir = Path.join(System.tmp_dir(), "juruconnect_uploads")
+    temp_dir = Path.join(System.tmp_dir(), ChatConfig.get_config_value(:upload, :temp_dir_prefix))
     File.mkdir_p!(temp_dir)
 
-    # Gerar nome único para arquivo temporário
     timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
     unique_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
     extension = Path.extname(original_name)
     temp_filename = "upload_#{timestamp}_#{unique_id}#{extension}"
     temp_path = Path.join(temp_dir, temp_filename)
 
-    # Copiar arquivo para local temporário
     case File.cp(source_path, temp_path) do
       :ok -> temp_path
       {:error, _reason} ->
-        # Fallback: usar o arquivo original se não conseguir copiar
         source_path
     end
   end
@@ -1352,7 +1249,6 @@ defmodule AppWeb.ChatLive do
   @impl true
   def handle_info({:new_message, msg}, socket) do
     try do
-      # Validação de estrutura da mensagem
       if msg && Map.get(msg, :treaty_id) == socket.assigns.treaty_id do
         socket = socket
         |> update(:messages, fn current_messages ->
@@ -1376,17 +1272,15 @@ defmodule AppWeb.ChatLive do
   @impl true
   def handle_info({:upload_complete, %{message_id: message_id, file_url: file_url}}, socket) do
     try do
-      # Atualizar mensagem com anexo quando upload for concluído
       updated_socket = socket
       |> update(:messages, fn messages ->
         Enum.map(messages, fn msg ->
           if msg.id == message_id do
-            # Safely recarregar anexos da mensagem
             try do
               attachments = App.Chat.get_message_attachments(message_id)
               %{msg | attachments: attachments}
             rescue
-              _ -> msg  # Se falhar, mantém mensagem sem anexos
+              _ -> msg
             end
           else
             msg
@@ -1398,7 +1292,6 @@ defmodule AppWeb.ChatLive do
       {:noreply, updated_socket}
     rescue
       _error ->
-        # Silent error handling
         {:noreply, socket}
     end
   end
@@ -1410,7 +1303,6 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:notification, :new_message, notification_data}, socket) do
-    # Mostrar notificação apenas se o usuário não estiver no chat atual
     current_treaty_id = socket.assigns.treaty_id
 
     if notification_data.treaty_id != current_treaty_id do
@@ -1435,7 +1327,6 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:notification, :mention, notification_data}, socket) do
-    # Sempre mostrar notificações de menção
     {:noreply,
       socket
       |> push_event("show-notification", %{
@@ -1491,6 +1382,8 @@ defmodule AppWeb.ChatLive do
       |> assign(:messages, older_messages ++ socket.assigns.messages)
       |> assign(:has_more_messages, has_more)
       |> assign(:loading_messages, false)
+      |> assign(:skeleton_loading, false)
+      |> push_event("messages-loaded", %{count: length(older_messages)})
     }
   end
 
@@ -1531,9 +1424,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_info({:read_receipts_updated, message_ids, _user_id, treaty_id}, socket) do
-    # Só processa se for da tratativa atual
     if treaty_id == socket.assigns.treaty_id do
-      # Carregar novos read receipts
       updated_receipts = load_updated_read_receipts(message_ids, treaty_id, socket.assigns.read_receipts)
 
       {:noreply, assign(socket, :read_receipts, updated_receipts)}
@@ -1547,7 +1438,13 @@ defmodule AppWeb.ChatLive do
     is_connected = connected?(socket)
     connection_status = if(is_connected, do: "Conectado", else: "Desconectado")
 
-    # Remover usuário das salas ativas quando desconectado
+    # Trigger connection transition animation
+    transition_state = if is_connected != socket.assigns.connected do
+      if is_connected, do: "connecting", else: "disconnecting"
+    else
+      "stable"
+    end
+
     if not is_connected and socket.assigns.user_object do
       case Process.whereis(App.ActiveRooms) do
         nil -> :ok
@@ -1562,23 +1459,66 @@ defmodule AppWeb.ChatLive do
       end
     end
 
-    # Continuar monitorando enquanto conectado para fornecer atualizações de status em tempo real
     if is_connected do
-      Process.send_after(self(), :update_connection_status, 5000)
+      Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
     end
 
     {:noreply,
       socket
       |> assign(:connected, is_connected)
       |> assign(:connection_status, connection_status)
-      |> push_event("connection-status", %{connected: is_connected, status: connection_status})
+      |> assign(:connection_transition_state, transition_state)
+      |> push_event("connection-status", %{connected: is_connected, status: connection_status, transition: transition_state})
+      |> then(fn socket ->
+        if transition_state != "stable" do
+          Process.send_after(self(), :reset_connection_transition, 1000)
+        end
+        socket
+      end)
     }
   end
 
 
   @impl true
+  def handle_info(:close_tag_modal, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_tag_modal, false)
+      |> assign(:modal_animation_state, "closed")
+      |> assign(:tag_search_query, "")
+      |> assign(:tag_search_results, [])
+    }
+  end
+
+  @impl true
+  def handle_info(:close_close_modal, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_close_modal, false)
+      |> assign(:modal_animation_state, "closed")
+      |> assign(:close_reason, "")
+      |> assign(:resolution_notes, "")
+      |> assign(:rating_value, "")
+      |> assign(:rating_comment, "")
+    }
+  end
+
+  @impl true
+  def handle_info(:close_activities_modal, socket) do
+    {:noreply,
+      socket
+      |> assign(:show_activities_modal, false)
+      |> assign(:modal_animation_state, "closed")
+    }
+  end
+
+  @impl true
+  def handle_info(:reset_connection_transition, socket) do
+    {:noreply, assign(socket, :connection_transition_state, "stable")}
+  end
+
+  @impl true
   def terminate(_reason, socket) do
-    # Remover usuário das salas ativas quando o LiveView termina
     if socket.assigns.user_object do
       case Process.whereis(App.ActiveRooms) do
         nil -> :ok
@@ -1617,14 +1557,14 @@ defmodule AppWeb.ChatLive do
               <div class="min-w-0 flex-1">
                 <div class="flex items-center space-x-2">
                   <h1 class="text-sm sm:text-base font-bold text-gray-900 truncate">#<%= @treaty.treaty_code %></h1>
-                  <span class={get_status_class(@treaty.status)}>
+                  <span class={obter_classes_status(@treaty.status)}>
                     <%= @treaty.status %>
                   </span>
                 </div>
                 <div class="flex flex-wrap items-center mt-1 space-x-2 sm:space-x-3">
                   <div class="flex items-center">
-                    <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
-                    <span class="text-xs text-gray-600 font-medium"><%= @connection_status %></span>
+                    <div class={get_connection_indicator_class(@connected, @connection_transition_state)} aria-hidden="true"></div>
+                    <span class={get_connection_text_class(@connected, @connection_transition_state)}><%= @connection_status %></span>
                   </div>
                   <div class="flex items-center text-xs text-gray-500">
                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1639,7 +1579,7 @@ defmodule AppWeb.ChatLive do
 
            <div class="flex items-center space-x-1 mt-1 sm:mt-0">
             <!-- Botão para abrir sidebar no mobile -->
-            <button phx-click="toggle_sidebar" class="lg:hidden p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            <button phx-click="toggle_sidebar" class="lg:hidden p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-110 active:scale-95"
                     aria-label="Abrir sidebar com tags e usuários online"
                     title="Tags e usuários online">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1649,7 +1589,7 @@ defmodule AppWeb.ChatLive do
 
             <!-- Botão de comentários internos -->
             <button phx-click="toggle_comments" class={[
-              "p-1.5 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-offset-1",
+              "p-1.5 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-offset-1 transform hover:scale-110 active:scale-95",
               if(@showing_comments, do: "text-blue-600 bg-blue-50", else: "text-gray-500 hover:text-blue-600 hover:bg-blue-50")
             ]}
                     aria-label={if(@showing_comments, do: "Ocultar comentários", else: "Mostrar comentários internos")}
@@ -1660,7 +1600,7 @@ defmodule AppWeb.ChatLive do
             </button>
 
             <!-- Botão de atividades/tracking -->
-            <button phx-click="show_activities_modal" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+            <button phx-click="show_activities_modal" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transform hover:scale-110 active:scale-95"
                     aria-label="Ver atividades da tratativa"
                     title="Histórico de atividades">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1689,20 +1629,6 @@ defmodule AppWeb.ChatLive do
               <% end %>
             <% end %>
 
-            <button phx-click="toggle_search" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                    aria-label="Buscar mensagens"
-                    title="Buscar mensagens (Ctrl+K)">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </button>
-            <button phx-click="show_shortcuts_help" class="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
-                    aria-label="Mostrar atalhos de teclado"
-                    title="Atalhos de teclado (Ctrl+/)">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </button>
             <button
               phx-click="exit_chat"
               class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 rounded-lg hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
@@ -1758,7 +1684,7 @@ defmodule AppWeb.ChatLive do
             </form>
 
             <!-- Lista de comentários -->
-            <div class="space-y-2 max-h-48 overflow-y-auto">
+            <div class={"space-y-2 #{ChatConfig.get_config_value(:comments, :max_display_height)} overflow-y-auto"}>
               <%= for comment <- @treaty_comments do %>
                 <div class="p-2 bg-white border border-blue-200 rounded-lg">
                   <div class="flex items-start justify-between mb-1">
@@ -1818,106 +1744,6 @@ defmodule AppWeb.ChatLive do
           </div>
         <% end %>
 
-        <!-- Search Bar -->
-        <%= if @show_search do %>
-          <div class="mx-2 sm:mx-3 mt-1 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
-            <!-- Search Input -->
-            <div class="flex items-center space-x-2 mb-2">
-              <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-              <input
-                type="text"
-                placeholder="Buscar nas mensagens..."
-                value={@search_query}
-                class="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                phx-keyup="search_messages"
-                phx-debounce="300"
-                aria-label="Buscar mensagens"
-              />
-              <%= if @search_active do %>
-                <button phx-click="clear_search" class="text-gray-500 hover:text-gray-700 p-1.5 hover:bg-gray-100 rounded-lg transition-colors" aria-label="Limpar busca">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              <% end %>
-              <button phx-click="toggle_search" class="text-blue-500 hover:text-blue-700 p-1.5 hover:bg-blue-100 rounded-lg transition-colors" aria-label="Fechar busca">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Advanced Filters -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <!-- Date Range Filter -->
-              <div class="space-y-1">
-                <label class="text-xs font-medium text-gray-700">Período</label>
-                <div class="flex space-x-1">
-                  <input
-                    type="date"
-                    class="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    phx-change="update_date_from"
-                    placeholder="De"
-                  />
-                  <input
-                    type="date"
-                    class="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    phx-change="update_date_to"
-                    placeholder="Até"
-                  />
-          </div>
-              </div>
-
-              <!-- User Filter -->
-              <div class="space-y-1">
-                <label class="text-xs font-medium text-gray-700">Usuário</label>
-                <select
-                  class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  phx-change="update_user_filter"
-                >
-                  <option value="">Todos os usuários</option>
-                  <%= for user <- @users_online do %>
-                    <option value={user}><%= user %></option>
-                  <% end %>
-                </select>
-              </div>
-
-              <!-- Content Type Filter -->
-              <div class="space-y-1">
-                <label class="text-xs font-medium text-gray-700">Tipo de conteúdo</label>
-                <select
-                  class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  phx-change="update_content_type"
-                >
-                  <option value="all">Todos</option>
-                  <option value="text">Apenas texto</option>
-                  <option value="images">Com imagens</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Search Results Summary -->
-            <%= if @search_active do %>
-              <div class="mt-3 pt-3 border-t border-blue-200">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-2">
-                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="text-sm font-medium text-blue-800">
-                      <%= length(@search_results) %> resultado<%= if length(@search_results) != 1, do: "s", else: "" %> encontrado<%= if length(@search_results) != 1, do: "s", else: "" %>
-                    </span>
-                  </div>
-                  <button phx-click="clear_search" class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                    Limpar filtros
-                  </button>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
 
         <!-- Messages Container -->
         <div class="flex-1 flex overflow-hidden">
@@ -1933,7 +1759,7 @@ defmodule AppWeb.ChatLive do
               <button
                 phx-click="load_older_messages"
                 disabled={@loading_messages}
-                class={"px-2.5 py-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 shadow-sm hover:shadow-md " <>
+                class={"px-2.5 py-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 shadow-sm hover:shadow-md transform hover:scale-105 active:scale-95 " <>
                        if(@loading_messages, do: "btn-loading", else: "")}>
                 <%= if @loading_messages do %>
                   <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1950,22 +1776,20 @@ defmodule AppWeb.ChatLive do
             </div>
           <% end %>
 
-          <%= if @search_active && Enum.empty?(@search_results) do %>
-            <div class="flex flex-col items-center justify-center h-full text-center py-4 sm:py-6 animate-fade-in">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-sm">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
-              <h2 class="text-sm font-semibold text-gray-900 mb-1 sm:mb-2">Nenhum resultado encontrado</h2>
-              <p class="text-xs text-gray-600 max-w-md px-4">Tente ajustar os filtros ou usar termos de busca diferentes.</p>
-            </div>
-          <% else %>
-            <%= if @search_active do %>
-              <%= for {message, index} <- Enum.with_index(@search_results) do %>
-                <%= render_message(message, index, @search_results, @user_object, @read_receipts, @current_user) %>
+          <!-- Skeleton Loading -->
+          <%= if @skeleton_loading do %>
+            <div class="space-y-3 animate-pulse">
+              <%= for _i <- 1..3 do %>
+                <div class="flex justify-start">
+                  <div class="max-w-[85%] px-3 py-2 rounded-xl bg-gray-200">
+                    <div class="h-3 bg-gray-300 rounded w-16 mb-1"></div>
+                    <div class="h-4 bg-gray-300 rounded w-32"></div>
+                  </div>
+                </div>
               <% end %>
-            <% else %>
+            </div>
+          <% end %>
+
           <!-- Banner de tratativa encerrada -->
           <%= if @treaty.status == "closed" do %>
             <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4 rounded-r-lg shadow-sm">
@@ -2001,16 +1825,15 @@ defmodule AppWeb.ChatLive do
             <%= for {message, index} <- Enum.with_index(@messages) do %>
                   <%= render_message(message, index, @messages, @user_object, @read_receipts, @current_user) %>
               <% end %>
-                  <% end %>
-                        <% end %>
-                      <% end %>
-                    </div>
+          <% end %>
 
-          <!-- Sidebar com usuários online e tags -->
-          <div class={"w-56 bg-white border-l border-gray-200 overflow-y-auto transition-transform duration-300 ease-in-out " <>
+        </div>
+
+        <!-- Sidebar com usuários online e tags -->
+          <div class={"#{ChatConfig.get_config_value(:ui, :sidebar_width)} bg-white border-l border-gray-200 overflow-y-auto transition-transform #{ChatConfig.get_config_value(:ui, :transition_duration)} ease-in-out " <>
                 if(@show_sidebar, do: "translate-x-0", else: "translate-x-full") <>
                 " lg:translate-x-0 lg:block " <>
-                if(@show_sidebar, do: "fixed inset-y-0 right-0 z-30", else: "hidden lg:block")}
+                if(@show_sidebar, do: "fixed inset-y-0 right-0 #{ChatConfig.get_config_value(:ui, :sidebar_z_index)}", else: "hidden lg:block")}
                 role="complementary"
                 aria-label="Sidebar com tags e usuários online">
             <!-- Header da sidebar com botão de fechar no mobile -->
@@ -2120,8 +1943,8 @@ defmodule AppWeb.ChatLive do
           <!-- Status de Conexão -->
           <div class="mb-1 flex items-center justify-between text-xs">
             <div class="flex items-center space-x-1" role="status" aria-live="polite">
-              <div class={get_connection_indicator_class(@connected)} aria-hidden="true"></div>
-              <span class={get_connection_text_class(@connected)}>
+              <div class={get_connection_indicator_class(@connected, @connection_transition_state)} aria-hidden="true"></div>
+              <span class={get_connection_text_class(@connected, @connection_transition_state)}>
                 <%= if @connected do %>
                   Conectado
                 <% else %>
@@ -2143,12 +1966,16 @@ defmodule AppWeb.ChatLive do
             <% end %>
           </div>
 
-          <form phx-submit="send_message" phx-drop-target={if @treaty.status != "closed", do: @uploads.image.ref, else: nil} class="flex items-end space-x-1.5 sm:space-x-3 transition-all duration-200" role="form" aria-label="Enviar mensagem">
+          <form phx-submit="send_message" phx-drop-target={if @treaty.status != "closed" and @uploads[:image], do: @uploads.image.ref, else: nil} class="flex items-end space-x-1.5 sm:space-x-3 transition-all duration-200" role="form" aria-label="Enviar mensagem">
             <div class="flex-1 relative">
               <label for="message-input" class="sr-only">Digite sua mensagem</label>
               <!-- Drag and drop overlay -->
-              <div class="fixed inset-0 bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/30 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50" id="drag-overlay">
-                <div class="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-blue-200/50 transform scale-95 transition-all duration-300 max-w-sm mx-4" id="drag-content">
+              <div class={"fixed inset-0 bg-gradient-to-br from-blue-500/30 via-blue-400/20 to-blue-600/30 backdrop-blur-md flex items-center justify-center pointer-events-none transition-all duration-300 z-50 " <>
+                       if(@drag_drop_state == "dragging", do: "opacity-100", else: "opacity-0")}
+                   id="drag-overlay">
+                <div class={"bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-blue-200/50 transition-all duration-300 max-w-sm mx-4 " <>
+                       if(@drag_drop_state == "dragging", do: "scale-100", else: "scale-95")}
+                   id="drag-content">
                   <div class="text-center">
                     <!-- Ícone animado -->
                     <div class="relative mb-6">
@@ -2188,7 +2015,9 @@ defmodule AppWeb.ChatLive do
                   <%= for entry <- @uploads.image.entries do %>
                     <div class="relative inline-block mr-1 mb-1">
                       <!-- Preview da imagem -->
-                      <.live_img_preview entry={entry} class="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200" />
+                      <div class="upload-preview-container rounded-lg border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden bg-gray-100">
+                        <.live_img_preview entry={entry} class="upload-preview-image" />
+                      </div>
 
                       <!-- Barra de progresso animada -->
                       <div class="absolute bottom-0 left-0 w-full h-1 bg-gray-200 rounded-b overflow-hidden">
@@ -2223,18 +2052,16 @@ defmodule AppWeb.ChatLive do
                 placeholder="Digite uma mensagem ou arraste uma imagem aqui..."
                 class="w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:border-blue-300 hover:shadow-md text-sm sm:text-base focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
                 autocomplete="off"
-                maxlength={ChatConfig.security_config()[:max_message_length]}
+                maxlength={ChatConfig.get_config_value(:security, :max_message_length)}
                 disabled={not @connected or @treaty.status == "closed"}
                 phx-change="update_message"
-                phx-keydown="handle_keydown"
-                phx-keyup="handle_keyup"
                 aria-describedby="message-help"
                 aria-invalid={if @message_error, do: "true", else: "false"}
                 role="textbox"
                 aria-label="Campo de entrada de mensagem"
               />
               <div id="message-help" class="sr-only">
-                Digite sua mensagem. Máximo de <%= ChatConfig.security_config()[:max_message_length] %> caracteres.
+                Digite sua mensagem. Máximo de <%= ChatConfig.get_config_value(:security, :max_message_length) %> caracteres.
               </div>
 
               <!-- Autocomplete para menções -->
@@ -2251,23 +2078,13 @@ defmodule AppWeb.ChatLive do
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                 </svg>
                 <.live_file_input upload={@uploads.image} id="image-upload" class="hidden" phx-change="validate" phx-upload="upload" disabled={@treaty.status == "closed"} />
-                <!-- Input separado para drag & drop -->
-                <input
-                  id="drag-drop-input"
-                  type="file"
-                  accept="image/*"
-                  class="hidden"
-                  phx-hook="ImageUploadHook"
-                  multiple={true}
-                  disabled={@treaty.status == "closed"}
-                />
               </label>
             </div>
 
             <button
               type="submit"
               disabled={String.trim(@message) == "" && @uploads.image.entries == [] or @treaty.status == "closed"}
-              class="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed phx-submit-loading:opacity-75 text-sm sm:text-base min-w-[50px] sm:min-w-[60px]"
+              class="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold flex items-center space-x-1 sm:space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed phx-submit-loading:opacity-75 text-sm sm:text-base min-w-[50px] sm:min-w-[60px] transform hover:scale-105 active:scale-95 disabled:transform-none"
               aria-label="Enviar mensagem"
               aria-describedby="send-button-help"
               title={if String.trim(@message) == "" && @uploads.image.entries == [], do: "Gravar áudio", else: "Enviar mensagem"}>
@@ -2299,11 +2116,11 @@ defmodule AppWeb.ChatLive do
 
     <!-- Overlay para mobile quando sidebar está aberta -->
     <%= if @show_sidebar do %>
-      <div class="fixed inset-0 bg-black/50 z-20 md:hidden" phx-click="toggle_sidebar" aria-hidden="true"></div>
+      <div class="fixed inset-0 bg-black/50 #{ChatConfig.get_config_value(:ui, :overlay_z_index)} md:hidden" phx-click="toggle_sidebar" aria-hidden="true"></div>
     <% end %>
 
     <%= if @modal_image_url do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70" phx-click="close_image_modal">
+      <div class="fixed inset-0 #{ChatConfig.get_config_value(:ui, :modal_z_index)} flex items-center justify-center bg-black/70" phx-click="close_image_modal">
         <div class="relative" phx-click="stopPropagation">
           <img src={@modal_image_url} class="max-h-[80vh] max-w-[90vw] rounded-lg shadow-2xl border-4 border-white" alt="Imagem ampliada" />
           <button class="absolute top-2 right-2 bg-white/80 rounded-full p-2 text-gray-700 hover:text-red-600" phx-click="close_image_modal">
@@ -2317,8 +2134,14 @@ defmodule AppWeb.ChatLive do
 
     <!-- Modal para adicionar tags -->
     <%= if @show_tag_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_tag_modal">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+      <div class={"fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-backdrop-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-backdrop-out", else: "")}
+           phx-click="hide_tag_modal">
+        <div class={"bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-out", else: "")}
+           phx-click="stopPropagation">
           <!-- Header do modal -->
           <div class="flex items-center justify-between p-6 border-b border-slate-200">
             <h3 class="text-xl font-bold text-slate-900">Adicionar Tag</h3>
@@ -2337,7 +2160,7 @@ defmodule AppWeb.ChatLive do
               <div class="relative">
                 <input type="text"
                        phx-keyup="search_tags"
-                       phx-debounce="300"
+                       phx-debounce={ChatConfig.get_config_value(:search, :debounce_delay)}
                        value={@tag_search_query}
                        placeholder="Digite para filtrar tags..."
                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all duration-200 text-sm" />
@@ -2377,174 +2200,18 @@ defmodule AppWeb.ChatLive do
       </div>
     <% end %>
 
-    <!-- Modal de Atalhos de Teclado -->
-    <%= if @show_shortcuts_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_shortcuts_help">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
-          <!-- Header do modal -->
-          <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-xl font-bold text-gray-900">Atalhos de Teclado</h3>
-                <p class="text-sm text-gray-600">Acelere seu trabalho com estes atalhos</p>
-              </div>
-            </div>
-            <button phx-click="hide_shortcuts_help" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
 
-          <!-- Conteúdo do modal -->
-          <div class="p-6 overflow-y-auto max-h-[60vh]">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Navegação -->
-              <div class="space-y-4">
-                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
-                  <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
-                  Navegação
-                </h4>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Abrir busca</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+K</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Fechar modais</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">ESC</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Mostrar atalhos</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+/</kbd>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Mensagens -->
-              <div class="space-y-4">
-                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
-                  <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                  </svg>
-                  Mensagens
-                </h4>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Enviar mensagem</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+Enter</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Navegar mensagens</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">↑↓</kbd>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Ações Rápidas -->
-              <div class="space-y-4">
-                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
-                  <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
-                  Ações Rápidas
-                </h4>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Focar input</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">1</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Toggle sidebar</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">2</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Gerenciar tags</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">3</kbd>
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">Sair do chat</span>
-                    <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">4</kbd>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dicas -->
-              <div class="space-y-4">
-                <h4 class="text-lg font-semibold text-gray-900 flex items-center">
-                  <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                  </svg>
-                  Dicas
-                </h4>
-                <div class="space-y-3">
-                  <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p class="text-sm text-blue-800">
-                      <strong>💡 Dica:</strong> Use <kbd class="px-1 py-0.5 bg-blue-200 text-blue-800 rounded text-xs font-mono">Ctrl+K</kbd> para buscar rapidamente em qualquer lugar do chat.
-                    </p>
-                  </div>
-                  <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p class="text-sm text-green-800">
-                      <strong>⚡ Produtividade:</strong> Os atalhos funcionam mesmo quando você não está focando nos elementos da interface.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Rodapé -->
-          <div class="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-            <p class="text-sm text-gray-600">
-              💡 Pressione <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+/</kbd> a qualquer momento para mostrar esta ajuda
-            </p>
-            <button phx-click="hide_shortcuts_help" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-              Entendi!
-            </button>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <!-- Tour de Boas-vindas para Shortcuts -->
-    <%= if @show_shortcuts_tour do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_shortcuts_tour">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation">
-          <div class="p-6 text-center">
-            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 mb-2">🚀 Atalhos de Teclado Ativados!</h3>
-            <p class="text-gray-600 mb-4">
-              Agora você pode usar atalhos para ser mais produtivo no chat.
-              Experimente <kbd class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-mono">Ctrl+K</kbd> para buscar!
-            </p>
-            <div class="flex space-x-3">
-              <button phx-click="hide_shortcuts_tour" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                Pular
-              </button>
-              <button phx-click="show_shortcuts_help" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                Ver Todos
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    <% end %>
 
     <!-- Modal de Encerrar Tratativa -->
     <%= if @show_close_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_close_modal">
-        <div id="close-modal" class="bg-white rounded-2xl shadow-2xl max-w-md w-full" phx-click="stopPropagation" phx-hook="RatingHook">
+      <div class={"fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-backdrop-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-backdrop-out", else: "")}
+           phx-click="hide_close_modal">
+        <div id="close-modal" class={"bg-white rounded-2xl shadow-2xl max-w-md w-full transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-out", else: "")}
+           phx-click="stopPropagation" phx-hook="RatingHook">
           <!-- Header do modal -->
           <div class="flex items-center justify-between p-6 border-b border-gray-200">
             <h3 class="text-xl font-bold text-gray-900">Encerrar e Avaliar Tratativa</h3>
@@ -2634,8 +2301,14 @@ defmodule AppWeb.ChatLive do
 
     <!-- Modal de Atividades -->
     <%= if @show_activities_modal do %>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" phx-click="hide_activities_modal">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" phx-click="stopPropagation">
+      <div class={"fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-backdrop-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-backdrop-out", else: "")}
+           phx-click="hide_activities_modal">
+        <div class={"bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden transition-all duration-300 " <>
+                   if(@modal_animation_state == "opening", do: "animate-modal-in", else: "") <>
+                   if(@modal_animation_state == "closing", do: "animate-modal-out", else: "")}
+           phx-click="stopPropagation">
           <!-- Header do modal -->
           <div class="flex items-center justify-between p-6 border-b border-gray-200">
             <h3 class="text-xl font-bold text-gray-900">Histórico de Atividades</h3>
@@ -2686,66 +2359,11 @@ defmodule AppWeb.ChatLive do
     """
   end
 
-  # --- Funções Utilitárias ---
 
-  defp apply_search_filters(messages, query, filters) do
-    messages
-    |> filter_by_text(query)
-    |> filter_by_date_range(filters.date_from, filters.date_to)
-    |> filter_by_user(filters.user_filter)
-    |> filter_by_content_type(filters.content_type)
-  end
 
-  defp filter_by_text(messages, query) when query == "" or is_nil(query), do: messages
-  defp filter_by_text(messages, query) do
-    query_lower = String.downcase(query)
-    Enum.filter(messages, fn message ->
-      String.contains?(String.downcase(message.text || ""), query_lower)
-    end)
-  end
 
-  defp filter_by_date_range(messages, nil, nil), do: messages
-  defp filter_by_date_range(messages, date_from, date_to) do
-    Enum.filter(messages, fn message ->
-      message_date = message.inserted_at || message.timestamp
-      case message_date do
-        nil -> false
-        dt ->
-          date_from_ok = if date_from, do: DateTime.compare(dt, date_from) != :lt, else: true
-          date_to_ok = if date_to, do: DateTime.compare(dt, date_to) != :gt, else: true
-          date_from_ok && date_to_ok
-      end
-    end)
-  end
 
-  defp filter_by_user(messages, nil), do: messages
-  defp filter_by_user(messages, user_filter) do
-    Enum.filter(messages, fn message ->
-      String.contains?(String.downcase(message.sender_name || ""), String.downcase(user_filter))
-    end)
-  end
 
-  defp filter_by_content_type(messages, "all"), do: messages
-  defp filter_by_content_type(messages, "text") do
-    Enum.filter(messages, fn message ->
-      is_nil(message.attachments) || length(message.attachments) == 0
-    end)
-  end
-  defp filter_by_content_type(messages, "images") do
-    Enum.filter(messages, fn message ->
-      message.attachments &&
-      Enum.any?(message.attachments, fn att -> att.file_type == "image" end)
-    end)
-  end
-
-  defp parse_date(""), do: nil
-  defp parse_date(date_string) when is_binary(date_string) do
-    case Date.from_iso8601(date_string) do
-      {:ok, date} -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-      {:error, _} -> nil
-    end
-  end
-  defp parse_date(_), do: nil
 
   defp extract_users_from_presences(presences) when is_map(presences) do
     presences
@@ -2754,11 +2372,13 @@ defmodule AppWeb.ChatLive do
     |> Enum.uniq()
     |> Enum.sort()
   end
+
   defp extract_users_from_presences(_), do: []
 
   defp extract_names_from_metas(%{metas: metas}) when is_list(metas) do
     Enum.map(metas, fn %{name: name} when is_binary(name) -> name end)
   end
+
   defp extract_names_from_metas(_), do: []
 
   defp load_older_messages_async(socket) do
@@ -2766,7 +2386,7 @@ defmodule AppWeb.ChatLive do
     current_count = length(socket.assigns.messages)
 
     Task.start(fn ->
-      with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.pagination_config()[:default_limit], current_count) do
+      with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:pagination, :default_limit), current_count) do
         send(self(), {:older_messages_loaded, older_messages, has_more})
       else
         {:error, _reason} ->
@@ -2777,35 +2397,47 @@ defmodule AppWeb.ChatLive do
     socket
   end
 
-  # --- Auxiliares de Formatação e Exibição da Interface ---
 
-  defp get_user_initial(user) when is_binary(user) and byte_size(user) > 0 do
-    user |> String.first() |> String.upcase()
+  defp classes_base, do: "px-2.5 py-1 text-xs font-semibold rounded-full border shadow-sm transition-all duration-200"
+
+  defp obter_classes_status("active"), do: classes_base() <> " bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+  defp obter_classes_status("inactive"), do: classes_base() <> " bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+  defp obter_classes_status("cancelled"), do: classes_base() <> " bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+  defp obter_classes_status("completed"), do: classes_base() <> " bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+  defp obter_classes_status("closed"), do: classes_base() <> " bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+  defp obter_classes_status(_), do: classes_base() <> " bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+
+  defp get_connection_indicator_class(true, "connecting") do
+    "w-1.5 h-1.5 rounded-full mr-1 bg-yellow-500 animate-pulse shadow-sm transition-colors duration-500"
   end
-  defp get_user_initial(_), do: "U"
-
-  defp get_status_class(status) do
-    base_classes = "px-2.5 py-1 text-xs font-semibold rounded-full border shadow-sm transition-all duration-200"
-
-    case status do
-      "active" -> "#{base_classes} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-      "inactive" -> "#{base_classes} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-      "cancelled" -> "#{base_classes} bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-      "completed" -> "#{base_classes} bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-      "closed" -> "#{base_classes} bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-      _ -> "#{base_classes} bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-    end
+  defp get_connection_indicator_class(true, "stable") do
+    "w-1.5 h-1.5 rounded-full mr-1 bg-emerald-500 animate-pulse shadow-sm transition-colors duration-500"
+  end
+  defp get_connection_indicator_class(false, "disconnecting") do
+    "w-1.5 h-1.5 rounded-full mr-1 bg-yellow-500 animate-pulse shadow-sm transition-colors duration-500"
+  end
+  defp get_connection_indicator_class(false, "stable") do
+    "w-1.5 h-1.5 rounded-full mr-1 bg-red-500 shadow-sm transition-colors duration-500"
+  end
+  defp get_connection_indicator_class(_, _) do
+    "w-1.5 h-1.5 rounded-full mr-1 bg-gray-500 shadow-sm transition-colors duration-500"
   end
 
-  defp get_connection_indicator_class(true) do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-emerald-500 animate-pulse shadow-sm"
+  defp get_connection_text_class(true, "connecting") do
+    "text-yellow-600 font-medium transition-colors duration-500"
   end
-  defp get_connection_indicator_class(false) do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-red-500 shadow-sm"
+  defp get_connection_text_class(true, "stable") do
+    "text-emerald-600 font-medium transition-colors duration-500"
   end
-
-  defp get_connection_text_class(true), do: "text-emerald-600 font-medium"
-  defp get_connection_text_class(false), do: "text-red-600 font-medium"
+  defp get_connection_text_class(false, "disconnecting") do
+    "text-yellow-600 font-medium transition-colors duration-500"
+  end
+  defp get_connection_text_class(false, "stable") do
+    "text-red-600 font-medium transition-colors duration-500"
+  end
+  defp get_connection_text_class(_, _) do
+    "text-gray-600 font-medium transition-colors duration-500"
+  end
 
 
   defp format_time(datetime) do
@@ -2836,7 +2468,6 @@ defmodule AppWeb.ChatLive do
   end
 
   defp should_show_date_separator(_current_message, nil), do: true
-
   defp should_show_date_separator(current_message, previous_message) do
     current_date = get_message_date(current_message)
     previous_date = get_message_date(previous_message)
@@ -2859,7 +2490,6 @@ defmodule AppWeb.ChatLive do
     previous_message = if index > 0, do: Enum.at(message_list, index - 1), else: nil
     show_date_separator = should_show_date_separator(message, previous_message)
 
-    # Obter confirmações de leitura para esta mensagem
     message_receipts = get_read_receipts_for_message(message.id, read_receipts)
     read_by_text = format_read_by_list(message.id, read_receipts, current_user)
     message_status = get_message_status(message, message_receipts)
@@ -2886,7 +2516,7 @@ defmodule AppWeb.ChatLive do
         </div>
       </div>
     <% end %>
-    <div class={"flex mb-2 animate-slide-in " <> if(@is_current_user, do: "justify-end", else: "justify-start")}
+    <div class={"flex mb-2 animate-slide-in transition-all duration-300 hover:scale-[1.02] " <> if(@is_current_user, do: "justify-end", else: "justify-start")}
          role="article"
          aria-label={"Mensagem de " <> @message.sender_name}>
       <div class={
@@ -2903,11 +2533,14 @@ defmodule AppWeb.ChatLive do
           <div class="mt-1.5 space-y-1.5">
             <%= for attachment <- @message.attachments do %>
               <%= if attachment.file_type == "image" do %>
-                <img src={attachment.file_url}
-                     class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg cursor-pointer hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
+                <div class="chat-image-container rounded-lg cursor-pointer hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg bg-gray-100"
                      phx-click="show_image"
-                     phx-value-url={attachment.file_url}
-                     alt={attachment.original_filename} />
+                     phx-value-url={attachment.file_url}>
+                  <img src={attachment.file_url}
+                       class="chat-image-thumbnail"
+                       alt={attachment.original_filename}
+                       loading="lazy" />
+                </div>
               <% end %>
             <% end %>
           </div>
@@ -2944,16 +2577,17 @@ defmodule AppWeb.ChatLive do
     """
   end
 
-  # === FUNÇÕES PARA CONFIRMAÇÃO DE LEITURA ===
-
   defp parse_message_ids(message_keys) when is_list(message_keys) do
-    Enum.map(message_keys, fn key ->
-      case Integer.parse(to_string(key)) do
-        {id, _} -> id
-        :error -> nil
-      end
-    end)
+    message_keys
+    |> Enum.map(&parse_single_message_id/1)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp parse_single_message_id(key) do
+    case Integer.parse(to_string(key)) do
+      {id, _} -> id
+      :error -> nil
+    end
   end
 
   defp safe_mark_message_as_read(message_id, user_id, treaty_id) do
@@ -2978,61 +2612,43 @@ defmodule AppWeb.ChatLive do
     Map.get(read_receipts, message_id, [])
   end
 
+  defp format_read_by_list(_message_id, _read_receipts, _current_user_name, []), do: ""
+
+  defp format_read_by_list(_message_id, _read_receipts, _current_user_name, [receipt]) do
+    user_name = receipt.user_name || receipt.username || "Usuário"
+    "#{user_name} leu"
+  end
+
+  defp format_read_by_list(_message_id, _read_receipts, current_user_name, receipts) do
+    user_names = receipts
+    |> Enum.map(fn receipt -> receipt.user_name || receipt.username end)
+    |> Enum.reject(fn name -> name == current_user_name end)
+
+    case user_names do
+      [] -> "Você leu"
+      names ->
+        names_str = join_names_smartly(names)
+        "#{names_str} leram"
+    end
+  end
+
   defp format_read_by_list(message_id, read_receipts, current_user_name) do
     receipts = get_read_receipts_for_message(message_id, read_receipts)
-
-    case receipts do
-      [] -> ""
-      [receipt] ->
-        user_name = receipt.user_name || receipt.username || "Usuário"
-        "#{user_name} leu"
-      receipts ->
-        user_names = receipts
-        |> Enum.map(fn receipt -> receipt.user_name || receipt.username end)
-        |> Enum.reject(fn name -> name == current_user_name end)
-
-        case user_names do
-          [] -> "Você leu"
-          names ->
-            names_str = join_names_smartly(names)
-            "#{names_str} leram"
-        end
-    end
+    format_read_by_list(message_id, read_receipts, current_user_name, receipts)
   end
 
-  defp get_message_status(_message, read_receipts) do
-    # Retorna :sent, :delivered ou :read baseado no estado da mensagem
-    # No WhatsApp seria:
-    # :sent -> ✓ (cinza) - mensagem foi enviada
-    # :delivered -> ✓✓ (cinza) - mensagem chegou ao destinatário
-    # :read -> ✓✓ (azul) - destinatário leu a mensagem
+  defp get_message_status(_message, read_receipts) when length(read_receipts) > 0, do: :read
+  defp get_message_status(_message, _read_receipts), do: :sent
 
-    cond do
-      length(read_receipts) > 0 -> :read
-      # TODO: Implementar lógica de :delivered no futuro se necessário
-      # Por enquanto todas as mensagens são :sent ou :read
-      true -> :sent
-    end
-  end
-
-  defp join_names_smartly(names) when length(names) <= 2 do
-    Enum.join(names, " e ")
-  end
-
-  defp join_names_smartly(names) do
-    [first | rest] = names
-    case rest do
-      [] -> first
-      [_second] -> Enum.join(names, " e ")
-      _ ->
-        last = List.last(rest)
-        middle = length(rest) - 1
-        "#{first} e mais #{middle} outros#{if last != Enum.at(names, 1), do: " e #{last}", else: ""}"
-    end
+  defp join_names_smartly([name]), do: name
+  defp join_names_smartly([first, second]), do: "#{first} e #{second}"
+  defp join_names_smartly([first, second | rest]) do
+    last = List.last(rest)
+    middle_count = length(rest) - 1
+    "#{first} e mais #{middle_count} outros#{if last != second, do: " e #{last}", else: ""}"
   end
 
   defp broadcast_read_receipts(topic, message_ids, user_id, treaty_id) do
-    # Broadcast para outros usuários sobre as confirmações de leitura
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:read_receipts_updated, message_ids, user_id, treaty_id})
   end
 

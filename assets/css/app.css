@@ -592,6 +592,99 @@ kbd {
   }
 }
 
+/* Chat Image Thumbnails - Force proper sizing */
+.chat-image-thumbnail {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  min-width: 96px !important;
+  min-height: 96px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+@media (min-width: 640px) {
+  .chat-image-thumbnail {
+    width: 128px !important;
+    height: 128px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+    min-width: 128px !important;
+    min-height: 128px !important;
+  }
+}
+
+/* Chat Image Container - Ensure proper containment */
+.chat-image-container {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+  min-width: 96px !important;
+  min-height: 96px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: block !important;
+}
+
+@media (min-width: 640px) {
+  .chat-image-container {
+    width: 128px !important;
+    height: 128px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+    min-width: 128px !important;
+    min-height: 128px !important;
+  }
+}
+
+/* Upload Preview Images */
+.upload-preview-container {
+  width: 80px !important;
+  height: 80px !important;
+  max-width: 80px !important;
+  max-height: 80px !important;
+  min-width: 80px !important;
+  min-height: 80px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: block !important;
+}
+
+.upload-preview-image {
+  width: 80px !important;
+  height: 80px !important;
+  max-width: 80px !important;
+  max-height: 80px !important;
+  min-width: 80px !important;
+  min-height: 80px !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+@media (min-width: 640px) {
+  .upload-preview-container {
+    width: 128px !important;
+    height: 128px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+    min-width: 128px !important;
+    min-height: 128px !important;
+  }
+  
+  .upload-preview-image {
+    width: 128px !important;
+    height: 128px !important;
+    max-width: 128px !important;
+    max-height: 128px !important;
+    min-width: 128px !important;
+    min-height: 128px !important;
+  }
+}
+
 @media (max-width: 480px) {
     .apple-login .container {
         max-width: 100%;

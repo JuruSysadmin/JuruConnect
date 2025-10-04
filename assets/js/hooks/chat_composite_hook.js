@@ -37,6 +37,11 @@ const ChatCompositeHook = {
     this.scrollToBottom(false);
     this.setupEventListeners();
     this.setupTypingDetection();
+    
+    // Delay drag and drop setup to ensure DOM is ready
+    setTimeout(() => {
+      this.setupDragAndDrop();
+    }, 100);
   },
 
   handleChatUpdate() {
@@ -314,10 +319,146 @@ const ChatCompositeHook = {
     }
   },
 
+  // Drag and Drop functionality
+  setupDragAndDrop() {
+    console.log('Setting up drag and drop...');
+    
+    const form = this.el.querySelector('form');
+    const messageInput = this.el.querySelector('#message-input');
+    const imageUpload = this.el.querySelector('#image-upload');
+
+    console.log('Elements found:', {
+      form: !!form,
+      messageInput: !!messageInput,
+      imageUpload: !!imageUpload
+    });
+
+    if (!form || !messageInput || !imageUpload) {
+      console.error('Required elements for drag and drop not found:', {
+        form: form,
+        messageInput: messageInput,
+        imageUpload: imageUpload
+      });
+      return;
+    }
+
+    // Prevent default drag behaviors on the entire page
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.addEventListener(eventName, this.preventDefaults, false);
+    });
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+      form.addEventListener(eventName, (e) => {
+        this.highlightDropArea(form, true);
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      form.addEventListener(eventName, (e) => {
+        this.highlightDropArea(form, false);
+      }, false);
+    });
+
+    // Handle dropped files
+    form.addEventListener('drop', (e) => {
+      this.handleDroppedFiles(e, imageUpload);
+    }, false);
+  },
+
+  preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  },
+
+  highlightDropArea(element, highlight) {
+    if (highlight) {
+      element.classList.add('border-blue-400', 'bg-blue-50');
+      element.style.transform = 'scale(1.02)';
+    } else {
+      element.classList.remove('border-blue-400', 'bg-blue-50');
+      element.style.transform = 'scale(1)';
+    }
+  },
+
+  handleDroppedFiles(e, imageUpload) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    console.log('Files dropped:', files.length);
+
+    if (files.length > 0) {
+      // Filter only image files
+      const imageFiles = Array.from(files).filter(file => {
+        return file.type.startsWith('image/');
+      });
+
+      if (imageFiles.length > 0) {
+        // Validate image files
+        const validFiles = imageFiles.filter(file => {
+          if (file.size > 5 * 1024 * 1024) {
+            this.showError('Arquivo muito grande. Máximo permitido: 5MB');
+            return false;
+          }
+          return true;
+        });
+
+        if (validFiles.length === 0) {
+          return;
+        }
+
+        // Limit to 3 files maximum
+        const filesToUpload = validFiles.slice(0, 3);
+        
+        if (validFiles.length > 3) {
+          this.showError('Máximo de 3 imagens permitidas. Apenas as primeiras 3 serão enviadas.');
+        }
+
+        // Transfer files to LiveView input
+        this.transferFilesToLiveView(filesToUpload, imageUpload);
+        
+      } else {
+        this.showError('Por favor, solte apenas arquivos de imagem (JPG, PNG, GIF, etc.)');
+      }
+    }
+  },
+
+  transferFilesToLiveView(files, imageUpload) {
+    // Create a new FileList with the dropped files
+    const dataTransfer = new DataTransfer();
+    files.forEach(file => {
+      dataTransfer.items.add(file);
+    });
+    
+    // Set the files to the input
+    imageUpload.files = dataTransfer.files;
+    
+    // Trigger change event to notify LiveView
+    const changeEvent = new Event('change', { bubbles: true });
+    imageUpload.dispatchEvent(changeEvent);
+
+    console.log('Files transferred to LiveView:', files.length);
+  },
+
+  showError(message) {
+    // Use the existing toast notification system
+    this.pushEvent("show-toast", {
+      type: "error",
+      title: "Erro no upload",
+      message: message,
+      duration: 5000
+    });
+  },
+
   // Cleanup
   cleanup() {
     // Remove event listeners
     document.removeEventListener('keydown', this.handleKeydown);
+    
+    // Remove drag and drop listeners
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.removeEventListener(eventName, this.preventDefaults, false);
+    });
     
     // Remove DOM elements
     if (this.toastContainer && this.toastContainer.parentNode) {
