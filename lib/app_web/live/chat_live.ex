@@ -282,31 +282,7 @@ defmodule AppWeb.ChatLive do
     Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
   end
 
-  defp fetch_treaty_with_fallback(treaty_id) when is_binary(treaty_id) do
-    case App.Treaties.get_treaty(treaty_id) do
-      {:ok, treaty} -> treaty
-      {:error, _} ->
-        %App.Treaties.Treaty{
-          treaty_code: treaty_id,
-          status: "Não encontrado",
-          title: "N/A",
-          description: "N/A",
-          priority: "N/A",
-          created_by: nil,
-          store_id: nil
-        }
-    end
-  end
 
-  defp safely_load_paginated_messages(treaty_id) when is_binary(treaty_id) do
-    try do
-      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:messages, :default_message_limit)) do
-        {:ok, messages, has_more} -> {messages, has_more}
-      end
-    rescue
-      _ -> {[], false}
-    end
-  end
 
 
   defp get_user_initial(user) do
@@ -482,7 +458,7 @@ defmodule AppWeb.ChatLive do
       comment_type: comment_type
     }) do
       {:ok, _comment} ->
-        updated_comments = safely_get_treaty_comments(treaty_id)
+        updated_comments = TreatyContext.load_treaty_additional_data(treaty_id).treaty_comments
         {:noreply,
           socket
           |> assign(:treaty_comments, updated_comments)
@@ -502,7 +478,7 @@ defmodule AppWeb.ChatLive do
   def handle_event("edit_comment", %{"comment_id" => comment_id, "content" => content}, %{assigns: %{treaty: %{id: treaty_id}}} = socket) do
     case App.TreatyComments.update_comment(comment_id, %{content: content}) do
       {:ok, _comment} ->
-        updated_comments = safely_get_treaty_comments(treaty_id)
+        updated_comments = TreatyContext.load_treaty_additional_data(treaty_id).treaty_comments
         {:noreply,
           socket
           |> assign(:treaty_comments, updated_comments)
@@ -525,7 +501,7 @@ defmodule AppWeb.ChatLive do
   def handle_event("delete_comment", %{"comment_id" => comment_id}, %{assigns: %{treaty: %{id: treaty_id}}} = socket) do
     case App.TreatyComments.delete_comment(comment_id) do
       {:ok, _comment} ->
-        updated_comments = safely_get_treaty_comments(treaty_id)
+        updated_comments = TreatyContext.load_treaty_additional_data(treaty_id).treaty_comments
         {:noreply,
           socket
           |> assign(:treaty_comments, updated_comments)
