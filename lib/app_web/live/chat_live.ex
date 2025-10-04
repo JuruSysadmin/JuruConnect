@@ -14,6 +14,10 @@ defmodule AppWeb.ChatLive do
   alias AppWeb.ChatConfig
   alias App.Tags
   alias App.DateTimeHelper
+  alias AppWeb.ChatContext
+  alias AppWeb.TreatyContext
+  alias AppWeb.PresenceContext
+  alias AppWeb.UploadContext
 
   defstruct [:filename, :original_filename, :file_size, :mime_type, :file_url]
 
@@ -89,12 +93,7 @@ defmodule AppWeb.ChatLive do
   end
 
   defp configure_upload(socket) do
-    allow_upload(socket, :image,
-      accept: ChatConfig.get_config_value(:upload, :allowed_image_types),
-      max_entries: ChatConfig.get_config_value(:upload, :max_entries),
-      max_file_size: ChatConfig.get_config_value(:upload, :max_file_size),
-      auto_upload: ChatConfig.get_config_value(:upload, :auto_upload)
-    )
+    UploadContext.configure_upload(socket, :image)
   end
 
   defp create_error_socket(socket, treaty_id, session) do
@@ -153,24 +152,33 @@ defmodule AppWeb.ChatLive do
   end
 
   defp load_treaty_data(socket, treaty_id) do
-    treaty_data = fetch_treaty_with_fallback(treaty_id)
+    treaty_data = TreatyContext.load_treaty(treaty_id)
     assign(socket, :treaty, treaty_data)
   end
 
   defp load_message_data(socket, treaty_id) do
-    {message_history, has_more_messages} = safely_load_paginated_messages(treaty_id)
-    read_receipts = safely_get_read_receipts(message_history, treaty_id)
+    case ChatContext.load_messages(treaty_id) do
+      {:ok, message_history, has_more_messages} ->
+        read_receipts = ChatContext.get_read_receipts(Enum.map(message_history, & &1.id), treaty_id)
 
-    socket
-    |> assign(:messages, message_history)
-    |> assign(:has_more_messages, has_more_messages)
-    |> assign(:message_count, length(message_history))
-    |> assign(:read_receipts, read_receipts)
+        socket
+        |> assign(:messages, message_history)
+        |> assign(:has_more_messages, has_more_messages)
+        |> assign(:message_count, length(message_history))
+        |> assign(:read_receipts, read_receipts)
+
+      {:error, _reason} ->
+        socket
+        |> assign(:messages, [])
+        |> assign(:has_more_messages, false)
+        |> assign(:message_count, 0)
+        |> assign(:read_receipts, %{})
+    end
   end
 
   defp load_presence_data(socket, topic) do
-    current_presences = safely_get_presences(topic)
-    online_users = extract_users_from_presences(current_presences || %{})
+    current_presences = PresenceContext.safely_get_presences(topic)
+    online_users = PresenceContext.extract_users_from_presences(current_presences || %{})
 
     socket
     |> assign(:presences, current_presences || %{})
@@ -178,18 +186,14 @@ defmodule AppWeb.ChatLive do
   end
 
   defp load_additional_data(socket, treaty_id) do
-    treaty_tags = safely_get_treaty_tags(treaty_id)
-    treaty_ratings = safely_get_treaty_ratings(socket.assigns.treaty.id)
-    treaty_activities = safely_get_treaty_activities(socket.assigns.treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
-    treaty_stats = safely_get_treaty_stats(socket.assigns.treaty.id)
-    treaty_comments = safely_get_treaty_comments(socket.assigns.treaty.id)
+    additional_data = TreatyContext.load_treaty_additional_data(treaty_id)
 
     socket
-    |> assign(:treaty_tags, treaty_tags)
-    |> assign(:treaty_ratings, treaty_ratings)
-    |> assign(:treaty_activities, treaty_activities)
-    |> assign(:treaty_stats, treaty_stats)
-    |> assign(:treaty_comments, treaty_comments)
+    |> assign(:treaty_tags, additional_data.treaty_tags)
+    |> assign(:treaty_ratings, additional_data.treaty_ratings)
+    |> assign(:treaty_activities, additional_data.treaty_activities)
+    |> assign(:treaty_stats, additional_data.treaty_stats)
+    |> assign(:treaty_comments, additional_data.treaty_comments)
   end
 
   defp handle_authenticated_user_actions(socket, authenticated_user, treaty_id) do
@@ -269,35 +273,10 @@ defmodule AppWeb.ChatLive do
   end
 
   defp setup_presence_tracking(topic, socket, user_name, authenticated_user, treaty_id) do
-    user_data = %{
-      user_id: get_user_id_for_presence(authenticated_user),
-      name: user_name,
-      joined_at: DateTimeHelper.now() |> DateTime.to_iso8601(),
-      user_agent: get_connect_info(socket, :user_agent) || "Desconhecido"
-    }
-
-    case Presence.track(self(), topic, socket.id, user_data) do
-      {:ok, _} ->
-        if authenticated_user do
-          case Process.whereis(App.ActiveRooms) do
-            nil ->
-              :ok
-            _pid ->
-              try do
-                App.ActiveRooms.join_room(treaty_id, authenticated_user.id, user_name)
-              rescue
-                _e -> :ok
-              catch
-                :exit, _reason -> :ok
-              end
-          end
-        end
-      {:error, _reason} -> :ok
-    end
+    PresenceContext.setup_presence_tracking(topic, socket, user_name, authenticated_user, treaty_id)
+    socket
   end
 
-  defp get_user_id_for_presence(nil), do: "anonimo"
-  defp get_user_id_for_presence(%{id: id}), do: id
 
   defp schedule_connection_status_update do
     Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
@@ -329,80 +308,16 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  defp safely_get_treaty_tags(treaty_id) do
-    try do
-      Tags.get_treaty_tags(treaty_id)
-    rescue
-      _ -> []
-    end
-  end
 
-  defp safely_get_presences(topic) do
-    try do
-      Presence.list(topic)
-    rescue
-      _ -> %{}
-    end
-  end
-
-  defp get_user_initial(user) when is_binary(user) and byte_size(user) > 0 do
-    user |> String.first() |> String.upcase()
-  end
-
-  defp get_user_initial(_), do: "U"
-
-  defp safely_get_treaty_ratings(nil), do: []
-  defp safely_get_treaty_ratings(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
-    try do
-      App.Treaties.get_treaty_ratings(treaty_id)
-    rescue
-      _ -> []
-    end
-  end
-
-  defp safely_get_treaty_activities(nil, _limit), do: []
-  defp safely_get_treaty_activities(treaty_id, limit) when (is_integer(treaty_id) or is_binary(treaty_id)) and is_integer(limit) do
-    try do
-      App.Treaties.get_treaty_activities(treaty_id, limit)
-    rescue
-      _ -> []
-    end
-  end
-
-  defp safely_get_treaty_stats(nil), do: %{}
-  defp safely_get_treaty_stats(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
-    try do
-      App.Treaties.get_treaty_stats(treaty_id)
-    rescue
-      _ -> %{}
-    end
-  end
-
-  defp safely_get_treaty_comments(nil), do: []
-  defp safely_get_treaty_comments(treaty_id) when is_integer(treaty_id) or is_binary(treaty_id) do
-    try do
-      App.TreatyComments.get_treaty_comments(treaty_id)
-    rescue
-      _ -> []
-    end
-  end
-
-  defp safely_get_read_receipts(messages, treaty_id) do
-    try do
-      message_ids = Enum.map(messages, & &1.id)
-      App.Chat.get_read_receipts_for_messages(message_ids, treaty_id)
-    rescue
-      _ -> %{}
-    end
+  defp get_user_initial(user) do
+    PresenceContext.get_user_initial(user)
   end
 
 
-  defp format_message_with_mentions(text) when is_binary(text) do
-    text
-    |> String.replace(~r/@([\w\.-]+)/, ~s(<span class="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md text-xs font-medium">@\\1</span>))
-    |> Phoenix.HTML.raw()
+
+  defp format_message_with_mentions(text) do
+    ChatContext.format_message_with_mentions(text)
   end
-  defp format_message_with_mentions(_), do: ""
 
 
   defp assign_connection_state(socket, is_connected, connection_status) do
@@ -703,48 +618,31 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("search_tags", %{"query" => query}, socket) do
-    if String.length(query) >= ChatConfig.get_config_value(:search, :min_search_length) do
-      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, results)
-      }
-    else
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, [])
-      }
-    end
+    results = TreatyContext.search_tags(query, socket.assigns.user_object.store_id)
+    {:noreply,
+      socket
+      |> assign(:tag_search_query, query)
+      |> assign(:tag_search_results, results)
+    }
   end
 
   @impl true
   def handle_event("search_tags", %{"value" => query}, socket) do
-    if String.length(query) >= ChatConfig.get_config_value(:search, :min_search_length) do
-      results = Tags.search_tags(query, socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, results)
-      }
-    else
-      all_tags = Tags.list_tags(socket.assigns.user_object.store_id)
-      {:noreply,
-        socket
-        |> assign(:tag_search_query, query)
-        |> assign(:tag_search_results, all_tags)
-      }
-    end
+    results = TreatyContext.search_tags(query, socket.assigns.user_object.store_id)
+    {:noreply,
+      socket
+      |> assign(:tag_search_query, query)
+      |> assign(:tag_search_results, results)
+    }
   end
 
   @impl true
   def handle_event("add_tag_to_treaty", %{"tag_id" => tag_id}, socket) do
     user_id = socket.assigns.user_object.id
 
-    case Tags.add_tag_to_treaty(socket.assigns.treaty_id, tag_id, user_id) do
+    case TreatyContext.add_tag_to_treaty(socket.assigns.treaty_id, tag_id, user_id) do
       {:ok, _treaty_tag} ->
-        treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+        treaty_tags = TreatyContext.load_treaty_additional_data(socket.assigns.treaty_id).treaty_tags
 
         Phoenix.PubSub.broadcast(
           App.PubSub,
@@ -780,9 +678,9 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("remove_tag_from_treaty", %{"tag_id" => tag_id}, socket) do
-    case Tags.remove_tag_from_treaty(socket.assigns.treaty_id, tag_id) do
+    case TreatyContext.remove_tag_from_treaty(socket.assigns.treaty_id, tag_id) do
       {count, nil} when count > 0 ->
-        treaty_tags = Tags.get_treaty_tags(socket.assigns.treaty_id)
+        treaty_tags = TreatyContext.load_treaty_additional_data(socket.assigns.treaty_id).treaty_tags
 
         Phoenix.PubSub.broadcast(
           App.PubSub,
@@ -885,7 +783,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("close_treaty", _params, %{assigns: %{user_object: user, treaty: treaty, close_reason: reason, resolution_notes: notes, rating_value: rating, rating_comment: rating_comment}} = socket) do
-    if App.Accounts.can_close_treaty?(user, treaty) do
+    if TreatyContext.can_close_treaty?(user, treaty) do
       close_attrs = %{
         close_reason: reason || "",
         resolution_notes: notes || ""
@@ -993,7 +891,7 @@ defmodule AppWeb.ChatLive do
 
   @impl true
   def handle_event("reopen_treaty", _params, %{assigns: %{user_object: user, treaty: treaty}} = socket) do
-    if App.Accounts.can_close_treaty?(user, treaty) do
+    if TreatyContext.can_close_treaty?(user, treaty) do
       case App.Treaties.reopen_treaty(treaty, user.id) do
         {:ok, updated_treaty} ->
           treaty_activities = App.Treaties.get_treaty_activities(updated_treaty.id, ChatConfig.get_config_value(:activities, :default_limit))
@@ -1106,57 +1004,15 @@ defmodule AppWeb.ChatLive do
   end
 
   defp validate_message_input(socket, trimmed_text) do
-    with {:ok, _} <- validate_message_not_empty(trimmed_text, socket),
-         {:ok, _} <- validate_message_length(trimmed_text),
-         {:ok, _} <- validate_connection(socket),
-         {:ok, _} <- validate_treaty_status(socket) do
-      {:ok, :valid}
-    else
-      {:error, reason} -> {:error, reason}
-    end
+    ChatContext.validate_message(trimmed_text, socket, socket.assigns.uploads)
   end
 
-  defp validate_message_not_empty("", %{assigns: %{uploads: %{image: %{entries: []}}}}) do
-    {:error, "Digite uma mensagem ou selecione uma imagem"}
-  end
 
-  defp validate_message_not_empty("", _socket), do: {:ok, :valid}
-  defp validate_message_not_empty(_text, _socket), do: {:ok, :valid}
 
-  defp validate_message_length(text) when is_binary(text) and byte_size(text) > 0 do
-    max_length = ChatConfig.get_config_value(:security, :max_message_length)
-
-    case byte_size(text) > max_length do
-      true -> {:error, "Mensagem muito longa"}
-      false -> {:ok, :valid}
-    end
-  end
-
-  defp validate_message_length(text) when is_binary(text) and byte_size(text) == 0 do
-    {:ok, :valid}
-  end
-
-  defp validate_message_length(_), do: {:ok, :valid}
-
-  defp validate_connection(socket) do
-    if connected?(socket) do
-      {:ok, :valid}
-    else
-      {:error, "Conexão perdida. Tente recarregar a página."}
-    end
-  end
-
-  defp validate_treaty_status(%{assigns: %{treaty: %{status: "closed"}}}) do
-    {:error, "Esta tratativa está encerrada. Não é possível enviar mensagens."}
-  end
-
-  defp validate_treaty_status(_socket) do
-    {:ok, :valid}
-  end
 
   defp can_close_treaty?(%{assigns: %{user_object: nil}}), do: false
   defp can_close_treaty?(%{assigns: %{user_object: user, treaty: treaty}}) do
-    App.Accounts.can_close_treaty?(user, treaty)
+    TreatyContext.can_close_treaty?(user, treaty)
   end
   defp can_close_treaty?(_socket), do: false
 
@@ -1166,10 +1022,10 @@ defmodule AppWeb.ChatLive do
   end
 
   defp process_message_send(socket, trimmed_text) do
-    file_info = handle_image_upload(socket)
-    {user_id, _user_name} = get_user_info_for_message(socket)
+    file_info = ChatContext.process_upload(socket)
+    {user_id, _user_name} = ChatContext.get_user_info_for_message(socket)
 
-    with {:ok, _message} <- App.Chat.send_message(socket.assigns.treaty_id, user_id, trimmed_text, file_info) do
+    with {:ok, _message} <- ChatContext.send_message(socket.assigns.treaty_id, user_id, trimmed_text, file_info) do
       {:noreply,
         socket
         |> assign(:message, "")
@@ -1190,59 +1046,9 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  defp handle_image_upload(socket) do
-    entries = socket.assigns.uploads.image.entries
 
-    case entries do
-      [] ->
-        nil
-      [_entry | _] ->
-        consume_uploaded_entries(socket, :image, &process_upload_entry/2)
-        |> Enum.filter(&(&1 != nil))
-    end
-  end
 
-  defp process_upload_entry(%{path: path}, entry) do
-    temp_path = create_temp_file(path, entry.client_name)
 
-    {:ok, %{
-      temp_path: temp_path,
-      original_filename: entry.client_name,
-      file_size: entry.client_size,
-      mime_type: entry.client_type,
-      pending_upload: true
-    }}
-  end
-
-  defp create_temp_file(source_path, original_name) do
-    temp_dir = Path.join(System.tmp_dir(), ChatConfig.get_config_value(:upload, :temp_dir_prefix))
-    File.mkdir_p!(temp_dir)
-
-    timestamp = DateTime.utc_now() |> DateTime.to_unix(:microsecond)
-    unique_id = :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
-    extension = Path.extname(original_name)
-    temp_filename = "upload_#{timestamp}_#{unique_id}#{extension}"
-    temp_path = Path.join(temp_dir, temp_filename)
-
-    case File.cp(source_path, temp_path) do
-      :ok -> temp_path
-      {:error, _reason} ->
-        source_path
-    end
-  end
-
-  defp get_user_info_for_message(%{assigns: %{user_object: nil, current_user: current_user}}) do
-    {nil, current_user}
-  end
-  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id, name: name}, current_user: _}}) when not is_nil(name) do
-    {id, name}
-  end
-  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id, username: username}, current_user: _}}) when not is_nil(username) do
-    {id, username}
-  end
-  defp get_user_info_for_message(%{assigns: %{user_object: %{id: id}, current_user: current_user}}) do
-    {id, current_user}
-  end
 
 
 
@@ -1439,18 +1245,14 @@ defmodule AppWeb.ChatLive do
     connection_status = if(is_connected, do: "Conectado", else: "Desconectado")
 
     # Trigger connection transition animation
-    transition_state = if is_connected != socket.assigns.connected do
-      if is_connected, do: "connecting", else: "disconnecting"
-    else
-      "stable"
-    end
+    transition_state = PresenceContext.get_connection_transition_state(is_connected, socket.assigns.connected)
 
     if not is_connected and socket.assigns.user_object do
       case Process.whereis(App.ActiveRooms) do
         nil -> :ok
         _pid ->
           try do
-            App.ActiveRooms.leave_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
+            PresenceContext.leave_active_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
           rescue
             _ -> :ok
           catch
@@ -1524,7 +1326,7 @@ defmodule AppWeb.ChatLive do
         nil -> :ok
         _pid ->
           try do
-            App.ActiveRooms.leave_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
+            PresenceContext.leave_active_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
           rescue
             _ -> :ok
           catch
@@ -2386,9 +2188,9 @@ defmodule AppWeb.ChatLive do
     current_count = length(socket.assigns.messages)
 
     Task.start(fn ->
-      with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:pagination, :default_limit), current_count) do
-        send(self(), {:older_messages_loaded, older_messages, has_more})
-      else
+      case ChatContext.load_messages(treaty_id, ChatConfig.get_config_value(:pagination, :default_limit), current_count) do
+        {:ok, older_messages, has_more} ->
+          send(self(), {:older_messages_loaded, older_messages, has_more})
         {:error, _reason} ->
           send(self(), {:older_messages_loaded, [], false})
       end
@@ -2398,45 +2200,16 @@ defmodule AppWeb.ChatLive do
   end
 
 
-  defp classes_base, do: "px-2.5 py-1 text-xs font-semibold rounded-full border shadow-sm transition-all duration-200"
-
-  defp obter_classes_status("active"), do: classes_base() <> " bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-  defp obter_classes_status("inactive"), do: classes_base() <> " bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-  defp obter_classes_status("cancelled"), do: classes_base() <> " bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-  defp obter_classes_status("completed"), do: classes_base() <> " bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-  defp obter_classes_status("closed"), do: classes_base() <> " bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-  defp obter_classes_status(_), do: classes_base() <> " bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-
-  defp get_connection_indicator_class(true, "connecting") do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-yellow-500 animate-pulse shadow-sm transition-colors duration-500"
-  end
-  defp get_connection_indicator_class(true, "stable") do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-emerald-500 animate-pulse shadow-sm transition-colors duration-500"
-  end
-  defp get_connection_indicator_class(false, "disconnecting") do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-yellow-500 animate-pulse shadow-sm transition-colors duration-500"
-  end
-  defp get_connection_indicator_class(false, "stable") do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-red-500 shadow-sm transition-colors duration-500"
-  end
-  defp get_connection_indicator_class(_, _) do
-    "w-1.5 h-1.5 rounded-full mr-1 bg-gray-500 shadow-sm transition-colors duration-500"
+  defp obter_classes_status(status) do
+    TreatyContext.get_status_classes(status)
   end
 
-  defp get_connection_text_class(true, "connecting") do
-    "text-yellow-600 font-medium transition-colors duration-500"
+  defp get_connection_indicator_class(is_connected, transition_state) do
+    PresenceContext.get_connection_indicator_classes(is_connected, transition_state)
   end
-  defp get_connection_text_class(true, "stable") do
-    "text-emerald-600 font-medium transition-colors duration-500"
-  end
-  defp get_connection_text_class(false, "disconnecting") do
-    "text-yellow-600 font-medium transition-colors duration-500"
-  end
-  defp get_connection_text_class(false, "stable") do
-    "text-red-600 font-medium transition-colors duration-500"
-  end
-  defp get_connection_text_class(_, _) do
-    "text-gray-600 font-medium transition-colors duration-500"
+
+  defp get_connection_text_class(is_connected, transition_state) do
+    PresenceContext.get_connection_text_classes(is_connected, transition_state)
   end
 
 
