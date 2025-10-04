@@ -10,10 +10,10 @@ defmodule AppWeb.ChatLive do
   - Histórico de mensagens com paginação
   """
   use AppWeb, :live_view
-  alias AppWeb.Presence
   alias AppWeb.ChatConfig
   alias AppWeb.ChatLive.AuthHelper
   alias AppWeb.ChatLive.TagManager
+  alias AppWeb.ChatLive.PresenceManager
   alias App.DateTimeHelper
 
   defstruct [:filename, :original_filename, :file_size, :mime_type, :file_url]
@@ -155,12 +155,11 @@ defmodule AppWeb.ChatLive do
   end
 
   defp load_presence_data(socket, topic) do
-    current_presences = safely_get_presences(topic)
-    online_users = extract_users_from_presences(current_presences || %{})
+    presence_info = PresenceManager.get_presence_info(String.replace(topic, "treaty:", ""))
 
     socket
-    |> assign(:presences, current_presences || %{})
-    |> assign(:users_online, online_users)
+    |> assign(:presences, presence_info.presences)
+    |> assign(:users_online, presence_info.online_users)
   end
 
   defp load_additional_data(socket, treaty_id) do
@@ -186,31 +185,9 @@ defmodule AppWeb.ChatLive do
   end
 
   defp setup_presence_tracking(topic, socket, user_name, authenticated_user, treaty_id) do
-    user_data = %{
-      user_id: AuthHelper.get_user_id_for_presence(authenticated_user),
-      name: user_name,
-      joined_at: DateTimeHelper.now() |> DateTime.to_iso8601(),
-      user_agent: get_connect_info(socket, :user_agent) || "Desconhecido"
-    }
-
-    case Presence.track(self(), topic, socket.id, user_data) do
-      {:ok, _} ->
-        if authenticated_user do
-          case Process.whereis(App.ActiveRooms) do
-            nil ->
-              :ok
-            _pid ->
-              try do
-                App.ActiveRooms.join_room(treaty_id, authenticated_user.id, user_name)
-              rescue
-                _e -> :ok
-              catch
-                :exit, _reason -> :ok
-              end
-          end
-        end
-      {:error, _reason} -> :ok
-    end
+    user_agent = get_connect_info(socket, :user_agent) || "Desconhecido"
+    PresenceManager.track_user_presence(topic, socket, user_name, authenticated_user, treaty_id, user_agent)
+    socket
   end
 
   defp schedule_connection_status_update do
@@ -243,13 +220,6 @@ defmodule AppWeb.ChatLive do
     end
   end
 
-  defp safely_get_presences(topic) do
-    try do
-      Presence.list(topic)
-    rescue
-      _ -> %{}
-    end
-  end
 
   defp get_user_initial(user) when is_binary(user) and byte_size(user) > 0 do
     user |> String.first() |> String.upcase()
@@ -1166,15 +1136,12 @@ defmodule AppWeb.ChatLive do
   """
   @impl true
   def handle_info(%{event: "presence_diff", payload: _diff}, socket) do
-    presences = Presence.list(socket.assigns.topic)
-    users_online = extract_users_from_presences(presences)
-
-
+    presence_info = PresenceManager.get_presence_info(socket.assigns.treaty_id)
 
     {:noreply,
       socket
-      |> assign(:presences, presences)
-      |> assign(:users_online, users_online)
+      |> assign(:presences, presence_info.presences)
+      |> assign(:users_online, presence_info.online_users)
     }
   end
 
@@ -2125,21 +2092,6 @@ defmodule AppWeb.ChatLive do
 
 
 
-  defp extract_users_from_presences(presences) when is_map(presences) do
-    presences
-    |> Map.values()
-    |> Enum.flat_map(&extract_names_from_metas/1)
-    |> Enum.uniq()
-    |> Enum.sort()
-  end
-
-  defp extract_users_from_presences(_), do: []
-
-  defp extract_names_from_metas(%{metas: metas}) when is_list(metas) do
-    Enum.map(metas, fn %{name: name} when is_binary(name) -> name end)
-  end
-
-  defp extract_names_from_metas(_), do: []
 
   defp load_older_messages_async(socket) do
     treaty_id = socket.assigns.treaty_id

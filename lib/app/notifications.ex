@@ -6,6 +6,7 @@ defmodule App.Notifications do
   alias App.Accounts
   alias App.Notifications.Notification
   alias App.Repo
+  alias AppWeb.ChatLive.PresenceManager
   import Ecto.Query
 
   @doc """
@@ -46,16 +47,7 @@ defmodule App.Notifications do
   end
 
   defp check_presence_in_treaty(treaty_id, user_id) do
-    topic = "treaty:#{treaty_id}"
-    presences = AppWeb.Presence.list(topic)
-
-    is_user_online = presences
-    |> Map.values()
-    |> Enum.flat_map(fn %{metas: metas} ->
-      Enum.map(metas, fn %{user_id: user_id} -> user_id end)
-    end)
-    |> Enum.member?(user_id)
-
+    is_user_online = PresenceManager.is_user_online?(treaty_id, user_id)
     {:ok, is_user_online}
   end
 
