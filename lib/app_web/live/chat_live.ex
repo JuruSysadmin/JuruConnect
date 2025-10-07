@@ -1218,57 +1218,13 @@ defmodule AppWeb.ChatLive do
   def handle_info(:update_connection_status, socket) do
     is_connected = connected?(socket)
     connection_status = get_connection_status(is_connected)
+    transition_state = calculate_transition_state(is_connected, socket.assigns.connected)
 
-    # Trigger connection transition animation
-    transition_state = case is_connected != socket.assigns.connected do
-      true ->
-        case is_connected do
-          true -> "connecting"
-          false -> "disconnecting"
-        end
-      false ->
-        "stable"
-    end
+    handle_user_room_leave(socket, is_connected)
+    schedule_next_connection_check(is_connected)
 
-    # Handle user leaving room when disconnected
-    with true <- not is_connected and not is_nil(socket.assigns.user_object),
-         pid when not is_nil(pid) <- Process.whereis(App.ActiveRooms) do
-      try do
-        App.ActiveRooms.leave_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
-      rescue
-        _ -> :ok
-      catch
-        :exit, _ -> :ok
-      end
-    else
-      _ -> :ok
-    end
-
-    case is_connected do
-      true ->
-        Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
-      false ->
-        :ok
-    end
-
-    {:noreply,
-      socket
-      |> assign(:connected, is_connected)
-      |> assign(:connection_status, connection_status)
-      |> assign(:connection_transition_state, transition_state)
-      |> push_event("connection-status", %{connected: is_connected, status: connection_status, transition: transition_state})
-      |> then(fn socket ->
-        case transition_state != "stable" do
-          true ->
-            Process.send_after(self(), :reset_connection_transition, 1000)
-            socket
-          false ->
-            socket
-        end
-      end)
-    }
+    {:noreply, update_socket_with_connection_status(socket, is_connected, connection_status, transition_state)}
   end
-
 
   @impl true
   def handle_info(:close_tag_modal, socket) do
@@ -2179,11 +2135,9 @@ defmodule AppWeb.ChatLive do
     current_count = length(socket.assigns.messages)
 
     Task.start(fn ->
-      with {:ok, older_messages, has_more} <- App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:pagination, :default_limit), current_count) do
-        send(self(), {:older_messages_loaded, older_messages, has_more})
-      else
-        {:error, _reason} ->
-          send(self(), {:older_messages_loaded, [], false})
+      case App.Chat.list_messages_for_treaty(treaty_id, ChatConfig.get_config_value(:pagination, :default_limit), current_count) do
+        {:ok, older_messages, has_more} ->
+          send(self(), {:older_messages_loaded, older_messages, has_more})
       end
     end)
 
@@ -2443,6 +2397,60 @@ defmodule AppWeb.ChatLive do
 
   defp broadcast_read_receipts(topic, message_ids, user_id, treaty_id) do
     Phoenix.PubSub.broadcast(App.PubSub, topic, {:read_receipts_updated, message_ids, user_id, treaty_id})
+  end
+
+  defp calculate_transition_state(is_connected, was_connected) do
+    case is_connected != was_connected do
+      true -> get_transition_direction(is_connected)
+      false -> "stable"
+    end
+  end
+
+  defp get_transition_direction(true), do: "connecting"
+  defp get_transition_direction(false), do: "disconnecting"
+
+  defp handle_user_room_leave(socket, is_connected) do
+    if should_leave_room?(socket, is_connected) do
+      leave_room_safely(socket)
+    end
+  end
+
+  defp should_leave_room?(socket, is_connected) do
+    not is_connected and not is_nil(socket.assigns.user_object)
+  end
+
+  defp leave_room_safely(socket) do
+    case Process.whereis(App.ActiveRooms) do
+      pid when not is_nil(pid) ->
+        try do
+          App.ActiveRooms.leave_room(socket.assigns.treaty_id, socket.assigns.user_object.id)
+        rescue
+          _ -> :ok
+        catch
+          :exit, _ -> :ok
+        end
+      _ -> :ok
+    end
+  end
+
+  defp schedule_next_connection_check(true) do
+    Process.send_after(self(), :update_connection_status, ChatConfig.get_config_value(:messages, :connection_check_interval))
+  end
+  defp schedule_next_connection_check(false), do: :ok
+
+  defp update_socket_with_connection_status(socket, is_connected, connection_status, transition_state) do
+    socket
+    |> assign(:connected, is_connected)
+    |> assign(:connection_status, connection_status)
+    |> assign(:connection_transition_state, transition_state)
+    |> push_event("connection-status", %{connected: is_connected, status: connection_status, transition: transition_state})
+    |> schedule_transition_reset(transition_state)
+  end
+
+  defp schedule_transition_reset(socket, "stable"), do: socket
+  defp schedule_transition_reset(socket, _transition_state) do
+    Process.send_after(self(), :reset_connection_transition, 1000)
+    socket
   end
 
 end

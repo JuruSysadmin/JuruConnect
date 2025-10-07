@@ -1,4 +1,8 @@
 defmodule App.GlobalReminders.GlobalReminder do
+  @moduledoc """
+  Schema for global reminders.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

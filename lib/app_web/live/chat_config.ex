@@ -335,27 +335,34 @@ defmodule AppWeb.ChatConfig do
   Retorna configuração específica por categoria.
   """
   def get_config(category) when is_atom(category) do
-    case category do
-      :ui -> ui_config()
-      :messages -> message_config()
-      :upload -> upload_config()
-      :security -> security_config()
-      :pagination -> pagination_config()
-      :notifications -> notification_config()
-      :keyboard -> keyboard_shortcuts()
-      :status -> status_config()
-      :rating -> rating_config()
-      :comments -> comments_config()
-      :search -> search_config()
-      :presence -> presence_config()
-      :tags -> tags_config()
-      :activities -> activities_config()
-      :performance -> performance_config()
-      :accessibility -> accessibility_config()
-      :development -> development_config()
-      :production -> production_config()
-      _ -> %{}
+    config_functions = get_config_functions()
+    case Map.get(config_functions, category) do
+      nil -> %{}
+      config_function -> apply(__MODULE__, config_function, [])
     end
+  end
+
+  defp get_config_functions do
+    %{
+      ui: :ui_config,
+      messages: :message_config,
+      upload: :upload_config,
+      security: :security_config,
+      pagination: :pagination_config,
+      notifications: :notification_config,
+      keyboard: :keyboard_shortcuts,
+      status: :status_config,
+      rating: :rating_config,
+      comments: :comments_config,
+      search: :search_config,
+      presence: :presence_config,
+      tags: :tags_config,
+      activities: :activities_config,
+      performance: :performance_config,
+      accessibility: :accessibility_config,
+      development: :development_config,
+      production: :production_config
+    }
   end
 
   @doc """

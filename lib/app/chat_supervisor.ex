@@ -1,4 +1,8 @@
 defmodule App.ChatSupervisor do
+  @moduledoc """
+  Dynamic supervisor for chat rooms.
+  """
+
   use DynamicSupervisor
 
   alias App.Chat.Room

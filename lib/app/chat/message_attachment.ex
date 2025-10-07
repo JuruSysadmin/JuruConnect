@@ -1,4 +1,8 @@
 defmodule App.Chat.MessageAttachment do
+  @moduledoc """
+  Schema for message attachments.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -8,7 +12,7 @@ defmodule App.Chat.MessageAttachment do
   @derive {Jason.Encoder, only: [:id, :message_id, :uploaded_by_id, :filename, :original_filename, :file_size, :mime_type, :file_url, :file_type, :upload_status, :thumbnail_url, :inserted_at]}
 
   schema "message_attachments" do
-    field :message_id, :integer
+    field :message_id, :binary_id
     field :uploaded_by_id, :binary_id
     field :filename, :string
     field :original_filename, :string

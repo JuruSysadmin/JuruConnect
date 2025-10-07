@@ -16,5 +16,8 @@ config :swoosh, local: false
 # Do not print debug messages in production
 config :logger, level: :info
 
+# Configure SSL for production
+config :app, :force_ssl, true
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

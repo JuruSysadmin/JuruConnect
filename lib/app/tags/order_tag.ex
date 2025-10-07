@@ -1,4 +1,8 @@
 defmodule App.Tags.OrderTag do
+  @moduledoc """
+  Schema for order tags.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -22,7 +22,7 @@
         # If you don't want the `setup` and `test` macro calls in ExUnit tests
         # or the `schema` macro in Ecto schemas to trigger DuplicatedCode, just
         # set the `excluded_macros` parameter to the corresponding modules.
-        {Credo.Check.DuplicatedCode, [excluded_macros: [:schema, :setup, :test]]}
+        {Credo.Check.Design.DuplicatedCode, [excluded_macros: [:schema, :setup, :test]]}
       ]
     }
   ]

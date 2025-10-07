@@ -1,4 +1,8 @@
 defmodule App.Treaties.Treaty do
+  @moduledoc """
+  Schema for treaties.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

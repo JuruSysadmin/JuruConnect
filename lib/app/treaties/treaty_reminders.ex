@@ -81,23 +81,32 @@ defmodule App.TreatyReminders do
   def automatic_reminder_creation(hours_threshold) do
     inactive_treaties = get_inactive_treaties(hours_threshold)
     count = Enum.reduce(inactive_treaties, 0, fn treaty, acc ->
-      # Verificar se já existe um lembrete pendente para esta tratativa
-      existing_reminder = from(r in TreatyReminder,
-        where: r.treaty_id == ^treaty.id and r.status == "pending"
-      ) |> Repo.one()
-
-      if existing_reminder do
-        acc
-      else
-        message = "Tratativa inativa há mais de #{hours_threshold} horas"
-        case create_reminder(treaty.id, message) do
-          {:ok, _} -> acc + 1
-          {:error, _} -> acc
-        end
-      end
+      process_treaty_for_reminder(treaty, hours_threshold, acc)
     end)
 
     {:ok, count}
+  end
+
+  defp process_treaty_for_reminder(treaty, hours_threshold, acc) do
+    if has_existing_reminder?(treaty.id) do
+      acc
+    else
+      create_reminder_for_treaty(treaty.id, hours_threshold, acc)
+    end
+  end
+
+  defp has_existing_reminder?(treaty_id) do
+    from(r in TreatyReminder,
+      where: r.treaty_id == ^treaty_id and r.status == "pending"
+    ) |> Repo.one() != nil
+  end
+
+  defp create_reminder_for_treaty(treaty_id, hours_threshold, acc) do
+    message = "Tratativa inativa há mais de #{hours_threshold} horas"
+    case create_reminder(treaty_id, message) do
+      {:ok, _} -> acc + 1
+      {:error, _} -> acc
+    end
   end
 
   @doc """

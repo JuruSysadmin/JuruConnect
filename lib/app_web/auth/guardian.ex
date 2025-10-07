@@ -1,4 +1,8 @@
 defmodule AppWeb.Auth.Guardian do
+  @moduledoc """
+  Guardian authentication module.
+  """
+
   use Guardian, otp_app: :app
 
 

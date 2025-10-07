@@ -1,4 +1,8 @@
 defmodule App.TreatyComments.TreatyComment do
+  @moduledoc """
+  Schema for treaty comments.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

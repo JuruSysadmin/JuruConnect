@@ -68,29 +68,60 @@ defmodule App.DateTimeHelper do
   """
   def format_relative_time_br(datetime) do
     case to_sao_paulo_timezone(datetime) do
-      %DateTime{} = dt ->
-        now = now()
-        diff_seconds = Timex.diff(now, dt, :second)
-
-        cond do
-          diff_seconds < 60 ->
-            "agora"
-          diff_seconds < 3600 ->
-            minutes = div(diff_seconds, 60)
-            "#{minutes} #{if minutes == 1, do: "minuto", else: "minutos"} atrás"
-          diff_seconds < 86400 ->
-            hours = div(diff_seconds, 3600)
-            "#{hours} #{if hours == 1, do: "hora", else: "horas"} atrás"
-          diff_seconds < 2592000 ->
-            days = div(diff_seconds, 86400)
-            "#{days} #{if days == 1, do: "dia", else: "dias"} atrás"
-          true ->
-            format_date_br(dt)
-        end
-      _ ->
-        "Data não disponível"
+      %DateTime{} = dt -> format_relative_time_for_datetime(dt)
+      _ -> "Data não disponível"
     end
   end
+
+  defp format_relative_time_for_datetime(dt) do
+    now = now()
+    diff_seconds = Timex.diff(now, dt, :second)
+    format_time_difference(diff_seconds, dt)
+  end
+
+  defp format_time_difference(diff_seconds, dt) do
+    case get_time_unit(diff_seconds) do
+      :now -> "agora"
+      :minutes -> format_minutes_ago(diff_seconds)
+      :hours -> format_hours_ago(diff_seconds)
+      :days -> format_days_ago(diff_seconds)
+      :date -> format_date_br(dt)
+    end
+  end
+
+  defp get_time_unit(diff_seconds) do
+    cond do
+      diff_seconds < 60 -> :now
+      diff_seconds < 3600 -> :minutes
+      diff_seconds < 86_400 -> :hours
+      diff_seconds < 2_592_000 -> :days
+      true -> :date
+    end
+  end
+
+  defp format_minutes_ago(diff_seconds) do
+    minutes = div(diff_seconds, 60)
+    "#{minutes} #{pluralize_minutes(minutes)} atrás"
+  end
+
+  defp format_hours_ago(diff_seconds) do
+    hours = div(diff_seconds, 3600)
+    "#{hours} #{pluralize_hours(hours)} atrás"
+  end
+
+  defp format_days_ago(diff_seconds) do
+    days = div(diff_seconds, 86_400)
+    "#{days} #{pluralize_days(days)} atrás"
+  end
+
+  defp pluralize_minutes(1), do: "minuto"
+  defp pluralize_minutes(_), do: "minutos"
+
+  defp pluralize_hours(1), do: "hora"
+  defp pluralize_hours(_), do: "horas"
+
+  defp pluralize_days(1), do: "dia"
+  defp pluralize_days(_), do: "dias"
 
   @doc """
   Converte uma string de data para o timezone de São Paulo.

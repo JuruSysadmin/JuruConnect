@@ -1,4 +1,8 @@
 defmodule App.SLAs.SLAAlert do
+  @moduledoc """
+  Schema for SLA alerts.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

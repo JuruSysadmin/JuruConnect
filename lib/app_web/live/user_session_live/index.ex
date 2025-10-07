@@ -52,6 +52,10 @@ defmodule AppWeb.UserSessionLive.Index do
     {:noreply, assign(socket, email: email)}
   end
 
+  def handle_event("update_username", %{"user" => %{"username" => username}}, socket) do
+    {:noreply, assign(socket, username: username)}
+  end
+
   def handle_event("save", %{"user" => %{"username" => username, "password" => password}}, socket)
       when is_binary(username) and is_binary(password) and byte_size(username) > 0 and byte_size(password) > 0 do
 
@@ -115,13 +119,16 @@ defmodule AppWeb.UserSessionLive.Index do
     {:noreply, update(socket, :show_password, &(!&1))}
   end
 
-  # Handler genérico para capturar todos os eventos
-  def handle_event(_event, _params, socket) do
+  # Handler para capturar eventos não reconhecidos (para debug)
+  def handle_event(event, params, socket) do
+    require Logger
+    Logger.warning("Unhandled event: #{inspect(event)} with params: #{inspect(params)}")
     {:noreply, socket}
   end
 
+
   defp login_changeset do
-    types = %{email: :string, password: :string}
+    types = %{username: :string, password: :string}
 
     {%{}, types}
     |> Ecto.Changeset.cast(%{}, Map.keys(types))

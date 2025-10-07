@@ -1,4 +1,8 @@
 defmodule App.Chat.ChatReminder do
+  @moduledoc """
+  Schema for chat reminders.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -13,7 +13,7 @@ defmodule App.Chat.MessageReadReceipt do
 
   schema "message_read_receipts" do
     # Chave composta: message_id + user_id
-    field :message_id, :id, primary_key: true
+    field :message_id, :binary_id, primary_key: true
     field :user_id, :binary_id, primary_key: true
 
     # Informações adicionais

@@ -1,4 +1,8 @@
 defmodule App.Treaties.TreatyRating do
+  @moduledoc """
+  Schema for treaty ratings.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -92,7 +92,7 @@ defmodule AppWeb.ChatLive.PresenceManager do
   - `true` se o usuário está online
   - `false` se o usuário está offline ou não encontrado
   """
-  def is_user_online?(treaty_id, user_id) do
+  def user_online?(treaty_id, user_id) do
     topic = "treaty:#{treaty_id}"
     presences = get_presences(topic)
 

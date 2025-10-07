@@ -9,7 +9,7 @@ defmodule AppWeb.Endpoint do
     key: "_app_key",
     signing_salt: "tdnofqF8",
     http_only: true,
-    secure: false, # Disabled for HTTP development
+    secure: Application.compile_env(:app, :force_ssl, false),
     same_site: "Lax" # Changed from Strict to Lax to avoid session conflicts
   ]
 

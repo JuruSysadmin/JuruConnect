@@ -15,7 +15,7 @@ defmodule AppWeb.AdminDashboardLive do
           |> redirect(to: ~p"/")}
 
       user ->
-        if Accounts.is_admin?(user) do
+        if Accounts.admin?(user) do
           {:ok,
             socket
             |> assign(:user, user)

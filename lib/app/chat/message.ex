@@ -1,8 +1,12 @@
 defmodule App.Chat.Message do
+  @moduledoc """
+  Schema for chat messages.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, :id, autogenerate: true}
+  @primary_key {:id, :binary_id, autogenerate: true}
 
   @derive {Jason.Encoder, only: [:id, :text, :sender_id, :sender_name, :treaty_id, :tipo, :inserted_at, :image_url, :timestamp, :attachments]}
   schema "messages" do

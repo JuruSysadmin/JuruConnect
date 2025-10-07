@@ -106,14 +106,8 @@ defmodule AppWeb.TreatySearchLive do
           {:ok, treaty} ->
             {:noreply, push_navigate(socket, to: "/chat/#{treaty.treaty_code}")}
           {:error, changeset} ->
-            error_message = case changeset.errors do
-              [treaty_code: {"has already been taken", _}] -> "Erro ao gerar código único. Tente novamente."
-              _ -> "Erro ao criar tratativa"
-            end
-            {:noreply, assign(socket,
-              error: error_message,
-              loading: false
-            )}
+            error_message = extract_treaty_creation_error(changeset)
+            {:noreply, assign(socket, error: error_message, loading: false)}
         end
     end
   end
@@ -816,8 +810,8 @@ defmodule AppWeb.TreatySearchLive do
     cond do
       seconds_ago < 60 -> "há alguns segundos"
       seconds_ago < 3600 -> format_minutes(seconds_ago)
-      seconds_ago < 86400 -> format_hours(seconds_ago)
-      seconds_ago < 2592000 -> format_days(seconds_ago)
+      seconds_ago < 86_400 -> format_hours(seconds_ago)
+      seconds_ago < 2_592_000 -> format_days(seconds_ago)
       true -> "há mais de um mês"
     end
   end
@@ -833,7 +827,7 @@ defmodule AppWeb.TreatySearchLive do
   end
 
   defp format_days(seconds_ago) do
-    days = div(seconds_ago, 86400)
+    days = div(seconds_ago, 86_400)
     "há #{days} dia#{pluralize(days)}"
   end
 
@@ -904,6 +898,13 @@ defmodule AppWeb.TreatySearchLive do
       end
     rescue
       _ -> notification.treaty_id
+    end
+  end
+
+  defp extract_treaty_creation_error(changeset) do
+    case changeset.errors do
+      [treaty_code: {"has already been taken", _}] -> "Erro ao gerar código único. Tente novamente."
+      _ -> "Erro ao criar tratativa"
     end
   end
 end

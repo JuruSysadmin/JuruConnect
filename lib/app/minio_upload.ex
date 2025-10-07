@@ -8,7 +8,7 @@ defmodule App.MinIOUpload do
   @bucket "juruconnect"
   @max_file_size 5_000_000 # 5MB
   @allowed_extensions ~w(.jpg .jpeg .png .gif .webp)
-  @base_url "http://10.1.1.168:9000"
+  @base_url "https://api.minio.jurunense.com"
 
   @doc """
   Salva um arquivo no MinIO e retorna a URL pública.
@@ -56,7 +56,7 @@ defmodule App.MinIOUpload do
       {:ok, %{body: %{contents: contents}}} ->
         files = contents
         |> Enum.map(& &1.key)
-        |> Enum.filter(&is_image_file?/1)
+        |> Enum.filter(&image_file?/1)
         |> Enum.map(&public_url/1)
         {:ok, files}
       {:error, reason} ->
@@ -141,7 +141,7 @@ defmodule App.MinIOUpload do
     end
   end
 
-  defp is_image_file?(filename) do
+  defp image_file?(filename) do
     extension = Path.extname(filename) |> String.downcase()
     extension in @allowed_extensions
   end

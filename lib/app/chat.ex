@@ -89,62 +89,84 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
   """
   def send_message(treaty_id, sender_id, text, file_info \\ nil)
       when is_binary(treaty_id) and is_binary(text) do
-    # Validar que a mensagem tenha conteúdo (texto ou anexo)
+    case validate_message_content(text, file_info) do
+      :ok -> create_and_send_message(treaty_id, sender_id, text, file_info)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp validate_message_content(text, file_info) do
     if String.trim(text) == "" and is_nil(file_info) do
       {:error, "Mensagem deve conter texto ou anexo"}
     else
-      sender_name = get_sender_name(sender_id)
+      :ok
+    end
+  end
 
-      params = %{
-        text: text,
-        sender_id: sender_id,
-        sender_name: sender_name,
-        treaty_id: treaty_id,
-        tipo: "mensagem",
-        timestamp: DateTime.utc_now()
-      }
+  defp create_and_send_message(treaty_id, sender_id, text, file_info) do
+    sender_name = get_sender_name(sender_id)
+    params = build_message_params(sender_id, sender_name, treaty_id, text)
 
     case create_message(params) do
-      {:ok, message} ->
-        # Processar uploads assíncronos se houver arquivos
-        if file_info do
-          # Handle both single file and multiple files
-          files = if is_list(file_info), do: file_info, else: [file_info]
-
-          Enum.each(files, fn file ->
-            if file && file.pending_upload do
-              # Enviar job para Oban para processamento assíncrono
-              job_args = %{
-                "file_path" => file.temp_path,
-                "original_filename" => file.original_filename,
-                "file_size" => file.file_size,
-                "mime_type" => file.mime_type,
-                "treaty_id" => treaty_id,
-                "user_id" => sender_id,
-                "message_id" => message.id
-              }
-
-              App.Jobs.MediaProcessingJob.new(job_args)
-              |> Oban.insert()
-            end
-          end)
-        end
-
-        # Carregar anexos para a mensagem (pode estar vazio se uploads estão pendentes)
-        message_with_attachments = %{message | attachments: get_message_attachments(message.id)}
-
-        # Publicar a mensagem via PubSub
-        topic = "treaty:#{treaty_id}"
-        Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message_with_attachments})
-
-        # Processar notificações
-        process_message_notifications(message_with_attachments, treaty_id)
-
-        {:ok, message_with_attachments}
-      {:error, changeset} ->
-        {:error, changeset}
+      {:ok, message} -> process_successful_message(message, treaty_id, sender_id, file_info)
+      {:error, changeset} -> {:error, changeset}
     end
+  end
+
+  defp build_message_params(sender_id, sender_name, treaty_id, text) do
+    %{
+      text: text,
+      sender_id: sender_id,
+      sender_name: sender_name,
+      treaty_id: treaty_id,
+      tipo: "mensagem",
+      timestamp: DateTime.utc_now()
+    }
+  end
+
+  defp process_successful_message(message, treaty_id, sender_id, file_info) do
+    process_file_uploads(file_info, treaty_id, sender_id, message.id)
+    message_with_attachments = load_message_attachments(message)
+    broadcast_message(message_with_attachments, treaty_id)
+    process_message_notifications(message_with_attachments, treaty_id)
+    {:ok, message_with_attachments}
+  end
+
+  defp process_file_uploads(nil, _treaty_id, _sender_id, _message_id), do: :ok
+  defp process_file_uploads(file_info, treaty_id, sender_id, message_id) do
+    files = normalize_file_info(file_info)
+    Enum.each(files, &schedule_file_upload(&1, treaty_id, sender_id, message_id))
+  end
+
+  defp normalize_file_info(file_info) when is_list(file_info), do: file_info
+  defp normalize_file_info(file_info), do: [file_info]
+
+  defp schedule_file_upload(file, treaty_id, sender_id, message_id) do
+    if file && file.pending_upload do
+      job_args = build_upload_job_args(file, treaty_id, sender_id, message_id)
+      App.Jobs.MediaProcessingJob.new(job_args) |> Oban.insert()
     end
+  end
+
+  defp build_upload_job_args(file, treaty_id, sender_id, message_id) do
+    %{
+      "file_path" => file.temp_path,
+      "original_filename" => file.original_filename,
+      "file_size" => file.file_size,
+      "mime_type" => file.mime_type,
+      "treaty_id" => treaty_id,
+      "user_id" => sender_id,
+      "message_id" => message_id
+    }
+  end
+
+  defp load_message_attachments(message) do
+    %{message | attachments: get_message_attachments(message.id)}
+  end
+
+  defp broadcast_message(message_with_attachments, treaty_id) do
+    topic = "treaty:#{treaty_id}"
+    Phoenix.PubSub.broadcast(App.PubSub, topic, {:new_message, message_with_attachments})
   end
 
   defp get_sender_name(nil), do: "Usuário Anônimo"
@@ -290,7 +312,9 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
   Recebe uma lista de message_ids e retorna um mapa: %{message_id => [receipts]}
   """
   def get_read_receipts_for_messages(message_ids, treaty_id) when is_list(message_ids) and is_binary(treaty_id) do
-    unless Enum.empty?(message_ids) do
+    if Enum.empty?(message_ids) do
+      %{}
+    else
       MessageReadReceipt
       |> where([rr], rr.message_id in ^message_ids and rr.treaty_id == ^treaty_id)
       |> join(:inner, [rr], u in "users", on: rr.user_id == u.id)
@@ -305,8 +329,6 @@ when is_binary(treaty_id) and is_integer(limit) and is_integer(offset) do
       |> Enum.group_by(& &1.message_id, fn receipt ->
         Map.delete(receipt, :message_id)
       end)
-    else
-      %{}
     end
   end
 

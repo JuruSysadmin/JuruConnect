@@ -1,4 +1,8 @@
 defmodule App.Notifications.Notification do
+  @moduledoc """
+  Schema for notifications.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

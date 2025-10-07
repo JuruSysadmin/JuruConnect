@@ -4,7 +4,7 @@ defmodule AppWeb.Router do
   import Oban.Web.Router
 
   # CSP mais permissivo para iframes
-  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://10.1.1.168:4000 ws://127.0.0.1:4007; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors *;"
+  @csp "default-src 'self'; script-src 'self' http://127.0.0.1:4007; connect-src 'self' ws://10.1.1.168:4000 ws://127.0.0.1:4007 wss://tratativas.jurunense.com:4000; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors *;"
 
   pipeline :browser do
     plug :accepts, ["html"]

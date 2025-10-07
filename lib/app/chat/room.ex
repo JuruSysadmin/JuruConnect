@@ -1,4 +1,8 @@
 defmodule App.Chat.Room do
+  @moduledoc """
+  GenServer for managing chat rooms.
+  """
+
   use GenServer
   alias App.Chat
   alias App.ChatConfig

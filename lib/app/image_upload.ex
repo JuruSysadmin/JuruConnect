@@ -57,7 +57,7 @@ defmodule App.ImageUpload do
     case File.ls(@images_dir) do
       {:ok, files} ->
         images = files
-        |> Enum.filter(&is_image_file?/1)
+        |> Enum.filter(&image_file?/1)
         |> Enum.map(&public_url/1)
         {:ok, images}
       {:error, reason} ->
@@ -122,7 +122,7 @@ defmodule App.ImageUpload do
     end
   end
 
-  defp is_image_file?(filename) do
+  defp image_file?(filename) do
     extension = Path.extname(filename) |> String.downcase()
     extension in @allowed_extensions
   end

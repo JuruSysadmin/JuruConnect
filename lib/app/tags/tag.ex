@@ -1,4 +1,8 @@
 defmodule App.Tags.Tag do
+  @moduledoc """
+  Schema for tags.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

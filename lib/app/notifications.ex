@@ -47,7 +47,7 @@ defmodule App.Notifications do
   end
 
   defp check_presence_in_treaty(treaty_id, user_id) do
-    is_user_online = PresenceManager.is_user_online?(treaty_id, user_id)
+    is_user_online = PresenceManager.user_online?(treaty_id, user_id)
     {:ok, is_user_online}
   end
 
@@ -91,13 +91,13 @@ defmodule App.Notifications do
   end
 
   defp send_mention_notification(message, user_id) do
-    with {:ok, user} <- fetch_user_by_id(user_id) do
-      # Save mention notification to database
-      save_mention_notification(user_id, message)
-      broadcast_mention_notification(user_id, message)
-      send_desktop_notification(user, message, :mention)
-      {:ok, :mention_sent}
-    else
+    case fetch_user_by_id(user_id) do
+      {:ok, user} ->
+        # Save mention notification to database
+        save_mention_notification(user_id, message)
+        broadcast_mention_notification(user_id, message)
+        send_desktop_notification(user, message, :mention)
+        {:ok, :mention_sent}
       {:error, :user_not_found} ->
         {:error, :user_not_found}
       {:error, reason} ->

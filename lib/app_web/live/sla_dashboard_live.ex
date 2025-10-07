@@ -14,7 +14,7 @@ defmodule AppWeb.SLADashboardLive do
       schedule_sla_check()
 
       # Configurar timer para atualização automática
-      Process.send_after(self(), :refresh_data, 30000) # 30 segundos
+      Process.send_after(self(), :refresh_data, 30_000) # 30 segundos
     end
 
     {:ok,
@@ -80,7 +80,7 @@ defmodule AppWeb.SLADashboardLive do
   @impl true
   def handle_info(:refresh_data, socket) do
     # Agendar próxima atualização
-    Process.send_after(self(), :refresh_data, 30000)
+    Process.send_after(self(), :refresh_data, 30_000)
 
     {:noreply, load_dashboard_data(socket)}
   end

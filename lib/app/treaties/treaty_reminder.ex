@@ -1,4 +1,8 @@
 defmodule App.Treaties.TreatyReminder do
+  @moduledoc """
+  Schema for treaty reminders.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

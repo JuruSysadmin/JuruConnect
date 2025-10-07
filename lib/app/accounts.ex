@@ -261,14 +261,14 @@ defmodule App.Accounts do
   @doc """
   Verifica se um usuário é administrador.
   """
-  def is_admin?(%User{role: "admin"}), do: true
-  def is_admin?(_), do: false
+  def admin?(%User{role: "admin"}), do: true
+  def admin?(_), do: false
 
   @doc """
   Verifica se um usuário pode encerrar uma tratativa.
   Um usuário pode encerrar se for o criador da tratativa ou se for administrador.
   """
   def can_close_treaty?(%User{} = user, %App.Treaties.Treaty{} = treaty) do
-    is_admin?(user) or user.id == treaty.created_by
+    admin?(user) or user.id == treaty.created_by
   end
 end

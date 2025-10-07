@@ -1,4 +1,8 @@
 defmodule App.Tags.TreatyTag do
+  @moduledoc """
+  Schema for treaty tags.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
