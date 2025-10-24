@@ -21,17 +21,22 @@ defmodule AppWeb.DashboardSchedule do
   @doc false
   defp schedule_item(assigns) do
     delivery_data = find_delivery_by_date(assigns.schedule)
+    date = Map.get(assigns.schedule, "dateDelivery")
     assigns = assign(assigns, :delivery_data, delivery_data)
+    assigns = assign(assigns, :date, date)
 
     ~H"""
     <div class="bg-white border border-gray-200 rounded-lg shadow-md p-4">
-      <div class="flex items-start gap-3">
+      <div class="flex items-center gap-4">
         <.calendar_icon />
         <div class="flex-1">
-          <h3 class="font-semibold text-gray-900 text-sm mb-2">Agendamento de Entrega</h3>
-          <.schedule_date schedule={@schedule} />
-          <.delivery_info delivery_data={@delivery_data} />
+          <%= if @date do %>
+            <h3 class="font-semibold text-gray-900 text-sm">Data para entrega: {format_date(@date)}</h3>
+          <% else %>
+            <h3 class="font-semibold text-gray-900 text-sm">Agendamento de Entrega</h3>
+          <% end %>
         </div>
+        <.delivery_info delivery_data={@delivery_data} />
       </div>
     </div>
     """
@@ -44,7 +49,7 @@ defmodule AppWeb.DashboardSchedule do
     ~H"""
     <%= if @date do %>
       <div class="flex items-center gap-2">
-        <span class="text-sm font-semibold text-gray-900">{format_date(@date)}</span>
+        <span class="text-sm font-medium text-gray-700">{format_date(@date)}</span>
         <span class="badge badge-outline badge-sm">{get_weekday(@date)}</span>
       </div>
     <% end %>
@@ -55,7 +60,9 @@ defmodule AppWeb.DashboardSchedule do
   defp delivery_info(assigns) do
     case assigns.delivery_data do
       nil -> ~H"""
-
+      <div class="flex items-center gap-4">
+        <div class="text-xs text-gray-500 italic">Sem dados de entrega</div>
+      </div>
       """
       _ ->
         assigns
@@ -82,16 +89,14 @@ defmodule AppWeb.DashboardSchedule do
   @doc false
   defp render_delivery_info(assigns) do
     ~H"""
-    <div class="mt-3 pt-3 border-t border-gray-100">
-      <div class="grid grid-cols-2 gap-3">
-        <div class="stat bg-gray-50 rounded-lg shadow-sm p-3">
-          <div class="stat-title text-xs text-green-700">Peso Vendido</div>
-          <div class="stat-value text-sm text-green-900">{@formatted_sale_weight} kg</div>
-        </div>
-        <div class="stat bg-gray-50 rounded-lg shadow-sm p-3">
-          <div class="stat-title text-xs text-blue-700">Disponível</div>
-          <div class="stat-value text-sm text-blue-900">{@formatted_available} kg</div>
-        </div>
+    <div class="flex items-center gap-4">
+      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2">
+        <div class="text-xs font-medium text-green-700">Peso Vendido:</div>
+        <div class="text-sm font-semibold text-green-900">{@formatted_sale_weight} kg</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2">
+        <div class="text-xs font-medium text-blue-700">Disponível:</div>
+        <div class="text-sm font-semibold text-blue-900">{@formatted_available} kg</div>
       </div>
     </div>
     """
