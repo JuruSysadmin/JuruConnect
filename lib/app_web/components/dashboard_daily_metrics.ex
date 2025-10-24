@@ -31,7 +31,7 @@ defmodule AppWeb.DashboardDailyMetrics do
       <.card title="Vendas Diárias" value={@sale} subtitle="" animate={@animate_sale} animate_type="sale"></.card>
       <.card title="Devoluções Diárias" value={@devolution} subtitle="" animate={@animate_devolution} animate_type="devolution"></.card>
       <.card title="Margem Diária" value={@profit} subtitle="" animate={@profit_animate} animate_type={@profit_animate_class}></.card>
-      <.card title="NFs Diárias" value={@nfs} subtitle=""></.card>
+      <.card title="NFs Diárias " value={@nfs} subtitle=""></.card>
       <.card title="% Realizado Hoje" value={@realizado_hoje_formatted} subtitle=""></.card>
     </div>
     """

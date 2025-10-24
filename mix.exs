@@ -119,9 +119,7 @@
         ],
         Contexts: [
           App.Accounts,
-          App.Auth,
-          App.Dashboard,
-          App.Sales
+          App.Auth
         ],
         Authentication: [
           App.Auth.Manager,

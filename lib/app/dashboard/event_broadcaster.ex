@@ -45,18 +45,6 @@ defmodule App.Dashboard.EventBroadcaster do
     Phoenix.PubSub.subscribe(App.PubSub, @dashboard_topic)
   end
 
-  def subscribe_to_sales_feed do
-    Phoenix.PubSub.subscribe(App.PubSub, @sales_topic)
-  end
-
-  def subscribe_to_celebrations do
-    Phoenix.PubSub.subscribe(App.PubSub, @celebrations_topic)
-  end
-
-  def subscribe_to_system_status do
-    Phoenix.PubSub.subscribe(App.PubSub, @system_topic)
-  end
-
   def get_stats do
     GenServer.call(__MODULE__, :get_stats)
   end

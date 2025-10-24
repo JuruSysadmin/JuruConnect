@@ -22,7 +22,7 @@ defmodule AppWeb.DashboardStoresTable do
             <th class="text-center py-2 px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300">% Hora</th>
             <th class="text-center py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">% Dia</th>
             <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Ticket Médio</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Devoluções</th>
+            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Devolução mensal</th>
             <th class="text-center py-2 px-3 text-xs font-medium text-gray-600">Orçamentos</th>
           </tr>
         </thead>
@@ -102,6 +102,8 @@ defmodule AppWeb.DashboardStoresTable do
     assigns = assign(assigns, :perc_dia_formatted, format_percent_value(assigns.loja.perc_dia))
     assigns = assign(assigns, :perc_dia_color, get_percent_color(assigns.loja.perc_dia))
     assigns = assign(assigns, :perc_hora_formatted, format_percent_value(assigns.loja.perc_hora))
+    assigns = assign(assigns, :animate_venda_dia, Map.get(assigns.loja, :animate_venda_dia, false))
+    assigns = assign(assigns, :increment_value, Map.get(assigns.loja, :increment_value, 0.0))
 
     ~H"""
     <tr phx-click="show_supervisor_drawer" phx-value-supervisor-id={@loja.supervisor_id} class={[@row_color, "hover:bg-gray-100 transition-colors duration-200 cursor-pointer"]}>
@@ -123,7 +125,14 @@ defmodule AppWeb.DashboardStoresTable do
         <span class="text-xs text-gray-800 font-medium">{@loja.qtde_nfs}</span>
       </td>
       <td class="text-right py-2 px-3 border-r border-gray-200">
-        <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia)}</span>
+        <%= if @animate_venda_dia do %>
+          <div class="flex flex-col items-end gap-0.5">
+            <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia - @increment_value)}</span>
+            <span class="font-mono text-xs font-bold text-green-600 animate-pulse bg-green-100 px-2 py-0.5 rounded-full">+{format_money(@increment_value)}</span>
+          </div>
+        <% else %>
+          <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia)}</span>
+        <% end %>
       </td>
       <td class="text-center py-2 px-3 tablet-hide border-r border-gray-200">
         <span class="text-xs text-gray-800 font-medium">{@perc_hora_formatted}%</span>
@@ -226,9 +235,21 @@ defmodule AppWeb.DashboardStoresTable do
   @doc false
   defp format_percent_value(n) when is_number(n) do
     n
+    |> convert_to_float()
     |> :erlang.float_to_binary(decimals: 1)
     |> String.replace(".", ",")
   end
 
   defp format_percent_value(_), do: "0,0"
+
+  @doc false
+  defp convert_to_float(n) when is_float(n), do: n
+  defp convert_to_float(n) when is_integer(n), do: n * 1.0
+  defp convert_to_float(n) when is_binary(n) do
+    case Float.parse(n) do
+      {num, _} -> num
+      :error -> 0.0
+    end
+  end
+  defp convert_to_float(_), do: 0.0
 end

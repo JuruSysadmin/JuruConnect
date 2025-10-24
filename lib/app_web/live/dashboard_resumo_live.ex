@@ -16,6 +16,13 @@ defmodule AppWeb.DashboardResumoLive do
   alias App.Dashboard.Orchestrator
   alias App.Dashboard.SupervisorMonitor
 
+  # Constantes
+  @animation_duration_ms 2_000
+  @notification_duration_ms 8_000
+  @max_notifications 10
+  @orchestrator_timeout_ms 5_000
+  @brazil_timezone "America/Sao_Paulo"
+
   @impl true
   @spec mount(map, map, Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
@@ -40,6 +47,7 @@ defmodule AppWeb.DashboardResumoLive do
       animate_devolution: false,
       previous_profit_value: 0.0,
       animate_profit: nil,
+      previous_lojas_data: %{},
       lojas_data: [],
       sale: "R$ 0,00",
       cost: "R$ 0,00",
@@ -60,6 +68,7 @@ defmodule AppWeb.DashboardResumoLive do
       percentual_sale: 0,
       monthly_sale_value: 0.0,
       monthly_goal_value: 0.0,
+      goal_exceeded: false,
       schedule_data: []
     })
     |> fetch_and_assign_data_safe()
@@ -76,11 +85,14 @@ defmodule AppWeb.DashboardResumoLive do
     monthly_sale_value = Map.get(assigns, :monthly_sale_value, 0.0)
     monthly_goal_value = Map.get(assigns, :monthly_goal_value, 0.0)
 
+    remaining = monthly_goal_value - monthly_sale_value
+
     socket
     |> assign(%{
       percentual_sale_display: format_percent(percentual_sale),
       percentual_sale_capped: min(percentual_sale, 100),
-      goal_remaining_display: format_money(monthly_goal_value - monthly_sale_value),
+      goal_remaining_display: format_money(abs(remaining)),
+      goal_exceeded: remaining < 0,
       show_goal_remaining: monthly_sale_value > 0 and monthly_goal_value > 0
     })
   end
@@ -88,7 +100,7 @@ defmodule AppWeb.DashboardResumoLive do
   @impl true
   @spec handle_info(tuple, Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_info({:dashboard_updated, data}, socket) do
-    now = DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo")
+    now = DateTime.utc_now() |> Timex.Timezone.convert(@brazil_timezone)
     data = convert_keys_to_atoms(data)
 
     updated_socket = socket
@@ -128,7 +140,7 @@ defmodule AppWeb.DashboardResumoLive do
 
     socket
     |> assign(%{
-      notifications: [notification | socket.assigns.notifications] |> Enum.take(10),
+      notifications: [notification | socket.assigns.notifications] |> Enum.take(@max_notifications),
       show_celebration: true
     })
     |> push_event("goal-achieved-multiple", %{
@@ -138,7 +150,7 @@ defmodule AppWeb.DashboardResumoLive do
       timestamp: unix_timestamp
     })
     |> then(fn socket ->
-      Process.send_after(self(), {:hide_specific_notification, celebration_id}, 8000)
+      Process.send_after(self(), {:hide_specific_notification, celebration_id}, @notification_duration_ms)
       {:noreply, socket}
     end)
   end
@@ -165,11 +177,10 @@ defmodule AppWeb.DashboardResumoLive do
     formatted_achieved = format_money(notification.achieved)
     unix_timestamp = DateTime.to_unix(data.timestamp, :millisecond)
     sound = Map.get(data.data, :sound, "goal_achieved.mp3")
-    duration = 8000
 
     socket
     |> assign(%{
-      notifications: [notification | socket.assigns.notifications] |> Enum.take(10),
+      notifications: [notification | socket.assigns.notifications] |> Enum.take(@max_notifications),
       show_celebration: true
     })
     |> push_event("goal-achieved-real", %{
@@ -183,7 +194,7 @@ defmodule AppWeb.DashboardResumoLive do
       sound: sound
     })
     |> then(fn socket ->
-      Process.send_after(self(), {:hide_specific_notification, celebration_id}, duration)
+      Process.send_after(self(), {:hide_specific_notification, celebration_id}, @notification_duration_ms)
       {:noreply, socket}
     end)
   end
@@ -240,6 +251,18 @@ defmodule AppWeb.DashboardResumoLive do
   @impl true
   def handle_info(:clear_profit_animation, socket) do
     {:noreply, assign(socket, animate_profit: nil)}
+  end
+
+  @impl true
+  def handle_info(:clear_lojas_animation, socket) do
+    # Remove flags de animação de todas as lojas
+    updated_lojas = Enum.map(socket.assigns.lojas_data, fn loja ->
+      loja
+      |> Map.put(:animate_venda_dia, false)
+      |> Map.delete(:increment_value)
+    end)
+
+    {:noreply, assign(socket, lojas_data: updated_lojas)}
   end
 
   @impl true
@@ -318,8 +341,8 @@ defmodule AppWeb.DashboardResumoLive do
 
   @spec fetch_and_assign_data_safe(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   defp fetch_and_assign_data_safe(socket) do
-    now = DateTime.utc_now() |> Timex.Timezone.convert("America/Sao_Paulo")
-    handle_data_response(Orchestrator.get_data(timeout: 5_000), socket, now)
+    now = DateTime.utc_now() |> Timex.Timezone.convert(@brazil_timezone)
+    handle_data_response(Orchestrator.get_data(timeout: @orchestrator_timeout_ms), socket, now)
   end
 
   defp handle_data_response({:ok, data}, socket, now) do
@@ -414,7 +437,8 @@ defmodule AppWeb.DashboardResumoLive do
       percentual_sale: Map.get(data, :percentualSale, 0.0),
       monthly_sale_value: Map.get(data, :sale_mensal, 0.0),
       monthly_goal_value: Map.get(data, :objetivo_mensal, 0.0),
-      lojas_data: get_companies_data(data),
+      lojas_data: process_companies_with_animation(data, socket.assigns[:previous_lojas_data] || %{}),
+      previous_lojas_data: Map.new(get_companies_data(data), fn loja -> {loja.supervisor_id, loja.venda_dia} end),
       last_update: now,
       api_status: :ok,
       loading: false,
@@ -429,17 +453,23 @@ defmodule AppWeb.DashboardResumoLive do
 
     socket = assign(socket, assigns)
 
-    # Se houver animação, envia evento JS e depois desativa após 2 segundos
+    # Se houver animação, envia evento JS e depois desativa após o tempo definido
     if animate_sale do
-      Process.send_after(self(), :clear_sale_animation, 2000)
+      Process.send_after(self(), :clear_sale_animation, @animation_duration_ms)
     end
 
     if animate_devolution do
-      Process.send_after(self(), :clear_devolution_animation, 2000)
+      Process.send_after(self(), :clear_devolution_animation, @animation_duration_ms)
     end
 
     if animate_profit do
-      Process.send_after(self(), :clear_profit_animation, 2000)
+      Process.send_after(self(), :clear_profit_animation, @animation_duration_ms)
+    end
+
+    # Limpa animações das lojas após 2 segundos
+    has_any_loja_animation = Enum.any?(socket.assigns.lojas_data, fn loja -> Map.get(loja, :animate_venda_dia, false) end)
+    if has_any_loja_animation do
+      Process.send_after(self(), :clear_lojas_animation, @animation_duration_ms)
     end
 
     socket
@@ -472,6 +502,7 @@ defmodule AppWeb.DashboardResumoLive do
       percentual_sale: 0,
       monthly_sale_value: 0.0,
       monthly_goal_value: 0.0,
+      goal_exceeded: false,
       lojas_data: [],
       api_status: :error,
       api_error: reason,
@@ -490,6 +521,21 @@ defmodule AppWeb.DashboardResumoLive do
   defp get_companies_data(%{companies: companies}) when is_list(companies), do: companies
   @spec get_companies_data(any) :: list
   defp get_companies_data(_), do: []
+
+  @spec process_companies_with_animation(map, map) :: list
+  defp process_companies_with_animation(data, previous_lojas_map) do
+    companies = get_companies_data(data)
+
+    Enum.map(companies, fn loja ->
+      previous_value = Map.get(previous_lojas_map, loja.supervisor_id, 0.0)
+      increment = loja.venda_dia - previous_value
+      animate_venda_dia = increment > 0 and previous_value > 0
+
+      loja
+      |> Map.put(:animate_venda_dia, animate_venda_dia)
+      |> Map.put(:increment_value, increment)
+    end)
+  end
 
 
 
@@ -524,36 +570,9 @@ defmodule AppWeb.DashboardResumoLive do
 
       <!-- Layout principal - Responsivo -->
       <div class="px-3 sm:px-6 md:px-8 space-y-4 sm:space-y-5 md:space-y-6">
-        <!-- Tabela de Performance das Lojas - No Topo -->
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 hover:shadow-xl transition-shadow duration-300">
-          <!-- Header igual ao feed de vendas -->
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
-            <div>
-              <h2 class="text-sm sm:text-base font-bold text-gray-900 mb-0.5 flex items-center gap-2">
-                Performance das Lojas
-              </h2>
-              <p class="text-xs text-gray-500">
-                {length(@lojas_data)} lojas ativas • Atualização em tempo real
-              </p>
-            </div>
-            <div class="flex items-center space-x-2 px-2.5 py-1 bg-green-50 rounded-full border border-green-200" role="status" aria-label="Sistema em tempo real">
-              <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></div>
-              <span class="text-xs text-green-700 font-bold">AO VIVO</span>
-            </div>
-          </div>
-
-          <!-- Tabela Responsiva -->
-          <.stores_table lojas_data={@lojas_data} loading={@loading} />
-        </div>
-
         <!-- Cards de Métricas em Linha -->
         <div class="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6 lg:items-stretch">
-          <!-- Coluna esquerda: Cards de métricas DIÁRIAS -->
-          <div class="flex-1 w-full lg:w-7/12 flex">
-            <.daily_metrics objetivo={@objetivo} sale={@sale} devolution={@devolution} profit={@profit} nfs={@invoices_count} realizado_hoje_formatted={@realizado_hoje_formatted} animate_sale={@animate_sale} animate_devolution={@animate_devolution} animate_profit={@animate_profit} />
-          </div>
-
-          <!-- Coluna direita: Card Realizado Mensal -->
+          <!-- Coluna esquerda: Card Realizado Mensal -->
           <div class="flex-1 w-full lg:w-5/12 flex">
             <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 transition-all duration-300 hover:shadow-xl hover:scale-[1.01] w-full flex flex-col">
               <div class="text-center mb-3">
@@ -605,18 +624,55 @@ defmodule AppWeb.DashboardResumoLive do
                     <div class="font-mono text-xs font-semibold text-red-700 truncate w-full text-center">{@devolution_mensal}</div>
                   </div>
                   <%= if @show_goal_remaining do %>
-                    <div class="flex-1 min-w-[90px] bg-green-50 rounded-lg p-2 flex flex-col items-center shadow-sm border border-green-100 hover:shadow-md transition-shadow duration-200">
-                      <div class="flex items-center gap-1 text-[10px] text-green-700 mb-0.5">
-                        <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true"><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
-                        Falta
+                    <%= if @goal_exceeded do %>
+                      <div class="flex-1 min-w-[90px] bg-green-50 rounded-lg p-2 flex flex-col items-center shadow-sm border border-green-200 hover:shadow-md transition-shadow duration-200">
+                        <div class="flex items-center gap-1 text-[10px] text-green-700 mb-0.5">
+                          <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 text-green-500' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true"><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' /></svg>
+                          Excedente
+                        </div>
+                        <div class="font-mono text-xs font-semibold text-green-700 truncate w-full text-center">+{@goal_remaining_display}</div>
                       </div>
-                      <div class="font-mono text-xs font-semibold text-green-700 truncate w-full text-center">{@goal_remaining_display}</div>
-                    </div>
+                    <% else %>
+                      <div class="flex-1 min-w-[90px] bg-green-50 rounded-lg p-2 flex flex-col items-center shadow-sm border border-green-100 hover:shadow-md transition-shadow duration-200">
+                        <div class="flex items-center gap-1 text-[10px] text-green-700 mb-0.5">
+                          <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 text-green-400' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true"><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' /></svg>
+                          Falta
+                        </div>
+                        <div class="font-mono text-xs font-semibold text-green-700 truncate w-full text-center">{@goal_remaining_display}</div>
+                      </div>
+                    <% end %>
                   <% end %>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Coluna direita: Cards de métricas DIÁRIAS -->
+          <div class="flex-1 w-full lg:w-7/12 flex">
+            <.daily_metrics objetivo={@objetivo} sale={@sale} devolution={@devolution} profit={@profit} nfs={@invoices_count} realizado_hoje_formatted={@realizado_hoje_formatted} animate_sale={@animate_sale} animate_devolution={@animate_devolution} animate_profit={@animate_profit} />
+          </div>
+        </div>
+
+        <!-- Tabela de Performance das Lojas - No Final -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 hover:shadow-xl transition-shadow duration-300">
+          <!-- Header igual ao feed de vendas -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-gray-900 mb-0.5 flex items-center gap-2">
+                Performance das Lojas
+              </h2>
+              <p class="text-xs text-gray-500">
+                {length(@lojas_data)} lojas ativas • Atualização em tempo real
+              </p>
+            </div>
+            <div class="flex items-center space-x-2 px-2.5 py-1 bg-green-50 rounded-full border border-green-200" role="status" aria-label="Sistema em tempo real">
+              <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></div>
+              <span class="text-xs text-green-700 font-bold">AO VIVO</span>
+            </div>
+          </div>
+
+          <!-- Tabela Responsiva -->
+          <.stores_table lojas_data={@lojas_data} loading={@loading} />
         </div>
       </div>
 
