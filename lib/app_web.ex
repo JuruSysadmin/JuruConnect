@@ -78,6 +78,7 @@ defmodule AppWeb do
       import Phoenix.HTML
 
       import AppWeb.CoreComponents
+      import DaisyUi
 
       alias Phoenix.LiveView.JS
 

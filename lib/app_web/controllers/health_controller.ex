@@ -62,7 +62,7 @@ defmodule AppWeb.HealthController do
       api_status = get_detailed_external_api_status()
 
       conn
-      |> put_status(if api_status.api_status == :healthy, do: 200, else: 503)
+      |> put_status(503)
       |> json(%{
         api_status: api_status.api_status,
         last_check: api_status.last_check,
@@ -100,18 +100,16 @@ defmodule AppWeb.HealthController do
           })
 
         _pid ->
-          App.HealthCheck.check_now()
-
-          # Aguarda um pouco para o check completar
-          Process.sleep(1000)
-
-          status = App.HealthCheck.get_status()
+          # TODO: Implementar App.HealthCheck module
+          # App.HealthCheck.check_now()
+          # Process.sleep(1000)
+          # status = App.HealthCheck.get_status()
 
           conn
           |> put_status(200)
           |> json(%{
             message: "Health check triggered",
-            current_status: status
+            current_status: %{status: :unknown, note: "HealthCheck module not implemented"}
           })
       end
     rescue
@@ -136,7 +134,9 @@ defmodule AppWeb.HealthController do
     # Verifica API externa com fallback
     api_status = get_external_api_status()
 
-    overall_healthy = database_healthy? and api_status.status in [:healthy, :degraded, :unknown]
+    # Simplificando: como sempre retornamos :unknown para API (HealthCheck não implementado),
+    # consideramos API como saudável se database está saudável
+    overall_healthy = database_healthy?
 
     %{
       healthy?: overall_healthy,
@@ -161,12 +161,13 @@ defmodule AppWeb.HealthController do
           }
 
         _pid ->
-          status = App.HealthCheck.get_status()
+          # TODO: Implementar App.HealthCheck module
+          # status = App.HealthCheck.get_status()
           %{
-            status: status.status,
-            uptime: status.uptime_percentage,
-            last_check: status.last_check,
-            error: nil
+            status: :unknown,
+            uptime: 0.0,
+            last_check: nil,
+            error: "HealthCheck module not implemented"
           }
       end
     rescue
@@ -186,7 +187,9 @@ defmodule AppWeb.HealthController do
     api_health = get_detailed_external_api_status()
     system_info = get_system_info()
 
-    overall_healthy = database_health.healthy? and api_health.api_status in [:healthy, :degraded, :unknown]
+    # Simplificando: como sempre retornamos :unknown para API (HealthCheck não implementado),
+    # consideramos API como saudável se database está saudável
+    overall_healthy = database_health.healthy?
 
     %{
       overall_healthy?: overall_healthy,
@@ -197,7 +200,7 @@ defmodule AppWeb.HealthController do
       database: database_health,
       external_api: %{
         status: api_health.api_status,
-        base_url: api_health.api_base_url,
+        base_url: api_health.base_url,
         last_check: api_health.last_check,
         last_success: api_health.last_success,
         response_time: api_health.response_time,
@@ -234,7 +237,21 @@ defmodule AppWeb.HealthController do
           }
 
         _pid ->
-          App.HealthCheck.get_detailed_status()
+          # TODO: Implementar App.HealthCheck module
+          # App.HealthCheck.get_detailed_status()
+          %{
+            api_status: :unknown,
+            base_url: "http://10.1.1.212:8065/api/v1",
+            last_check: nil,
+            last_success: nil,
+            response_time: nil,
+            uptime_percentage: 0.0,
+            error_count: 0,
+            success_count: 0,
+            total_checks: 0,
+            last_error: "HealthCheck module not implemented",
+            endpoints_status: %{}
+          }
       end
     rescue
       error ->

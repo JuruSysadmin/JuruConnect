@@ -12,6 +12,7 @@
         "chart.js": "^4.5.0",
         "chartjs-gauge": "^0.3.0",
         "chartjs-plugin-annotation": "^3.1.0",
+        "daisyui": "^4.6.0",
         "esbuild": "^0.17.11",
         "fusioncharts": "^4.1.2",
         "phoenix": "^1.7.0",

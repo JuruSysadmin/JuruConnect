@@ -10,13 +10,29 @@ defmodule AppWeb.DashboardComponents do
 
   def card(assigns) do
     assigns = assign_new(assigns, :class, fn -> "" end)
+    assigns = assign_new(assigns, :animate, fn -> false end)
+    assigns = assign_new(assigns, :animate_type, fn -> "sale" end)
+
+    animate_class = case {assigns.animate, assigns.animate_type} do
+      {true, "sale"} -> "animate-pulse-sale"
+      {true, "devolution"} -> "animate-pulse-devolution"
+      {true, "profit_up"} -> "animate-pulse-profit-up"
+      {true, "profit_down"} -> "animate-pulse-profit-down"
+      _ -> ""
+    end
+
+    assigns = assign(assigns, :animate_class, animate_class)
 
     ~H"""
-    <div class={@class <> " bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-3 sm:p-4 md:p-5 w-full min-w-[140px] sm:min-w-[180px] md:min-w-[200px] transition-all duration-300 hover:shadow-xl hover:scale-105"}>
-      <div class="flex items-center mb-2 sm:mb-3">
-        <span class="text-xs sm:text-sm md:text-base font-medium text-gray-700 text-center leading-tight">{@title}</span>
+    <div class={[
+      @class,
+      "bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center p-3 sm:p-4 h-full transition-all duration-300 hover:shadow-xl hover:scale-105",
+      @animate_class
+    ]}>
+      <div class="flex items-center mb-1.5 sm:mb-2">
+        <span class="text-xs sm:text-sm font-medium text-gray-700 text-center leading-tight">{@title}</span>
       </div>
-      <div class="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 sm:mb-2 w-full text-center">
+      <div class="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-gray-900 mb-0.5 sm:mb-1 w-full text-center">
         {@value}
       </div>
       <%= if @subtitle != "" do %>
@@ -44,12 +60,7 @@ defmodule AppWeb.DashboardComponents do
           0.0
       end
 
-    bar_color =
-      cond do
-        percentual_num < 50 -> "from-red-500 to-yellow-400"
-        percentual_num < 80 -> "from-yellow-400 to-green-400"
-        true -> "from-green-500 to-green-400"
-      end
+    bar_color = get_bar_color(percentual_num)
 
     assigns = assign(assigns, :percentual_num, percentual_num)
     assigns = assign(assigns, :bar_color, bar_color)
@@ -73,4 +84,8 @@ defmodule AppWeb.DashboardComponents do
     </div>
     """
   end
+
+  defp get_bar_color(percentual_num) when percentual_num < 50, do: "from-red-500 to-yellow-400"
+  defp get_bar_color(percentual_num) when percentual_num < 80, do: "from-yellow-400 to-green-400"
+  defp get_bar_color(_percentual_num), do: "from-green-500 to-green-400"
 end

@@ -2,6 +2,17 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Logo customizada para topbar do dashboard */
+.dashboard-logo {
+  height: 7rem; /* 112px em mobile */
+  width: auto;
+}
+
+@media (min-width: 640px) {
+  .dashboard-logo {
+    height: 10rem; /* 160px em desktop */
+  }
+}
 
 /* Animação para confetti */
 @keyframes confettifall {
@@ -13,6 +24,90 @@
     transform: translateY(100vh) rotate(360deg);
     opacity: 0;
   }
+}
+
+/* Animação para aumento de vendas diárias */
+@keyframes pulse-sale {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.animate-pulse-sale {
+  animation: pulse-sale 1s ease-in-out;
+  border-color: rgba(34, 197, 94, 0.5) !important;
+}
+
+/* Animação para aumento de devoluções diárias */
+@keyframes pulse-devolution {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-devolution {
+  animation: pulse-devolution 1s ease-in-out;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Animação para quando a margem sobe (verde) */
+@keyframes pulse-profit-up {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.animate-pulse-profit-up {
+  animation: pulse-profit-up 1s ease-in-out;
+  border-color: rgba(34, 197, 94, 0.5) !important;
+}
+
+/* Animação para quando a margem cai (vermelho) */
+@keyframes pulse-profit-down {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-profit-down {
+  animation: pulse-profit-down 1s ease-in-out;
+  border-color: rgba(239, 68, 68, 0.5) !important;
 }
 
 /* This file is for your main application CSS */

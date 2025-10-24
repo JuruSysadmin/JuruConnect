@@ -52,11 +52,52 @@ module.exports = {
   },
   
   /**
+   * Configuração do DaisyUI
+   * @type {Object}
+   */
+  daisyui: {
+    themes: [
+      "light",
+      "dark",
+      "corporate",
+      "business",
+      "retro",
+      "cyberpunk",
+      "valentine",
+      "halloween",
+      "garden",
+      "forest",
+      "aqua",
+      "lofi",
+      "pastel",
+      "fantasy",
+      "wireframe",
+      "black",
+      "luxury",
+      "dracula",
+      "cmyk",
+      "autumn",
+      "lemonade",
+      "winter",
+      "nord",
+      "sunset"
+    ],
+    darkTheme: "dark",
+    base: true,
+    styled: true,
+    utils: true,
+    prefix: "",
+    logs: true,
+    themeRoot: ":root"
+  },
+
+  /**
    * Plugins do Tailwind CSS
    * @type {Array}
    */
   plugins: [
     require("@tailwindcss/forms"),
+    require("daisyui"),
     
     // Allows prefixing tailwind classes with LiveView classes to add rules
     // only when LiveView classes are applied, for example:

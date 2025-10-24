@@ -1,4 +1,4 @@
-defmodule App.MixProject do
+ defmodule App.MixProject do
   use Mix.Project
 
   def project do
@@ -40,6 +40,7 @@ defmodule App.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:usage_rules, "~> 0.1", only: [:dev]},
       {:phoenix, "~> 1.7.21"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.10"},
@@ -68,14 +69,15 @@ defmodule App.MixProject do
       {:httpoison, "~> 2.0"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:igniter, "~> 0.5.40", only: :dev, runtime: false},
       {:oban, "~> 2.17"},
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
+      {:igniter, "~> 0.6", only: [:dev, :test]},
       {:bandit, "~> 1.2"},
       {:timex, "~> 3.7"},
       {:tzdata, "~> 1.1"},
+      {:daisy_ui, "~> 0.1"},
 
       # Documentação
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
@@ -95,8 +97,8 @@ defmodule App.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind default", "esbuild default"],
-      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+      "assets.build": ["tailwind app", "esbuild app"],
+      "assets.deploy": ["tailwind app --minify", "esbuild app --minify", "phx.digest"]
     ]
   end
 
@@ -118,18 +120,17 @@ defmodule App.MixProject do
 
       # Grupos de módulos
       groups_for_modules: [
-        "Core": [
+        Core: [
           App.Application,
           App.Repo
         ],
-        "Contexts": [
+        Contexts: [
           App.Accounts,
           App.Auth,
-          App.Chat,
           App.Dashboard,
           App.Sales
         ],
-        "Authentication": [
+        Authentication: [
           App.Auth.Manager,
           App.Auth.RateLimiter,
           App.Auth.SecurityLogger,
@@ -147,11 +148,11 @@ defmodule App.MixProject do
           AppWeb.AdminLive.SecurityDashboard,
           AppWeb.ObanMonitorLive
         ],
-        "Components": [
+        Components: [
           AppWeb.CoreComponents,
           AppWeb.DashboardComponents
         ],
-        "Controllers": [
+        Controllers: [
           AppWeb.SessionController,
           AppWeb.ErrorController
         ],
@@ -165,9 +166,7 @@ defmodule App.MixProject do
           JuruConnect.Workers,
           JuruConnect.Api
         ],
-        "Schemas": [
-          App.Accounts.User,
-          App.Chat.Message,
+        Schemas: [
           App.Schemas
         ]
       ],
