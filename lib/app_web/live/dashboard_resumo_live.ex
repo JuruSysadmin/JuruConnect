@@ -9,8 +9,9 @@ defmodule AppWeb.DashboardResumoLive do
   import AppWeb.DashboardNotificationPanel
   import AppWeb.DashboardDailyMetrics
   import AppWeb.DashboardStoresTable
-  import AppWeb.DashboardConfetti
   import AppWeb.SupervisorModal
+  import AppWeb.DashboardComponents
+  import AppWeb.DashboardSchedule
 
   alias App.Dashboard.Orchestrator
   alias App.Dashboard.SupervisorMonitor
@@ -22,21 +23,14 @@ defmodule AppWeb.DashboardResumoLive do
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:goals")
+      Phoenix.PubSub.subscribe(App.PubSub, "dashboard:schedule")
     end
-
-    today = Date.utc_today()
-    hourly_sales_map =
-      App.Sales.list_hourly_sales_history(today)
-      |> Map.new(fn %{hour: h, total_sales: s} -> {h, s} end)
-
-    sales_per_hour = for hour <- 0..23, do: Map.get(hourly_sales_map, hour, 0.0)
 
     socket
     |> assign_loading_state()
     |> assign(%{
       notifications: [],
       show_celebration: false,
-      sales_per_hour: sales_per_hour,
       show_drawer: false,
       supervisor_data: [],
       supervisor_loading: false,
@@ -65,9 +59,11 @@ defmodule AppWeb.DashboardResumoLive do
       monthly_invoices_count: 0,
       percentual_sale: 0,
       monthly_sale_value: 0.0,
-      monthly_goal_value: 0.0
+      monthly_goal_value: 0.0,
+      schedule_data: []
     })
     |> fetch_and_assign_data_safe()
+    |> fetch_schedule_data()
     |> then(&assign_template_values(&1))
     |> then(&{:ok, &1})
   end
@@ -212,6 +208,13 @@ defmodule AppWeb.DashboardResumoLive do
     {:noreply, assign(socket, supervisor_data: supervisor_data)}
   end
 
+  # Atualiza schedule_data em tempo real ao receber evento PubSub
+  @impl true
+  def handle_info({:schedule_updated, schedule_data}, socket) do
+    schedule_list = if is_list(schedule_data), do: schedule_data, else: [schedule_data]
+    {:noreply, assign(socket, schedule_data: schedule_list)}
+  end
+
   @impl true
   def handle_info({:devolucao_aumentou, %{devolution: val, diff: diff, sellerName: seller}}, socket) do
     msg = "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{format_money(val)} (aumento de R$ #{format_money(diff)})"
@@ -295,6 +298,17 @@ defmodule AppWeb.DashboardResumoLive do
     case App.ApiClient.fetch_supervisor_data(id) do
       {:ok, sale_supervisors} -> sale_supervisors
       {:error, _reason} -> []
+    end
+  end
+
+  @doc false
+  defp fetch_schedule_data(socket) do
+    case App.ApiClient.fetch_schedule_data() do
+      {:ok, data} ->
+        schedule_list = if is_list(data), do: data, else: [data]
+        assign(socket, schedule_data: schedule_list)
+      {:error, _reason} ->
+        assign(socket, schedule_data: [])
     end
   end
 
@@ -495,15 +509,17 @@ defmodule AppWeb.DashboardResumoLive do
       </div>
     <% end %>
     <div id="dashboard-main" class="min-h-screen bg-white" phx-hook="GoalCelebration">
-      <!-- Confetti/Celebration Effect -->
-      <.confetti notifications={@notifications} show_celebration={@show_celebration} />
-
       <!-- Painel de Notificações -->
-      <.notification_panel notifications={@notifications} show_celebration={@show_celebration} />
+      <.notification_panel notifications={@notifications} />
 
       <!-- Logo apenas -->
       <div class="flex justify-center w-full mb-1">
         <img src={~p"/assets/logo2.svg"} alt="Logo Jurunense" class="dashboard-logo" />
+      </div>
+
+      <!-- Agendamento de Entregas -->
+      <div class="px-3 sm:px-6 md:px-8 mb-4">
+        <.schedule_card schedule_data={@schedule_data} />
       </div>
 
       <!-- Layout principal - Responsivo -->
@@ -551,27 +567,17 @@ defmodule AppWeb.DashboardResumoLive do
                 <!-- Gráfico Circular -->
                 <div class="flex justify-center w-full flex-1 items-center">
                   <%= if @loading do %>
-                    <div class="w-24 h-24 flex items-center justify-center" role="status" aria-label="Carregando gráfico">
-                      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <div class="radial-progress animate-spin" style={"--value: 20; --size: 10rem;"} role="status" aria-label="Carregando gráfico">
+                      <span class="text-xs text-gray-500">Carregando...</span>
                     </div>
                   <% else %>
-                    <div class="relative w-24 h-24 sm:w-28 sm:h-28 animate-fade-in">
-                      <canvas
-                        id="gauge-chart-2"
-                        phx-hook="GaugeChartMonthly"
-                        phx-update="ignore"
-                        data-value={@percentual_sale_capped}
-                        class="w-24 h-24 sm:w-28 sm:h-28"
-                        aria-label={"Gráfico mostrando {#{@percentual_sale_display}} do objetivo mensal"}
-                      >
-                      </canvas>
-                      <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-lg sm:text-xl font-bold text-blue-700 drop-shadow">
-                          {@percentual_sale_display}
-                        </span>
-                        <span class="text-[10px] text-gray-500">mensal</span>
-                      </div>
-                    </div>
+                    <.radial_progress
+                      value={@percentual_sale_capped}
+                      size="10rem"
+                      thickness="0.4rem"
+                      label={@percentual_sale_display}
+                      label_bottom="mensal"
+                    />
                   <% end %>
                 </div>
 
