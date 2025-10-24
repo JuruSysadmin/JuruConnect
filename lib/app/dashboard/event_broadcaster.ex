@@ -32,6 +32,15 @@ defmodule App.Dashboard.EventBroadcaster do
     GenServer.cast(__MODULE__, {:broadcast, @system_topic, {:status_update, status, message}})
   end
 
+    @doc """
+  Faz broadcast de atualização de dados de supervisor para um supervisor específico.
+  Tópico dinâmico: "supervisor:<supervisor_id>"
+  """
+  def broadcast_supervisor_update(supervisor_id, supervisor_data) do
+      topic = "supervisor:#{supervisor_id}"
+    GenServer.cast(__MODULE__, {:broadcast, topic, {:supervisor_updated, supervisor_data}})
+  end
+
   def subscribe_to_dashboard_updates do
     Phoenix.PubSub.subscribe(App.PubSub, @dashboard_topic)
   end

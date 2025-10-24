@@ -9,14 +9,17 @@ defmodule App.CelebrationManager do
   """
 
   use GenServer
-  require Logger
 
-
-  # Cache de celebrações por 1 hora
   @cache_ttl_ms 3_600_000
 
   @celebration_types %{
     daily_goal: %{
+      threshold: 100.0,
+      message: "Meta Diária Atingida!",
+      level: :standard,
+      sound: "goal_achieved.mp3"
+    },
+    seller_daily_goal: %{
       threshold: 100.0,
       message: "Meta Diária Atingida!",
       level: :standard,
@@ -48,19 +51,16 @@ defmodule App.CelebrationManager do
     }
   }
 
-  ## GenServer API
-
   def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
   @impl true
   def init(_state) do
-    # Limpa cache periodicamente
     schedule_cache_cleanup()
     {:ok, %{
       celebrations_cache: %{},
-      daily_notifications: %{}  # Controle específico para notificações diárias
+      daily_notifications: %{}
     }}
   end
 
@@ -76,16 +76,12 @@ defmodule App.CelebrationManager do
       end)
       |> Enum.into(%{})
 
-    # Limpa notificações diárias de dias anteriores
     cleaned_daily_notifications =
       state.daily_notifications
       |> Enum.filter(fn {_key, date} ->
         date == today
       end)
       |> Enum.into(%{})
-
-    Logger.debug("Cache limpo: #{map_size(state.celebrations_cache)} -> #{map_size(cleaned_cache)} entradas")
-    Logger.debug("Notificações diárias: #{map_size(state.daily_notifications)} -> #{map_size(cleaned_daily_notifications)} entradas")
 
     schedule_cache_cleanup()
     {:noreply, %{state |
@@ -100,16 +96,13 @@ defmodule App.CelebrationManager do
 
     case Map.get(state.celebrations_cache, cache_key) do
       nil ->
-        # Não existe no cache, adiciona
         new_cache = Map.put(state.celebrations_cache, cache_key, current_time)
         {:reply, :not_found, %{state | celebrations_cache: new_cache}}
 
       cached_time when current_time - cached_time < @cache_ttl_ms ->
-        # Existe e ainda é válido
         {:reply, :found, state}
 
       _expired_time ->
-        # Existe mas expirou, atualiza
         new_cache = Map.put(state.celebrations_cache, cache_key, current_time)
         {:reply, :not_found, %{state | celebrations_cache: new_cache}}
     end
@@ -122,109 +115,105 @@ defmodule App.CelebrationManager do
 
     case Map.get(state.daily_notifications, daily_key) do
       nil ->
-        # Primeira notificação desta loja hoje
         new_daily_notifications = Map.put(state.daily_notifications, daily_key, today)
-        Logger.debug("Primeira notificação de meta diária para #{store_name} hoje")
         {:reply, :not_notified, %{state | daily_notifications: new_daily_notifications}}
 
       ^today ->
-        # Já foi notificada hoje
-        Logger.debug("Loja #{store_name} já foi notificada hoje - ignorando duplicata")
         {:reply, :already_notified, state}
 
       _other_date ->
-        # Notificação de outro dia, atualiza para hoje
         new_daily_notifications = Map.put(state.daily_notifications, daily_key, today)
-        Logger.debug("Atualizando notificação de meta diária para #{store_name} - novo dia")
         {:reply, :not_notified, %{state | daily_notifications: new_daily_notifications}}
     end
   end
 
-  ## Public API
-
   def process_api_data(api_data) when is_map(api_data) do
     celebrations = []
 
-        celebrations =
+    celebrations =
       celebrations
       |> check_company_goals(Map.get(api_data, "companies", []))
-      # Outros tipos desabilitados - apenas meta diária quando venda > meta
-      # |> check_individual_sellers(Map.get(api_data, "companies", []))
-      # |> check_monthly_goals(api_data)
-      # |> check_system_wide_metrics(api_data)
 
-    # Filtra celebrações já enviadas
     filtered_celebrations =
       celebrations
       |> Enum.filter(&should_send_celebration?/1)
 
-        # Broadcast apenas celebrações novas
     Enum.each(filtered_celebrations, &broadcast_celebration/1)
-
-    companies_count = length(Map.get(api_data, "companies", []))
-
-    if length(filtered_celebrations) > 0 do
-      Logger.info("Verificadas #{companies_count} lojas → #{length(filtered_celebrations)} metas diárias atingidas")
-    else
-      Logger.debug("Verificadas #{companies_count} lojas → Nenhuma meta diária atingida ainda")
-    end
 
     {:ok, filtered_celebrations}
   end
 
   def process_api_data(_), do: {:ok, []}
 
-    def process_new_sale(_sale_data, _current_totals) do
-    # Celebrações de vendas individuais desabilitadas - apenas meta diária
-    # Verificações desabilitadas conforme solicitado
-    # celebrations = check_individual_sale_celebration(sale_data, celebrations)
-    # celebrations = check_milestone_celebrations(current_totals, celebrations)
+  @doc """
+  Processa dados de supervisores/vendedores e detecta quando vendedores atingem 100% da meta diária.
+  """
+  def process_supervisor_data(supervisor_id, supervisor_data) when is_list(supervisor_data) do
+    celebrations =
+      supervisor_data
+      |> Enum.filter(&is_map/1)
+      |> Enum.flat_map(&check_seller_daily_goal(supervisor_id, &1))
 
-    # Nenhuma celebração para vendas individuais
+    filtered_celebrations =
+      celebrations
+      |> Enum.filter(&should_send_celebration?/1)
+
+    Enum.each(filtered_celebrations, &broadcast_celebration/1)
+
+    {:ok, filtered_celebrations}
+  end
+
+  def process_supervisor_data(_supervisor_id, _), do: {:ok, []}
+
+  def process_new_sale(_sale_data, _current_totals) do
     {:ok, []}
   end
 
-  # Funções privadas
-
   defp schedule_cache_cleanup do
-    # Limpa cache a cada 10 minutos
     Process.send_after(self(), :cleanup_cache, 600_000)
   end
 
   defp should_send_celebration?(celebration) do
     case celebration.type do
       :daily_goal ->
-        # Controle específico para metas diárias
         store_name = get_in(celebration.data, [:store_name]) || "unknown"
 
         case GenServer.call(__MODULE__, {:check_daily_notification, store_name}) do
-          :not_notified -> true   # Primeira vez hoje
-          :already_notified -> false  # Já foi notificada hoje
+          :not_notified -> true
+          :already_notified -> false
+        end
+
+      :seller_daily_goal ->
+        # Para vendedores, verifica se já foi notificado hoje
+        seller_name = get_in(celebration.data, [:store_name]) || "unknown"
+        today = Date.utc_today() |> Date.to_string()
+        cache_key = "seller_daily_goal:#{seller_name}:#{today}"
+
+        case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
+          :not_found -> true
+          :found -> false
         end
 
       _ ->
-        # Outros tipos usam o cache tradicional
-    cache_key = create_cache_key(celebration)
+        cache_key = create_cache_key(celebration)
 
-    case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
-      :not_found -> true   # Nova celebração
-      :found -> false      # Já foi enviada
+        case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
+          :not_found -> true
+          :found -> false
         end
     end
   rescue
-    error ->
-      Logger.warning("Erro ao verificar cache de celebração: #{inspect(error)}")
-      true  # Se há erro no cache, permite a celebração
+    _error ->
+      true
   end
 
-    defp create_cache_key(celebration) do
+  defp create_cache_key(celebration) do
     today = Date.utc_today() |> Date.to_string()
 
     celebration.type
     |> create_cache_key_for_type(celebration, today)
   end
 
-  # Funções específicas para cada tipo de celebração
   defp create_cache_key_for_type(:daily_goal, celebration, today) do
     store_name = get_cache_store_name(celebration)
     "daily_goal:#{store_name}:#{today}"
@@ -272,7 +261,6 @@ defmodule App.CelebrationManager do
   end
 
   defp create_cache_key_for_type(type, celebration, today) do
-    # Fallback genérico
     "#{type}:#{celebration.percentage}:#{today}"
   end
 
@@ -291,43 +279,63 @@ defmodule App.CelebrationManager do
 
   defp check_company_goals(celebrations, _), do: celebrations
 
-    defp check_single_company_goals(company) do
-    celebrations = []
-
-    # APENAS Meta diária quando venda > meta
-    celebrations = check_daily_goal(company, celebrations)
-
-    # Outros tipos desabilitados conforme solicitado
-    # celebrations = check_hourly_goal(company, celebrations)
-    # celebrations = check_exceptional_performance(company, celebrations)
-
-    celebrations
+  defp check_single_company_goals(company) do
+    []
+    |> check_daily_goal(company)
   end
 
-  defp check_daily_goal(company, celebrations) do
+  defp check_daily_goal(celebrations, company) do
     venda_dia = get_numeric_value(company, :venda_dia, 0.0)
     meta_dia = get_numeric_value(company, :meta_dia, 0.0)
 
-    # APENAS celebra quando venda > meta (valores absolutos)
-    if meta_dia > 0 and venda_dia > meta_dia do
-      perc_dia = (venda_dia / meta_dia * 100.0)
+    case meta_dia > 0 and venda_dia > meta_dia do
+      true ->
+        perc_dia = (venda_dia / meta_dia * 100.0)
 
-      celebration = create_celebration(
-        :daily_goal,
-        company,
-        perc_dia,
-        %{
-          achieved: venda_dia,
-          target: meta_dia,
-          store_name: Map.get(company, :nome, "Loja Desconhecida")
-        }
-      )
+        celebration = create_celebration(
+          :daily_goal,
+          company,
+          perc_dia,
+          %{
+            achieved: venda_dia,
+            target: meta_dia,
+            store_name: Map.get(company, :nome, "Loja Desconhecida")
+          }
+        )
 
-      [celebration | celebrations]
-    else
-      celebrations
+        [celebration | celebrations]
+
+      false ->
+        celebrations
     end
   end
+
+  defp check_seller_daily_goal(supervisor_id, seller) do
+    percentual_objective = get_numeric_value(seller, "percentualObjective", 0.0)
+    check_seller_daily_goal(supervisor_id, seller, percentual_objective)
+  end
+
+  defp check_seller_daily_goal(supervisor_id, seller, percentual_objective) when percentual_objective >= 100.0 do
+    seller_name = Map.get(seller, "sellerName", "Vendedor Desconhecido")
+    sale_value = get_numeric_value(seller, "saleValue", 0.0)
+    objetivo = get_numeric_value(seller, "objetivo", 0.0)
+
+    celebration = create_celebration(
+      :seller_daily_goal,
+      seller,
+      percentual_objective,
+      %{
+        achieved: sale_value,
+        target: objetivo,
+        store_name: seller_name,
+        supervisor_id: supervisor_id
+      }
+    )
+
+    [celebration]
+  end
+
+  defp check_seller_daily_goal(_supervisor_id, _seller, _percentual_objective), do: []
 
 
 
@@ -336,7 +344,6 @@ defmodule App.CelebrationManager do
   defp create_celebration(type, _data, percentage, extra_data) do
     celebration_config = Map.get(@celebration_types, type)
 
-    # Garante que percentage seja um float antes de fazer round
     safe_percentage =
       case percentage do
         p when is_float(p) -> p
@@ -362,21 +369,7 @@ defmodule App.CelebrationManager do
     }
   end
 
-
-
   defp broadcast_celebration(celebration) do
-    case celebration.type do
-      :daily_goal ->
-        store_name = get_in(celebration.data, [:store_name])
-        achieved = get_in(celebration.data, [:achieved])
-        target = get_in(celebration.data, [:target])
-
-        Logger.info("META DIÁRIA ATINGIDA! #{store_name} - Vendeu: R$ #{:erlang.float_to_binary(achieved, decimals: 2)} | Meta: R$ #{:erlang.float_to_binary(target, decimals: 2)} (#{celebration.percentage}%)")
-
-      _ ->
-        Logger.info("Celebração enviada: #{celebration.type} (#{celebration.percentage}%)")
-    end
-
     Phoenix.PubSub.broadcast(
       App.PubSub,
       "dashboard:goals",
@@ -387,7 +380,7 @@ defmodule App.CelebrationManager do
   defp get_numeric_value(data, key, default) when is_map(data) do
     case Map.get(data, key) do
       value when is_float(value) -> value
-      value when is_integer(value) -> value * 1.0  # Converte para float
+      value when is_integer(value) -> value * 1.0
       value when is_binary(value) ->
         case Float.parse(value) do
           {num, _} -> num
@@ -403,7 +396,6 @@ defmodule App.CelebrationManager do
 
   defp get_numeric_value(_, _, default), do: ensure_float(default)
 
-  # Garante que o valor seja um float
   defp ensure_float(value) when is_float(value), do: value
   defp ensure_float(value) when is_integer(value), do: value * 1.0
   defp ensure_float(_), do: 0.0

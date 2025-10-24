@@ -128,23 +128,15 @@ defmodule AppWeb.HealthController do
   ## Funções Privadas
 
     defp get_basic_health_status do
-    # Verifica componentes básicos
-    database_healthy? = check_database_health()
-
     # Verifica API externa com fallback
     api_status = get_external_api_status()
 
-    # Simplificando: como sempre retornamos :unknown para API (HealthCheck não implementado),
-    # consideramos API como saudável se database está saudável
-    overall_healthy = database_healthy?
+    overall_healthy = true
 
     %{
       healthy?: overall_healthy,
       timestamp: DateTime.utc_now(),
       version: Application.spec(:app, :vsn) |> to_string(),
-      database: %{
-        healthy?: database_healthy?
-      },
       external_api: api_status
     }
   end
@@ -183,13 +175,10 @@ defmodule AppWeb.HealthController do
 
     defp get_detailed_health_status do
     # Health check mais detalhado
-    database_health = check_detailed_database_health()
     api_health = get_detailed_external_api_status()
     system_info = get_system_info()
 
-    # Simplificando: como sempre retornamos :unknown para API (HealthCheck não implementado),
-    # consideramos API como saudável se database está saudável
-    overall_healthy = database_health.healthy?
+    overall_healthy = true
 
     %{
       overall_healthy?: overall_healthy,
@@ -197,7 +186,6 @@ defmodule AppWeb.HealthController do
       version: Application.spec(:app, :vsn) |> to_string(),
       uptime: get_uptime(),
       system: system_info,
-      database: database_health,
       external_api: %{
         status: api_health.api_status,
         base_url: api_health.base_url,
@@ -212,7 +200,6 @@ defmodule AppWeb.HealthController do
         endpoints: api_health.endpoints_status
       },
       dependencies: %{
-        guardian_db: check_guardian_db_health(),
         pubsub: check_pubsub_health()
       }
     }
@@ -271,61 +258,6 @@ defmodule AppWeb.HealthController do
     end
   end
 
-  defp check_database_health do
-    try do
-      # Tenta uma query simples
-      case Ecto.Adapters.SQL.query(App.Repo, "SELECT 1", []) do
-        {:ok, _} -> true
-        {:error, _} -> false
-      end
-    rescue
-      _ -> false
-    end
-  end
-
-  defp check_detailed_database_health do
-    try do
-      start_time = System.monotonic_time(:millisecond)
-
-      case Ecto.Adapters.SQL.query(App.Repo, "SELECT 1", []) do
-        {:ok, _} ->
-          end_time = System.monotonic_time(:millisecond)
-          response_time = end_time - start_time
-
-          %{
-            healthy?: true,
-            response_time: response_time,
-            connection_info: get_db_connection_info()
-          }
-
-        {:error, reason} ->
-          %{
-            healthy?: false,
-            error: inspect(reason),
-            response_time: nil
-          }
-      end
-    rescue
-      error ->
-        %{
-          healthy?: false,
-          error: inspect(error),
-          response_time: nil
-        }
-    end
-  end
-
-  defp check_guardian_db_health do
-    try do
-      # Verifica se consegue acessar a tabela guardian_tokens
-      case Ecto.Adapters.SQL.query(App.Repo, "SELECT COUNT(*) FROM guardian_tokens LIMIT 1", []) do
-        {:ok, _} -> :healthy
-        {:error, _} -> :unhealthy
-      end
-    rescue
-      _ -> :unhealthy
-    end
-  end
 
   defp check_pubsub_health do
     try do
@@ -352,17 +284,6 @@ defmodule AppWeb.HealthController do
     }
   end
 
-  defp get_db_connection_info do
-    try do
-      config = App.Repo.config()
-      %{
-        pool_size: config[:pool_size],
-        timeout: config[:timeout]
-      }
-    rescue
-      _ -> %{}
-    end
-  end
 
   defp get_uptime do
     {uptime_ms, _} = :erlang.statistics(:wall_clock)

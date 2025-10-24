@@ -19,7 +19,6 @@ config :mime, :extensions, %{
 }
 
 config :app,
-  ecto_repos: [App.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configures the endpoint
@@ -71,18 +70,6 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
-
-# Configure Oban
-config :app, Oban,
-  repo: App.Repo,
-  plugins: [
-    Oban.Plugins.Pruner,
-    {Oban.Plugins.Cron, crontab: [
-      # Executa o worker todo dia às 23:59
-      {"59 23 * * *", App.Workers.DailySalesHistoryWorker}
-    ]}
-  ],
-  queues: [default: 10]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

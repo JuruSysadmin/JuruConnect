@@ -23,7 +23,8 @@ defmodule App.Dashboard.Supervisor do
       {App.Dashboard.CacheManager, []},
       {App.Dashboard.EventBroadcaster, []},
       {App.Dashboard.DataFetcher, []},
-      {App.Dashboard.Orchestrator, []}
+      {App.Dashboard.Orchestrator, []},
+      {App.Dashboard.SupervisorMonitor, []}
     ]
 
     opts = [

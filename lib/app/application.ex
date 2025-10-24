@@ -8,7 +8,7 @@ Este módulo inicializa e supervisiona todos os serviços essenciais do sistema,
 - Repositório Ecto (App.Repo)
 - Telemetria (AppWeb.Telemetry)
 - Sistema PubSub (Phoenix.PubSub)
-- Servidor de dados do dashboard (App.DashboardDataServer)
+- Supervisor do Dashboard (App.Dashboard.Supervisor)
 - Gerenciador de celebrações (App.CelebrationManager)
 - Endpoint HTTP/HTTPS (AppWeb.Endpoint)
 - Gerenciador de jobs em background (Oban)
@@ -23,26 +23,18 @@ Responsável também por aplicar mudanças de configuração dinâmica no endpoi
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      App.Repo,
       # Start the Telemetry supervisor
       AppWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: App.PubSub},
       # Start Presence para rastreamento de usuários online
       AppWeb.Presence,
-      # Start o rate limiter do chat
-      App.Chat.RateLimiter,
-      # Start the DashboardDataServer para dados do dashboard
-      App.DashboardDataServer,
+      # Start the Dashboard Supervisor para gerenciar serviços do dashboard
+      App.Dashboard.Supervisor,
       # Start the CelebrationManager para controle de celebrações
       App.CelebrationManager,
       # Start the Endpoint (http/https)
-      AppWeb.Endpoint,
-      # Start Oban for background jobs
-      {Oban, oban_config()}
-      # Start a worker by calling: App.Worker.start_link(arg)
-      # {App.Worker, arg}
+      AppWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -57,9 +49,5 @@ Responsável também por aplicar mudanças de configuração dinâmica no endpoi
   def config_change(changed, _new, removed) do
     AppWeb.Endpoint.config_change(changed, removed)
     :ok
-  end
-
-  defp oban_config do
-    Application.fetch_env!(:app, Oban)
   end
 end

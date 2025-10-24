@@ -26,6 +26,22 @@
   }
 }
 
+/* Animação fade-in para alertas */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
 /* Animação para aumento de vendas diárias */
 @keyframes pulse-sale {
   0% {
@@ -109,6 +125,32 @@
   animation: pulse-profit-down 1s ease-in-out;
   border-color: rgba(239, 68, 68, 0.5) !important;
 }
+
+/* Estilos customizados para o radial progress do DaisyUI */
+.radial-progress {
+  transition: all 0.5s ease-in-out;
+}
+
+/* Animação do radial progress */
+@keyframes radial-grow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.radial-animated {
+  animation: radial-grow 1s ease-out;
+}
+
+/* Cores do radial progress são aplicadas automaticamente pelo DaisyUI através das classes text-error, text-warning e text-success */
 
 /* This file is for your main application CSS */
 

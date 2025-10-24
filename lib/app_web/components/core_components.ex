@@ -20,7 +20,7 @@ defmodule AppWeb.CoreComponents do
 
   attr :id, :string, required: true
   attr :show, :boolean, default: false
-  attr :on_cancel, JS, default: %JS{}
+  attr :on_close, JS, default: %JS{}
   slot :inner_block, required: true
 
   @doc """
@@ -28,7 +28,7 @@ defmodule AppWeb.CoreComponents do
   Props:
     - id: identificador único do modal
     - show: booleano para exibir ou ocultar
-    - on_close: evento phx-click para fechar
+    - on_close: evento JS para fechar o modal
     - title: título opcional do modal
     - inner_block: conteúdo do modal
   """

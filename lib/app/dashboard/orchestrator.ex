@@ -17,13 +17,14 @@ defmodule App.Dashboard.Orchestrator do
   alias App.Dashboard.EventBroadcaster
 
   @fetch_interval 30_000
+  @call_timeout App.Config.api_timeout_ms()
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   def get_data(opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, App.Config.api_timeout_ms())
+    timeout = Keyword.get(opts, :timeout, @call_timeout)
     cache_key = "dashboard_data"
 
     case CacheManager.get(cache_key) do
@@ -43,6 +44,31 @@ defmodule App.Dashboard.Orchestrator do
     end
   end
 
+  def get_data_sync(opts \\ []) do
+    timeout = Keyword.get(opts, :timeout, @call_timeout)
+    max_attempts = Keyword.get(opts, :max_attempts, 10)
+
+    Enum.reduce_while(1..max_attempts, {:loading, nil}, fn attempt, _acc ->
+      case get_data(timeout: timeout) do
+        {:ok, data} ->
+          {:halt, {:ok, data}}
+
+        {:loading, nil} when attempt < max_attempts ->
+          Process.sleep(1000)
+          {:cont, {:loading, nil}}
+
+        {:loading, nil} ->
+          {:halt, {:error, "Dados não carregaram após #{max_attempts} tentativas"}}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
+
+        {:timeout, reason} ->
+          {:halt, {:timeout, reason}}
+      end
+    end)
+  end
+
   def force_refresh do
     GenServer.cast(__MODULE__, :force_refresh)
   end
@@ -59,6 +85,10 @@ defmodule App.Dashboard.Orchestrator do
     EventBroadcaster.get_stats()
   end
 
+  def status do
+    GenServer.call(__MODULE__, :status, 5_000)
+  end
+
   @impl true
   def init(_opts) do
     schedule_next_fetch()
@@ -66,7 +96,8 @@ defmodule App.Dashboard.Orchestrator do
     initial_state = %{
       fetch_count: 0,
       last_fetch_time: nil,
-      error_count: 0
+      error_count: 0,
+      last_devolution: 0.0
     }
 
     Logger.info("Dashboard Orchestrator initialized")
@@ -87,6 +118,18 @@ defmodule App.Dashboard.Orchestrator do
     {:noreply, new_state}
   end
 
+  @impl true
+  def handle_call(:status, _from, state) do
+    status_info = %{
+      api_status: DataStore.get_status().api_status,
+      last_update: DataStore.get_status().last_update,
+      fetch_count: state.fetch_count,
+      has_data: DataStore.get_status().has_data
+    }
+
+    {:reply, status_info, state}
+  end
+
   defp perform_data_fetch(state) do
     Logger.debug("Starting data fetch cycle")
 
@@ -99,6 +142,11 @@ defmodule App.Dashboard.Orchestrator do
 
         case process_and_validate_data(raw_data) do
           {:ok, processed_data} ->
+            current_devolution = extract_devolution_value(processed_data)
+            handle_devolution_change(current_devolution, state.last_devolution)
+
+            App.CelebrationManager.process_api_data(processed_data)
+
             DataStore.update_data(processed_data)
 
             CacheManager.delete("dashboard_data")
@@ -110,7 +158,8 @@ defmodule App.Dashboard.Orchestrator do
               state |
               fetch_count: state.fetch_count + 1,
               last_fetch_time: DateTime.utc_now(),
-              error_count: 0
+              error_count: 0,
+              last_devolution: current_devolution
             }
 
           {:error, reason} ->
@@ -151,4 +200,19 @@ defmodule App.Dashboard.Orchestrator do
   defp schedule_next_fetch do
     Process.send_after(self(), :fetch_data, @fetch_interval)
   end
+
+  defp extract_devolution_value(data) do
+    case data do
+      %{"devolution" => v} when is_number(v) -> v
+      %{devolution: v} when is_number(v) -> v
+      _ -> 0.0
+    end
+  end
+
+  defp handle_devolution_change(current, last) when current > last do
+    Logger.info("Nova devolução registrada: anterior=#{:erlang.float_to_binary(last, decimals: 2)}, atual=#{:erlang.float_to_binary(current, decimals: 2)}, timestamp=#{DateTime.utc_now()}")
+    Phoenix.PubSub.broadcast(App.PubSub, "dashboard:devolucao", {:devolucao_aumentou, %{anterior: last, atual: current}})
+  end
+
+  defp handle_devolution_change(_current, _last), do: :ok
 end

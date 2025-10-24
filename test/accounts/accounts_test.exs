@@ -6,16 +6,18 @@ defmodule App.AccountsTest do
   @store_id "550e8400-e29b-41d4-a716-446655440000"
 
   setup do
+    # TODO: Comentado devido à remoção do módulo App.Stores
+    # A tabela stores não existe mais - remover store_id dos testes quando Accounts for implementado
     # Criar uma loja para os testes
-    App.Repo.insert_all("stores", [
-      %{
-        id: Ecto.UUID.dump!(@store_id),
-        name: "Loja Teste",
-        location: "Localização Teste",
-        inserted_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
-      }
-    ])
+    # App.Repo.insert_all("stores", [
+    #   %{
+    #     id: Ecto.UUID.dump!(@store_id),
+    #     name: "Loja Teste",
+    #     location: "Localização Teste",
+    #     inserted_at: DateTime.utc_now(),
+    #     updated_at: DateTime.utc_now()
+    #   }
+    # ])
 
     :ok
   end
@@ -265,16 +267,17 @@ defmodule App.AccountsTest do
       store1_id = @store_id
       store2_id = "550e8400-e29b-41d4-a716-446655440001"
 
+      # TODO: Comentado devido à remoção do módulo App.Stores
       # Criar segunda loja
-      App.Repo.insert_all("stores", [
-        %{
-          id: Ecto.UUID.dump!(store2_id),
-          name: "Loja 2",
-          location: "Localização 2",
-          inserted_at: DateTime.utc_now(),
-          updated_at: DateTime.utc_now()
-        }
-      ])
+      # App.Repo.insert_all("stores", [
+      #   %{
+      #     id: Ecto.UUID.dump!(store2_id),
+      #     name: "Loja 2",
+      #     location: "Localização 2",
+      #     inserted_at: DateTime.utc_now(),
+      #     updated_at: DateTime.utc_now()
+      #   }
+      # ])
 
       user1_attrs = %{
         username: "usuario_loja1",

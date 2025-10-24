@@ -28,31 +28,19 @@ defmodule AppWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # === ROTAS PÚBLICAS (não autenticadas) ===
   scope "/", AppWeb do
     pipe_through :browser
 
-    # Página inicial pública
     get "/", PageController, :home
-
-    # Rotas de autenticação removidas
   end
 
-  # === ROTAS PROTEGIDAS (usuários autenticados) ===
   scope "/", AppWeb do
     pipe_through :browser
 
-    # Dashboards principais
     live "/hello", DashboardLive
     live "/dashboard", DashboardLive, :dashboard
-    live "/consulta-pedido", DashboardLive, :consulta_pedido
-
-    # Funcionalidades do sistema (mantém protegidas se necessário)
-    live "/chat/:order_id", ChatLive
-    live "/buscar-pedido", OrderSearchLive
   end
 
-  # === ROTAS ADMINISTRATIVAS (apenas admin/manager) ===
   scope "/admin", AppWeb do
     pipe_through :browser
 
@@ -60,27 +48,15 @@ defmodule AppWeb.Router do
     live "/health", HealthLive.Dashboard, :index
   end
 
-  # === ROTAS SUPER ADMIN (apenas admin) ===
-  scope "/super-admin", AppWeb do
-    pipe_through :browser
-
-    # Futuras funcionalidades exclusivas de admin
-    # live "/system-config", AdminLive.SystemConfig, :index
-    # live "/user-management", AdminLive.UserManagement, :index
-  end
-
-  # === ROTAS DE API ===
   scope "/api", AppWeb do
     pipe_through :api
 
-    # Health Check endpoints
     get "/health", HealthController, :index
     get "/health/detailed", HealthController, :detailed
     get "/health/api-status", HealthController, :api_status
     post "/health/check", HealthController, :trigger_check
   end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:app, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 
@@ -90,7 +66,6 @@ defmodule AppWeb.Router do
       live_dashboard "/dashboard", metrics: AppWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
 
-      # Monitor Oban personalizado
       live "/oban", AppWeb.ObanMonitorLive, :index
     end
   end

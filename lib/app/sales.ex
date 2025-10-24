@@ -3,8 +3,6 @@ defmodule App.Sales do
   Contexto para gerenciar vendas individuais do sistema.
   """
 
-  import Ecto.Query, warn: false
-
   @doc """
   Retorna o faturamento total por hora para um determinado dia.
   O resultado é uma lista de mapas: [%{hour: 0..23, total_sales: float}]
