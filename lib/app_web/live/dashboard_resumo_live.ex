@@ -563,11 +563,6 @@ defmodule AppWeb.DashboardResumoLive do
         <img src={~p"/assets/logo2.svg"} alt="Logo Jurunense" class="dashboard-logo" />
       </div>
 
-      <!-- Agendamento de Entregas -->
-      <div class="px-3 sm:px-6 md:px-8 mb-4">
-        <.schedule_card schedule_data={@schedule_data} />
-      </div>
-
       <!-- Layout principal - Responsivo -->
       <div class="px-3 sm:px-6 md:px-8 space-y-4 sm:space-y-5 md:space-y-6">
         <!-- Cards de Métricas em Linha -->
@@ -651,6 +646,11 @@ defmodule AppWeb.DashboardResumoLive do
           <div class="flex-1 w-full lg:w-7/12 flex">
             <.daily_metrics objetivo={@objetivo} sale={@sale} devolution={@devolution} profit={@profit} nfs={@invoices_count} realizado_hoje_formatted={@realizado_hoje_formatted} animate_sale={@animate_sale} animate_devolution={@animate_devolution} animate_profit={@animate_profit} />
           </div>
+        </div>
+
+        <!-- Agendamento de Entregas -->
+        <div class="mb-4">
+          <.schedule_card schedule_data={@schedule_data} />
         </div>
 
         <!-- Tabela de Performance das Lojas - No Final -->
