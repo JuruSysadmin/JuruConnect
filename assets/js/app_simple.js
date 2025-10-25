@@ -26,7 +26,7 @@ let liveSocket
  */
 let Hooks = {}
 
-Hooks.AutoHideFlash = {
+Hooks.AutoDismissFlash = {
   mounted() {
     setTimeout(() => {
       this.el.style.display = "none";
