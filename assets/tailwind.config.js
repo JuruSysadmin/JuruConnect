@@ -36,6 +36,19 @@ module.exports = {
   ],
   
   /**
+   * Classes que não devem ser removidas na purga do Tailwind
+   * Necessário porque algumas classes são montadas dinamicamente no HEEx
+   */
+  safelist: [
+    // Cores usadas nos cards inferiores que estavam sendo purgadas
+    'text-info',
+    'text-secondary',
+    'text-purple-700',
+    // Subtítulo custom RGBA
+    'text-[rgba(0,0,0,0.7)]'
+  ],
+  
+  /**
    * Configurações do tema
    * @type {Object}
    */

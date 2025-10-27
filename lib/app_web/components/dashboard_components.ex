@@ -33,26 +33,35 @@ defmodule AppWeb.DashboardComponents do
   defp get_animate_class(_animate, _type), do: ""
 
   defp render_card(assigns) do
-    card_style = get_card_style(@title)
+    assigns
+    |> assign(:card_style, get_card_style(assigns.title))
+    |> then(&render_card_html/1)
+  end
 
+  defp render_card_html(assigns) do
     ~H"""
     <div class={[
       @class,
-      "rounded-lg sm:rounded-xl shadow-lg flex flex-col items-center justify-center p-2 sm:p-2.5 h-full transition-all duration-300 hover:shadow-xl hover:scale-105 min-w-0 border",
-      card_style.bg,
-      card_style.border,
+      "rounded-xl sm:rounded-2xl backdrop-blur-sm flex flex-col items-center justify-center p-2.5 sm:p-3 pb-4 h-full transition-all duration-500 hover:scale-[1.02] min-w-0",
+      @card_style.bg,
+      @card_style.shadow,
       @animate_class
     ]}>
+      <!-- Title: 12px (body small) -->
       <div class="flex items-center mb-1 w-full">
-        <span class={["text-xs font-semibold text-center leading-tight truncate w-full", card_style.title_color]}>
+        <span class={["text-xs text-center leading-tight truncate w-full", @card_style.title_color]}>
           {@title}
         </span>
       </div>
-      <div class={["text-xs sm:text-sm md:text-base font-bold mb-0.5 w-full text-center truncate", card_style.value_color]}>
+
+      <!-- Value: 24px (h2) on all screens -->
+      <div class={["text-2xl w-full text-center truncate drop-shadow-sm", @card_style.value_color]}>
         {@value}
       </div>
+
       <%= if @subtitle != "" do %>
-        <div class={["text-xs truncate w-full text-center", card_style.subtitle_color]}>
+        <!-- Subtitle: 10px (caption) -->
+        <div class={["text-[10px] truncate w-full text-center mt-0.5", @card_style.subtitle_color]}>
           {@subtitle}
         </div>
       <% end %>
@@ -63,67 +72,67 @@ defmodule AppWeb.DashboardComponents do
   defp get_card_style(title) do
     case title do
       "Meta Dia" -> %{
-        bg: "bg-primary/10",
-        border: "border-primary/30",
-        title_color: "text-primary",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-primary/20",
+        title_color: "text-primary font-semibold",
         value_color: "text-primary font-extrabold",
-        subtitle_color: "text-primary/70"
+        subtitle_color: "text-primary/80 font-medium"
       }
 
       "Venda Dia" -> %{
-        bg: "bg-success/10",
-        border: "border-success/30",
-        title_color: "text-success",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-success/20",
+        title_color: "text-success font-semibold",
         value_color: "text-success font-extrabold",
-        subtitle_color: "text-success/70"
+        subtitle_color: "text-success/80 font-medium"
       }
 
       "Devolução Dia" -> %{
-        bg: "bg-error/10",
-        border: "border-error/30",
-        title_color: "text-error",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-error/20",
+        title_color: "text-error font-semibold",
         value_color: "text-error font-extrabold",
-        subtitle_color: "text-error/70"
+        subtitle_color: "text-error/80 font-medium"
       }
 
       "Margem Dia" -> %{
-        bg: "bg-info/10",
-        border: "border-info/30",
-        title_color: "text-info",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-info/20",
+        title_color: "text-info font-semibold",
         value_color: "text-info font-extrabold",
-        subtitle_color: "text-info/70"
+        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
       }
 
       "NFs Dia" -> %{
-        bg: "bg-warning/10",
-        border: "border-warning/30",
-        title_color: "text-warning",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-warning/20",
+        title_color: "text-warning font-semibold",
         value_color: "text-warning font-extrabold",
-        subtitle_color: "text-warning/70"
+        subtitle_color: "text-warning/80 font-medium"
       }
 
       "Ticket Médio Dia" -> %{
-        bg: "bg-secondary/10",
-        border: "border-secondary/30",
-        title_color: "text-secondary",
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-secondary/20",
+        title_color: "text-secondary font-semibold",
         value_color: "text-secondary font-extrabold",
-        subtitle_color: "text-secondary/70"
+        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
       }
 
       "% Realizado Hoje" -> %{
-        bg: "bg-purple-500/10",
-        border: "border-purple-500/30",
-        title_color: "text-purple-600",
-        value_color: "text-purple-600 font-extrabold",
-        subtitle_color: "text-purple-600/70"
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-purple-500/20",
+        title_color: "text-purple-700 font-semibold",
+        value_color: "text-purple-700 font-extrabold",
+        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
       }
 
       _ -> %{
-        bg: "bg-base-100",
-        border: "border-base-300",
-        title_color: "text-base-content",
-        value_color: "text-base-content",
-        subtitle_color: "text-base-content/70"
+        bg: "bg-white",
+        shadow: "shadow-lg shadow-black/5",
+        title_color: "text-gray-700 font-semibold",
+        value_color: "text-gray-900 font-extrabold",
+        subtitle_color: "text-gray-700 font-medium"
       }
     end
   end
@@ -157,8 +166,8 @@ defmodule AppWeb.DashboardComponents do
     ~H"""
     <div class="w-full max-w-xs mx-auto mt-6 sm:mt-8">
       <div class="flex justify-between mb-1">
-        <span class="text-xs sm:text-sm font-medium text-gray-700">Meta: {@objetivo}</span>
-        <span class="text-xs sm:text-sm font-medium text-gray-700">{@percentual}</span>
+        <span class="text-xs sm:text-sm font-bold text-gray-800">Meta: {@objetivo}</span>
+        <span class="text-xs sm:text-sm font-bold text-gray-800">{@percentual}</span>
       </div>
       <div class="w-full bg-gray-200 rounded-full h-4 sm:h-6 shadow-inner relative overflow-hidden">
         <div
@@ -183,25 +192,51 @@ defmodule AppWeb.DashboardComponents do
 
   @doc """
   Renderiza um indicador de progresso radial circular.
-  A cor muda automaticamente baseada no valor: vermelho (<50), amarelo (<80), verde (>=80).
+  A cor muda automaticamente baseada no valor:
+  - Vermelho (<50)
+  - Amarelo (<80)
+  - Verde (80-100)
+  - Dourado com gradiente (>100)
   """
   def radial_progress(assigns) do
-    value = min(max(assigns.value, 0), 100)
-    color_class = get_radial_color(value)
+    raw_value = max(assigns.value, 0)
+    display_value = min(raw_value, 100)
+    color_class = get_radial_color(raw_value)
+    exceeds_100 = raw_value > 100
 
     assigns =
       assigns
-      |> assign(:value, value)
+      |> assign(:value, display_value)
+      |> assign(:raw_value, raw_value)
       |> assign(:color_class, color_class)
+      |> assign(:exceeds_100, exceeds_100)
 
     ~H"""
-    <div class="radial-progress radial-animated {@color_class} {@class}" style={"--value: #{@value}; --size: #{@size}; --thickness: #{@thickness};"} role="progressbar" aria-valuenow={@value} aria-valuemin="0" aria-valuemax="100">
-      <%= if @label do %>
-        <div class="flex flex-col items-center justify-center">
-          <span class="text-xl sm:text-2xl font-bold">{@label}</span>
-          <%= if @label_bottom do %>
-            <span class="text-[10px] text-gray-500">{@label_bottom}</span>
-          <% end %>
+    <div class="relative">
+      <div class="radial-progress radial-animated {@color_class} {@class}"
+        style={"--value: #{@value}; --size: #{@size}; --thickness: #{@thickness};"}
+        role="progressbar"
+        aria-valuenow={@raw_value}
+        aria-valuemin="0"
+        aria-valuemax="100">
+        <%= if @label do %>
+          <div class="flex flex-col items-center justify-center">
+            <span class="text-xl sm:text-2xl font-bold">{@label}</span>
+            <%= if @label_bottom do %>
+              <span class="text-[10px] text-gray-500">{@label_bottom}</span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <%= if @exceeds_100 do %>
+        <!-- Indicador visual de excedente -->
+        <div class="absolute inset-0 radial-progress text-warning animate-pulse opacity-75"
+          style={"--value: 100; --size: #{@size}; --thickness: #{@thickness};"}>
+        </div>
+        <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+          <span class="text-xs font-bold text-yellow-500 bg-yellow-50 px-2 py-0.5 rounded-full">
+            +#{Float.round(@raw_value - 100, 1)}%
+          </span>
         </div>
       <% end %>
     </div>
@@ -210,6 +245,7 @@ defmodule AppWeb.DashboardComponents do
 
   defp get_radial_color(value) when value < 50, do: "text-error"
   defp get_radial_color(value) when value < 80, do: "text-warning"
+  defp get_radial_color(value) when value > 100, do: "text-warning"
   defp get_radial_color(_value), do: "text-success"
 
   defp get_bar_color(percentual_num) when percentual_num < 50, do: "from-red-500 to-yellow-400"
