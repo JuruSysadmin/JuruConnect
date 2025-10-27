@@ -27,62 +27,22 @@ defmodule App.Dashboard.Orchestrator do
     timeout = Keyword.get(opts, :timeout, @call_timeout)
     cache_key = "dashboard_data"
 
-    case CacheManager.get(cache_key) do
+    with {:error, _} <- CacheManager.get(cache_key),
+         {:ok, data} <- DataStore.get_data(timeout) do
+      CacheManager.put(cache_key, data, 30_000)
+      {:ok, data}
+    else
       {:ok, cached_data} ->
         Logger.debug("Dashboard data served from cache")
         {:ok, cached_data}
 
-      {:error, _} ->
-        case DataStore.get_data(timeout) do
-          {:ok, data} ->
-            CacheManager.put(cache_key, data, 30_000)
-            {:ok, data}
-
-          other ->
-            other
-        end
+      other ->
+        other
     end
-  end
-
-  def get_data_sync(opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, @call_timeout)
-    max_attempts = Keyword.get(opts, :max_attempts, 10)
-
-    Enum.reduce_while(1..max_attempts, {:loading, nil}, fn attempt, _acc ->
-      case get_data(timeout: timeout) do
-        {:ok, data} ->
-          {:halt, {:ok, data}}
-
-        {:loading, nil} when attempt < max_attempts ->
-          Process.sleep(1000)
-          {:cont, {:loading, nil}}
-
-        {:loading, nil} ->
-          {:halt, {:error, "Dados não carregaram após #{max_attempts} tentativas"}}
-
-        {:error, reason} ->
-          {:halt, {:error, reason}}
-
-        {:timeout, reason} ->
-          {:halt, {:timeout, reason}}
-      end
-    end)
-  end
-
-  def force_refresh do
-    GenServer.cast(__MODULE__, :force_refresh)
   end
 
   def get_status do
     DataStore.get_status()
-  end
-
-  def get_cache_stats do
-    CacheManager.stats()
-  end
-
-  def get_broadcast_stats do
-    EventBroadcaster.get_stats()
   end
 
   def status do
@@ -108,13 +68,6 @@ defmodule App.Dashboard.Orchestrator do
   def handle_info(:fetch_data, state) do
     new_state = perform_data_fetch(state)
     schedule_next_fetch()
-    {:noreply, new_state}
-  end
-
-  @impl true
-  def handle_cast(:force_refresh, state) do
-    Logger.info("Force refresh requested")
-    new_state = perform_data_fetch(state)
     {:noreply, new_state}
   end
 
@@ -174,12 +127,7 @@ defmodule App.Dashboard.Orchestrator do
   end
 
   defp process_and_validate_data(raw_data) do
-    case App.Validators.ApiDataValidator.validate_dashboard_data(raw_data) do
-      {:ok, validated_data} ->
-        {:ok, validated_data}
-      {:error, reason} ->
-        {:error, reason}
-    end
+    App.Validators.ApiDataValidator.validate_dashboard_data(raw_data)
   rescue
     error ->
       {:error, "Processing error: #{inspect(error)}"}
@@ -210,7 +158,7 @@ defmodule App.Dashboard.Orchestrator do
   end
 
   defp handle_devolution_change(current, last) when current > last do
-    Logger.info("Nova devolução registrada: anterior=#{:erlang.float_to_binary(last, decimals: 2)}, atual=#{:erlang.float_to_binary(current, decimals: 2)}, timestamp=#{DateTime.utc_now()}")
+    Logger.info("Nova devolução registrada: anterior=#{:erlang.float_to_binary(last * 1.0, decimals: 2)}, atual=#{:erlang.float_to_binary(current * 1.0, decimals: 2)}, timestamp=#{DateTime.utc_now()}")
     Phoenix.PubSub.broadcast(App.PubSub, "dashboard:devolucao", {:devolucao_aumentou, %{anterior: last, atual: current}})
   end
 

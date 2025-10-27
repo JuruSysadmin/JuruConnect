@@ -1,6 +1,10 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+  root: ":root";
+  exclude: rootscrollgutter;
+  logs: false;
+}
 
 /* Logo customizada para topbar do dashboard */
 .dashboard-logo {
@@ -818,5 +822,12 @@
   @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Classe para ocultar colunas em tablets */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .tablet-hide {
+    display: none;
   }
 }

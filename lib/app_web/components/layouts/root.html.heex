@@ -15,34 +15,32 @@
 
 
   </head>
-  <body class="bg-gray-50 antialiased min-h-screen">
+  <body class="bg-base-100 antialiased min-h-screen">
     <!-- Header com informações do usuário (apenas se logado) -->
     <%= if assigns[:current_user] do %>
-      <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center h-16">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <span class="text-xl font-bold text-blue-600">JuruConnect</span>
-              </div>
-            </div>
+      <div class="navbar bg-base-100 shadow-sm border-b border-base-300">
+        <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <div class="navbar-start">
+            <span class="text-xl font-bold text-primary">JuruConnect</span>
+          </div>
+          <div class="navbar-end">
             <div class="flex items-center space-x-4">
-              <div class="text-sm text-gray-700">
+              <div class="text-sm text-base-content">
                 Olá, <span class="font-medium"><%= get_user_display_name(@current_user) %></span>
                 <%= if get_user_role(@current_user) do %>
-                  <span class="text-gray-500">(<%= get_user_role(@current_user) %>)</span>
+                  <span class="text-base-content/70">(<%= get_user_role(@current_user) %>)</span>
                 <% end %>
               </div>
               <a
                 href="/logout"
-                class="text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+                class="text-sm text-error hover:text-error/80 font-medium transition-colors duration-200"
               >
                 Sair
               </a>
             </div>
           </div>
         </div>
-      </header>
+      </div>
     <% end %>
     <main class="w-full h-full min-h-screen">
       <.flash_group flash={@flash} />

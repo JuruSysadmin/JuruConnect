@@ -1,24 +1,31 @@
 defmodule AppWeb.DashboardSchedule do
+  @moduledoc """
+  Componente para exibir agendamentos de entregas no dashboard.
+
+  Renderiza cards com informações de data de entrega, peso vendido
+  e peso disponível para cada agendamento.
+  """
+
   use Phoenix.Component
 
-  import AppWeb.DashboardUtils, only: [format_date: 1, get_weekday: 1, format_weight: 1]
+  import AppWeb.DashboardUtils, only: [format_date: 1, format_weight: 1]
 
   @doc """
-  Renderiza cards de agendamento de entregas usando Alert do daisyUI.
-  Props:
-    - schedule_data: lista de dados de agendamento
+  Renderiza cards de agendamento de entregas.
+  Recebe uma lista de dados de agendamento e renderiza cada item.
   """
   def schedule_card(assigns) do
     assigns = assign_new(assigns, :schedule_data, fn -> [] end)
 
     ~H"""
-    <%= for schedule <- @schedule_data do %>
-      <.schedule_item schedule={schedule} />
-    <% end %>
+    <div class="space-y-3">
+      <%= for schedule <- @schedule_data do %>
+        <.schedule_item schedule={schedule} />
+      <% end %>
+    </div>
     """
   end
 
-  @doc false
   defp schedule_item(assigns) do
     delivery_data = find_delivery_by_date(assigns.schedule)
     date = Map.get(assigns.schedule, "dateDelivery")
@@ -26,12 +33,12 @@ defmodule AppWeb.DashboardSchedule do
     assigns = assign(assigns, :date, date)
 
     ~H"""
-    <div class="bg-white border border-gray-200 rounded-lg shadow-md p-4">
-      <div class="flex items-center gap-4">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-md p-4 min-w-0">
+      <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
         <.calendar_icon />
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <%= if @date do %>
-            <h3 class="font-semibold text-gray-900 text-sm">Data para entrega: {format_date(@date)}</h3>
+            <h3 class="font-semibold text-gray-900 text-sm truncate">Data para entrega: {format_date(@date)}</h3>
           <% else %>
             <h3 class="font-semibold text-gray-900 text-sm">Agendamento de Entrega</h3>
           <% end %>
@@ -42,21 +49,6 @@ defmodule AppWeb.DashboardSchedule do
     """
   end
 
-  @doc false
-  defp schedule_date(assigns) do
-    assigns = assign(assigns, :date, Map.get(assigns.schedule, "dateDelivery"))
-
-    ~H"""
-    <%= if @date do %>
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium text-gray-700">{format_date(@date)}</span>
-        <span class="badge badge-outline badge-sm">{get_weekday(@date)}</span>
-      </div>
-    <% end %>
-    """
-  end
-
-  @doc false
   defp delivery_info(assigns) do
     case assigns.delivery_data do
       nil -> ~H"""
@@ -72,37 +64,33 @@ defmodule AppWeb.DashboardSchedule do
     end
   end
 
-  @doc false
   defp assign_prepare_delivery_data(assigns) do
     assigns
-    |> assign(:sale_weight, assigns.delivery_data.saleWeigth)
-    |> assign(:available, assigns.delivery_data.avaliableDelivery)
+    |> assign(:sale_weight, Map.get(assigns.delivery_data, :saleWeigth, 0) || Map.get(assigns.delivery_data, "saleWeigth", 0))
+    |> assign(:available, Map.get(assigns.delivery_data, :avaliableDelivery, 0) || Map.get(assigns.delivery_data, "avaliableDelivery", 0))
   end
 
-  @doc false
   defp assign_format_weights(assigns) do
     assigns
     |> assign(:formatted_sale_weight, format_weight(assigns.sale_weight))
     |> assign(:formatted_available, format_weight(assigns.available))
   end
 
-  @doc false
   defp render_delivery_info(assigns) do
     ~H"""
-    <div class="flex items-center gap-4">
-      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2">
-        <div class="text-xs font-medium text-green-700">Peso Vendido:</div>
-        <div class="text-sm font-semibold text-green-900">{@formatted_sale_weight} kg</div>
+    <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
+        <div class="text-xs font-medium text-green-700 whitespace-nowrap">Peso Vendido:</div>
+        <div class="text-sm font-semibold text-green-900 whitespace-nowrap">{@formatted_sale_weight} kg</div>
       </div>
-      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2">
-        <div class="text-xs font-medium text-blue-700">Disponível:</div>
-        <div class="text-sm font-semibold text-blue-900">{@formatted_available} kg</div>
+      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
+        <div class="text-xs font-medium text-blue-700 whitespace-nowrap">Disponível:</div>
+        <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} kg</div>
       </div>
     </div>
     """
   end
 
-  @doc false
   defp find_delivery_by_date(schedule) do
     main_date = Map.get(schedule, "dateDelivery")
     deliveries = Map.get(schedule, "deliveries", [])
@@ -114,7 +102,6 @@ defmodule AppWeb.DashboardSchedule do
     |> map_delivery_data()
   end
 
-  @doc false
   defp map_delivery_data(nil), do: nil
 
   defp map_delivery_data(delivery) do
@@ -124,7 +111,6 @@ defmodule AppWeb.DashboardSchedule do
     }
   end
 
-  @doc false
   defp calendar_icon(assigns) do
     ~H"""
     <div class="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">

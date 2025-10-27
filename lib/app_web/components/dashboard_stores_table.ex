@@ -10,23 +10,23 @@ defmodule AppWeb.DashboardStoresTable do
   """
   def stores_table(assigns) do
     ~H"""
-    <div class="overflow-x-auto">
-      <table class="w-full animate-fade-in-scale text-xs hidden sm:table">
-        <thead class="bg-gray-100">
+    <div class="overflow-x-auto -mx-3 sm:mx-0">
+      <table class="w-full animate-fade-in-scale text-xs hidden sm:table min-w-[800px]">
+        <thead class="bg-gray-100 sticky top-0 z-10">
           <tr>
-            <th class="text-left py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Loja</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300">Meta Dia</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300">Meta Hora</th>
-            <th class="text-center py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">NFs</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Venda Dia</th>
-            <th class="text-center py-2 px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300">% Hora</th>
-            <th class="text-center py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">% Dia</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Ticket Médio</th>
-            <th class="text-right py-2 px-3 text-xs font-medium text-gray-600 border-r border-gray-300">Devolução mensal</th>
-            <th class="text-center py-2 px-3 text-xs font-medium text-gray-600">Orçamentos</th>
+            <th class="text-left py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Loja</th>
+            <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap">Meta Dia</th>
+            <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap">Meta Hora</th>
+            <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">NFs</th>
+            <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Venda Dia</th>
+            <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap">% Hora</th>
+            <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">% Dia</th>
+            <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Ticket</th>
+            <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Devolução</th>
+            <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 whitespace-nowrap">Orç.</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody>
           <%= if @loading do %>
             <.loading_rows />
           <% else %>
@@ -54,39 +54,39 @@ defmodule AppWeb.DashboardStoresTable do
   @doc false
   defp loading_rows(assigns) do
     ~H"""
-    <%= for _i <- 1..5 do %>
-      <tr class="animate-pulse">
-        <td class="py-2 px-3 border-r border-gray-200">
+    <%= for {_i, index} <- Enum.with_index(1..5) do %>
+      <tr class={["animate-pulse", if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50")]}>
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="flex items-center space-x-2">
             <div class="w-3 h-3 bg-gray-300 rounded-full shimmer-effect"></div>
             <div class="h-3 bg-gray-300 rounded w-32 shimmer-effect"></div>
           </div>
         </td>
-        <td class="py-2 px-3 tablet-hide border-r border-gray-200">
+        <td class="py-2.5 px-3 tablet-hide border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded w-20 shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 tablet-hide border-r border-gray-200">
+        <td class="py-2.5 px-3 tablet-hide border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded w-20 shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 border-r border-gray-200">
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded-full w-10 mx-auto shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 border-r border-gray-200">
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded w-20 shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 tablet-hide border-r border-gray-200">
+        <td class="py-2.5 px-3 tablet-hide border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded-full w-14 mx-auto shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 border-r border-gray-200">
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded-full w-14 mx-auto shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 border-r border-gray-200">
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded w-16 shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3 border-r border-gray-200">
+        <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="h-3 bg-gray-300 rounded w-16 shimmer-effect"></div>
         </td>
-        <td class="py-2 px-3">
+        <td class="py-2.5 px-3">
           <div class="h-3 bg-gray-300 rounded-full w-10 mx-auto shimmer-effect"></div>
         </td>
       </tr>
@@ -107,24 +107,22 @@ defmodule AppWeb.DashboardStoresTable do
 
     ~H"""
     <tr phx-click="show_supervisor_drawer" phx-value-supervisor-id={@loja.supervisor_id} class={[@row_color, "hover:bg-gray-100 transition-colors duration-200 cursor-pointer"]}>
-      <td class="py-2 px-3 border-r border-gray-200">
+      <td class="py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">
         <div class="flex items-center space-x-2">
-          <div class={["w-3 h-3 rounded-full", @status_color]}></div>
-          <div>
-            <div class="font-medium text-gray-900 text-xs">{@loja.nome}</div>
-          </div>
+          <div class={["w-3 h-3 rounded-full flex-shrink-0", @status_color]}></div>
+          <div class="font-medium text-gray-900 text-xs truncate">{@loja.nome}</div>
         </div>
       </td>
-      <td class="text-right py-2 px-3 tablet-hide border-r border-gray-200">
+      <td class="text-right py-2.5 px-2 sm:px-3 tablet-hide border-r border-gray-200 whitespace-nowrap">
         <span class="font-mono text-gray-800 text-xs">{format_money(@loja.meta_dia)}</span>
       </td>
-      <td class="text-right py-2 px-3 tablet-hide border-r border-gray-200">
+      <td class="text-right py-2.5 px-2 sm:px-3 tablet-hide border-r border-gray-200 whitespace-nowrap">
         <span class="font-mono text-gray-800 text-xs">{format_money(@loja.meta_hora)}</span>
       </td>
-      <td class="text-center py-2 px-3 border-r border-gray-200">
+      <td class="text-center py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
         <span class="text-xs text-gray-800 font-medium">{@loja.qtde_nfs}</span>
       </td>
-      <td class="text-right py-2 px-3 border-r border-gray-200">
+      <td class="text-right py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
         <%= if @animate_venda_dia do %>
           <div class="flex flex-col items-end gap-0.5">
             <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia - @increment_value)}</span>
@@ -134,19 +132,19 @@ defmodule AppWeb.DashboardStoresTable do
           <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia)}</span>
         <% end %>
       </td>
-      <td class="text-center py-2 px-3 tablet-hide border-r border-gray-200">
+      <td class="text-center py-2.5 px-2 sm:px-3 tablet-hide border-r border-gray-200 whitespace-nowrap">
         <span class="text-xs text-gray-800 font-medium">{@perc_hora_formatted}%</span>
       </td>
-      <td class="text-center py-2 px-3 border-r border-gray-200">
+      <td class="text-center py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
         <span class={["text-xs font-medium", @perc_dia_color]}>{@perc_dia_formatted}%</span>
       </td>
-      <td class="text-right py-2 px-3 border-r border-gray-200">
+      <td class="text-right py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
         <span class="font-mono text-gray-800 text-xs">{format_money(@loja.ticket)}</span>
       </td>
-      <td class="text-right py-2 px-3 border-r border-gray-200">
+      <td class="text-right py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
         <span class="font-mono text-red-600 text-xs">{format_money(@loja.devolution)}</span>
       </td>
-      <td class="text-center py-2 px-3">
+      <td class="text-center py-2.5 px-2 sm:px-3 whitespace-nowrap">
         <span class="text-xs text-gray-800 font-medium">{@loja.pre_sale_qtde}</span>
       </td>
     </tr>

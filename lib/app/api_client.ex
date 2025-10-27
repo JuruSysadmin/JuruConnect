@@ -9,6 +9,12 @@ defmodule App.ApiClient do
     start_time = System.monotonic_time(:millisecond)
     with {:ok, sale_data} <- fetch_sale_data(),
          {:ok, company_result} <- fetch_companies_data() do
+      # Calcula ticket médio mensal de todas as lojas
+      ticket_medio_mensal = calculate_average_ticket(company_result)
+
+      # Calcula ticket médio diário (baseado em vendas e NF's do dia)
+      ticket_medio_diario = calculate_daily_ticket(company_result)
+
       summary = %{
         "sale" => Map.get(sale_data, "sale", 0.0),
         "cost" => Map.get(sale_data, "cost", 0.0),
@@ -21,7 +27,9 @@ defmodule App.ApiClient do
         "sale_mensal" => Map.get(company_result, :sale, 0.0),
         "objetivo_mensal" => Map.get(company_result, :objetive, 0.0),
         "devolution_mensal" => Map.get(company_result, :devolution, 0.0),
-        "nfs_mensal" => Map.get(company_result, :nfs, 0)
+        "nfs_mensal" => Map.get(company_result, :nfs, 0),
+        "ticket_medio_mensal" => ticket_medio_mensal,
+        "ticket_medio_diario" => ticket_medio_diario
       }
       duration = System.monotonic_time(:millisecond) - start_time
       Logger.info("fetch_dashboard_summary success", api: "dashboard_summary", status: :ok, duration_ms: duration)
@@ -179,5 +187,45 @@ defmodule App.ApiClient do
     end
   end
 
+  # Calcula o ticket médio mensal de todas as lojas
+  defp calculate_average_ticket(company_result) do
+    companies = Map.get(company_result, :companies, [])
+
+    case companies do
+      [] -> 0.0
+      companies ->
+        total_tickets = Enum.reduce(companies, 0.0, fn company, acc ->
+          ticket = Map.get(company, :ticket, 0.0)
+          acc + ticket
+        end)
+
+        if length(companies) > 0 do
+          total_tickets / length(companies)
+        else
+          0.0
+        end
+    end
+  end
+
+  # Calcula o ticket médio diário baseado em vendas e NF's do dia
+  defp calculate_daily_ticket(company_result) do
+    companies = Map.get(company_result, :companies, [])
+
+    case companies do
+      [] -> 0.0
+      companies ->
+        {total_vendas, total_nfs} = Enum.reduce(companies, {0.0, 0}, fn company, {vendas_acc, nfs_acc} ->
+          venda_dia = Map.get(company, :venda_dia, 0.0)
+          qtde_nfs = Map.get(company, :qtde_nfs, 0)
+          {vendas_acc + venda_dia, nfs_acc + qtde_nfs}
+        end)
+
+        if total_nfs > 0 do
+          total_vendas / total_nfs
+        else
+          0.0
+        end
+    end
+  end
 
 end

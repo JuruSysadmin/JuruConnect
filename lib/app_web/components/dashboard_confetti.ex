@@ -1,13 +1,18 @@
 defmodule AppWeb.DashboardConfetti do
+  @moduledoc """
+  Componente para exibir alertas de celebração de metas atingidas.
+
+  Renderiza alertas no topo central da tela com animações de fade-in
+  quando metas são alcançadas.
+  """
+
   use Phoenix.Component
 
   import AppWeb.DashboardUtils, only: [format_money: 1]
 
   @doc """
   Renderiza alertas de celebração usando componentes Alert do daisyUI.
-  Props:
-    - notifications: lista de notificações
-    - show_celebration: boolean
+  Exibe notificações com informações da loja e valor atingido.
   """
   def confetti(assigns) do
     ~H"""
