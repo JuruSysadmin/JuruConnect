@@ -78,43 +78,6 @@ defmodule AppWeb.DashboardUtils do
   @spec format_weight(any) :: String.t()
   def format_weight(_), do: "0,000"
 
-  @doc """
-  Formata peso retornando valor formatado e unidade (kg ou ton).
-  Converte valores >= 1000 kg para toneladas.
-  """
-  @spec format_weight_with_unit(float | integer | binary | any) :: {String.t(), String.t()}
-  def format_weight_with_unit(value) when is_float(value) do
-    cond do
-      value >= 1000 ->
-        tons = value / 1000
-        formatted = tons
-          |> :erlang.float_to_binary(decimals: 3)
-          |> String.replace(".", ",")
-        {formatted, "ton"}
-      true ->
-        formatted = value
-          |> :erlang.float_to_binary(decimals: 3)
-          |> String.replace(".", ",")
-        {formatted, "kg"}
-    end
-  end
-
-  @spec format_weight_with_unit(integer) :: {String.t(), String.t()}
-  def format_weight_with_unit(value) when is_integer(value) do
-    format_weight_with_unit(value * 1.0)
-  end
-
-  @spec format_weight_with_unit(binary) :: {String.t(), String.t()}
-  def format_weight_with_unit(value) when is_binary(value) do
-    case Float.parse(value) do
-      {num, _} -> format_weight_with_unit(num)
-      :error -> {"0,000", "kg"}
-    end
-  end
-
-  @spec format_weight_with_unit(any) :: {String.t(), String.t()}
-  def format_weight_with_unit(_), do: {"0,000", "kg"}
-
   @spec add_thousands_separator(String.t()) :: String.t()
   def add_thousands_separator(str) do
     [int, frac] = String.split(str, ",")

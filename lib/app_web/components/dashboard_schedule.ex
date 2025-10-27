@@ -8,7 +8,7 @@ defmodule AppWeb.DashboardSchedule do
 
   use Phoenix.Component
 
-  import AppWeb.DashboardUtils, only: [format_date: 1, format_weight: 1, format_weight_with_unit: 1]
+  import AppWeb.DashboardUtils, only: [format_date: 1, format_weight: 1]
 
   @doc """
   Renderiza cards de agendamento de entregas.
@@ -72,17 +72,10 @@ defmodule AppWeb.DashboardSchedule do
   end
 
   defp assign_format_weights(assigns) do
-    {sale_weight_val, sale_weight_unit} = format_weight_with_unit(assigns.sale_weight)
-    {available_val, available_unit} = format_weight_with_unit(assigns.available)
-    {delivery_size_val, delivery_size_unit} = format_weight_with_unit(assigns.delivery_size)
-
     assigns
-    |> assign(:formatted_sale_weight, sale_weight_val)
-    |> assign(:sale_weight_unit, sale_weight_unit)
-    |> assign(:formatted_available, available_val)
-    |> assign(:available_unit, available_unit)
-    |> assign(:formatted_delivery_size, delivery_size_val)
-    |> assign(:delivery_size_unit, delivery_size_unit)
+    |> assign(:formatted_sale_weight, format_weight(assigns.sale_weight))
+    |> assign(:formatted_available, format_weight(assigns.available))
+    |> assign(:formatted_delivery_size, format_weight(assigns.delivery_size))
   end
 
   defp render_delivery_info(assigns) do
@@ -90,15 +83,15 @@ defmodule AppWeb.DashboardSchedule do
     <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-green-700 whitespace-nowrap">Peso Vendido:</div>
-        <div class="text-sm font-semibold text-green-900 whitespace-nowrap">{@formatted_sale_weight} {@sale_weight_unit}</div>
+        <div class="text-sm font-semibold text-green-900 whitespace-nowrap">{@formatted_sale_weight} kg</div>
       </div>
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-blue-700 whitespace-nowrap">Disponível:</div>
-        <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} {@available_unit}</div>
+        <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} kg</div>
       </div>
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
-        <div class="text-xs font-medium text-purple-700 whitespace-nowrap">Tamanho:</div>
-        <div class="text-sm font-semibold text-purple-900 whitespace-nowrap">{@formatted_delivery_size} {@delivery_size_unit}</div>
+        <div class="text-xs font-medium text-purple-700 whitespace-nowrap">Capacidade:</div>
+        <div class="text-sm font-semibold text-purple-900 whitespace-nowrap">{@formatted_delivery_size} kg</div>
       </div>
     </div>
     """
