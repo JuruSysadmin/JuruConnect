@@ -68,12 +68,14 @@ defmodule AppWeb.DashboardSchedule do
     assigns
     |> assign(:sale_weight, Map.get(assigns.delivery_data, :saleWeigth, 0) || Map.get(assigns.delivery_data, "saleWeigth", 0))
     |> assign(:available, Map.get(assigns.delivery_data, :avaliableDelivery, 0) || Map.get(assigns.delivery_data, "avaliableDelivery", 0))
+    |> assign(:delivery_size, Map.get(assigns.delivery_data, :deliverySize, 0) || Map.get(assigns.delivery_data, "deliverySize", 0))
   end
 
   defp assign_format_weights(assigns) do
     assigns
     |> assign(:formatted_sale_weight, format_weight(assigns.sale_weight))
     |> assign(:formatted_available, format_weight(assigns.available))
+    |> assign(:formatted_delivery_size, format_weight(assigns.delivery_size))
   end
 
   defp render_delivery_info(assigns) do
@@ -86,6 +88,10 @@ defmodule AppWeb.DashboardSchedule do
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-blue-700 whitespace-nowrap">Disponível:</div>
         <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} kg</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
+        <div class="text-xs font-medium text-purple-700 whitespace-nowrap">Tamanho:</div>
+        <div class="text-sm font-semibold text-purple-900 whitespace-nowrap">{@formatted_delivery_size} kg</div>
       </div>
     </div>
     """
@@ -107,7 +113,8 @@ defmodule AppWeb.DashboardSchedule do
   defp map_delivery_data(delivery) do
     %{
       saleWeigth: Map.get(delivery, "saleWeigth", 0),
-      avaliableDelivery: Map.get(delivery, "avaliableDelivery", 0)
+      avaliableDelivery: Map.get(delivery, "avaliableDelivery", 0),
+      deliverySize: Map.get(delivery, "deliverySize", 0)
     }
   end
 
