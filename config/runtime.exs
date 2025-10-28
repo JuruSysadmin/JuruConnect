@@ -48,7 +48,7 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    check_origin: ["http://localhost:4000", "http://10.1.1.23:4000", "https://localhost"],
+    check_origin: ["http://localhost:4000", "http://10.1.1.23:4000", "http://10.1.1.168:4000", "https://localhost"],
     secret_key_base: secret_key_base
 
   # ## SSL Support

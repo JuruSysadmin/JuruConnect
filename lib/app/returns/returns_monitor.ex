@@ -8,7 +8,7 @@ defmodule App.Returns.ReturnsMonitor do
   use GenServer
   require Logger
 
-  alias App.{ApiClient, Config}
+  alias App.Config
   alias App.Dashboard.EventBroadcaster
 
   @polling_interval 30_000

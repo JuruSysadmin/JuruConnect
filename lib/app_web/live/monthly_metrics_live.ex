@@ -44,7 +44,6 @@ defmodule AppWeb.MonthlyMetricsLive do
       |> assign_template_values()
       |> assign(%{loading: false})
 
-      # Atualiza o gauge mensal
       socket = push_event(socket, "update-gauge-monthly", %{value: socket.assigns.percentual_sale})
 
       {:noreply, socket}
@@ -80,20 +79,12 @@ defmodule AppWeb.MonthlyMetricsLive do
                   label_bottom="mensal"
                   class="text-base-content"
                 />
-                <!-- Valores atingidos -->
-                <div class="text-center">
-                  <div class="text-xs sm:text-sm font-medium text-base-content">
-                    <span class="text-base-content font-semibold">{@sale_mensal}</span>
-                    <span class="text-base-content/70 mx-1">/</span>
-                    <span class="text-base-content">{@objetivo_mensal}</span>
-                  </div>
-                </div>
               <% end %>
             </div>
 
             <!-- Cards horizontais -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
-              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                 <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                   <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                     <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' />
@@ -103,7 +94,7 @@ defmodule AppWeb.MonthlyMetricsLive do
                 <div class="font-mono text-[13px] sm:text-sm font-bold text-base-content text-center truncate w-full">{@objetivo_mensal}</div>
               </div>
 
-              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                 <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                   <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                     <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 17l6-6 4 4 8-8' />
@@ -113,7 +104,7 @@ defmodule AppWeb.MonthlyMetricsLive do
                 <div class="font-mono text-[13px] sm:text-sm font-bold text-base-content text-center truncate w-full">{@sale_mensal}</div>
               </div>
 
-              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+              <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                 <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                   <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                     <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' />
@@ -125,7 +116,7 @@ defmodule AppWeb.MonthlyMetricsLive do
 
               <%= if @show_goal_remaining do %>
                 <%= if @goal_exceeded do %>
-                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                   <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                         <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' />
@@ -135,7 +126,7 @@ defmodule AppWeb.MonthlyMetricsLive do
                   <div class="font-mono text-[13px] sm:text-sm font-bold text-base-content text-center truncate w-full">+{@goal_remaining_display}</div>
                   </div>
                 <% else %>
-                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                   <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                       <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                         <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3' />
@@ -146,7 +137,7 @@ defmodule AppWeb.MonthlyMetricsLive do
                   </div>
                 <% end %>
               <% else %>
-                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2.5 sm:p-3 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
+                <div class="bg-base-200/80 backdrop-blur-sm rounded-md p-2 sm:p-2.5 flex flex-col items-center shadow-sm border border-base-300/50 overflow-hidden">
                   <div class="flex items-center gap-1.5 text-xs sm:text-sm text-base-content mb-1.5">
                     <svg xmlns='http://www.w3.org/2000/svg' class='h-2.5 w-2.5 sm:h-3 sm:w-3' fill='none' viewBox='0 0 24 24' stroke='currentColor' aria-hidden="true">
                       <path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4' />
@@ -177,7 +168,6 @@ defmodule AppWeb.MonthlyMetricsLive do
     end
 
     defp assign_template_values(socket) do
-      # Usa os valores já calculados no assigns anterior
       socket.assigns
       |> Map.get(:percentual_sale, 0.0)
       |> calculate_monthly_template_values(
@@ -186,6 +176,4 @@ defmodule AppWeb.MonthlyMetricsLive do
       )
       |> then(&assign(socket, &1))
     end
-
-    # Usa convert_keys_to_atoms do DashboardState
   end

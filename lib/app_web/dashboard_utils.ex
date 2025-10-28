@@ -78,10 +78,58 @@ defmodule AppWeb.DashboardUtils do
   @spec format_weight(any) :: String.t()
   def format_weight(_), do: "0,000"
 
+  @doc """
+  Formata um valor de peso em toneladas.
+  O valor já vem em toneladas da API, apenas formata sem converter.
+  """
+  @spec format_weight_in_tons(float | integer | binary | any) :: String.t()
+  def format_weight_in_tons(value) when is_float(value) or is_integer(value) do
+    format_tons_only(value)
+  end
+
+  @spec format_weight_in_tons(binary) :: String.t()
+  def format_weight_in_tons(value) when is_binary(value) do
+    clean_value = value |> String.replace(".", "") |> String.replace(",", ".")
+
+    case Float.parse(clean_value) do
+      {num, _} -> format_tons_only(num)
+      :error -> "0"
+    end
+  end
+
+  defp format_tons_only(value) when is_float(value) or is_integer(value) do
+    formatted =
+      if value == trunc(value) do
+        value |> trunc() |> Integer.to_string()
+      else
+        value |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")
+      end
+
+    if String.contains?(formatted, ",") do
+      [int, frac] = String.split(formatted, ",")
+      int = add_thousands_separator_to_int(int)
+      int <> "," <> frac
+    else
+      add_thousands_separator_to_int(formatted)
+    end
+  end
+
+  defp format_tons_only(_), do: "0"
+
+  @spec format_weight_in_tons(any) :: String.t()
+  def format_weight_in_tons(_), do: "0"
+
+  defp add_thousands_separator_to_int(int_str) do
+    int_str
+    |> String.reverse()
+    |> String.replace(~r/(...)(?=.)/, "\\1.")
+    |> String.reverse()
+  end
+
   @spec add_thousands_separator(String.t()) :: String.t()
   def add_thousands_separator(str) do
     [int, frac] = String.split(str, ",")
-    int = int |> String.reverse() |> String.replace(~r/(...)(?=.)/, "\\1.") |> String.reverse()
+    int = add_thousands_separator_to_int(int)
     int <> "," <> frac
   end
 
