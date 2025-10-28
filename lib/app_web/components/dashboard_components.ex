@@ -42,20 +42,20 @@ defmodule AppWeb.DashboardComponents do
     ~H"""
     <div class={[
       @class,
-      "rounded-xl sm:rounded-2xl backdrop-blur-sm flex flex-col items-center justify-center p-2.5 sm:p-3 pb-4 h-full transition-all duration-500 hover:scale-[1.02] min-w-0",
+      "rounded-lg sm:rounded-xl backdrop-blur-sm flex flex-col items-center justify-center p-2 sm:p-2.5 pb-3 h-full transition-all duration-500 hover:scale-[1.01] min-w-0",
       @card_style.bg,
       @card_style.shadow,
       @animate_class
     ]}>
       <!-- Title: 12px (body small) -->
-      <div class="flex items-center mb-1 w-full">
+      <div class="flex items-center mb-0.5 w-full">
         <span class={["text-xs text-center leading-tight truncate w-full", @card_style.title_color]}>
           {@title}
         </span>
       </div>
 
       <!-- Value: 24px (h2) on all screens -->
-      <div class={["text-2xl w-full text-center truncate drop-shadow-sm", @card_style.value_color]}>
+      <div class={["text-xl w-full text-center truncate drop-shadow-sm", @card_style.value_color]}>
         {@value}
       </div>
 
