@@ -27,6 +27,7 @@ defmodule AppWeb.DashboardResumoLive do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
+      Phoenix.PubSub.subscribe(App.PubSub, "returns:new")
     end
 
     socket
@@ -87,6 +88,23 @@ defmodule AppWeb.DashboardResumoLive do
   def handle_info({:devolucao_aumentou, %{anterior: anterior, atual: atual}}, socket) do
     msg = "Atenção: Houve uma nova devolução registrada. Valor total de devoluções do dia: #{AppWeb.DashboardUtils.format_money(atual)} (anterior: #{AppWeb.DashboardUtils.format_money(anterior)})"
     {:noreply, put_flash(socket, :error, msg)}
+  end
+
+  @impl true
+  def handle_info({:new_returns, returns_data}, socket) do
+    count = Map.get(returns_data, :count, 0)
+    return_ids = Map.get(returns_data, :return_ids, [])
+
+    message = "Novo(s) retorno(s) detectado(s)! Total: #{count} retorno(s) - IDs: #{Enum.join(return_ids, ", ")}"
+
+    socket
+    |> put_flash(:info, message)
+    |> push_event("new-returns", %{
+      count: count,
+      return_ids: return_ids,
+      timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond)
+    })
+    |> then(&{:noreply, &1})
   end
 
   @impl true

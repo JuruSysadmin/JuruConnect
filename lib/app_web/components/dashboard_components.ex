@@ -72,67 +72,67 @@ defmodule AppWeb.DashboardComponents do
   defp get_card_style(title) do
     case title do
       "Meta Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-primary/20",
-        title_color: "text-primary font-semibold",
-        value_color: "text-primary font-extrabold",
-        subtitle_color: "text-primary/80 font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "Venda Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-success/20",
-        title_color: "text-success font-semibold",
-        value_color: "text-success font-extrabold",
-        subtitle_color: "text-success/80 font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "Devolução Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-error/20",
-        title_color: "text-error font-semibold",
-        value_color: "text-error font-extrabold",
-        subtitle_color: "text-error/80 font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "Margem Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-info/20",
-        title_color: "text-info font-semibold",
-        value_color: "text-info font-extrabold",
-        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "NFs Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-warning/20",
-        title_color: "text-warning font-semibold",
-        value_color: "text-warning font-extrabold",
-        subtitle_color: "text-warning/80 font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "Ticket Médio Dia" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-secondary/20",
-        title_color: "text-secondary font-semibold",
-        value_color: "text-secondary font-extrabold",
-        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       "% Realizado Hoje" -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-purple-500/20",
-        title_color: "text-purple-700 font-semibold",
-        value_color: "text-purple-700 font-extrabold",
-        subtitle_color: "text-[rgba(0,0,0,0.7)] font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
 
       _ -> %{
-        bg: "bg-white",
-        shadow: "shadow-lg shadow-black/5",
-        title_color: "text-gray-700 font-semibold",
-        value_color: "text-gray-900 font-extrabold",
-        subtitle_color: "text-gray-700 font-medium"
+        bg: "bg-base-100",
+        shadow: "shadow-md shadow-black/5",
+        title_color: "text-base-content/70 font-medium",
+        value_color: "text-base-content font-bold",
+        subtitle_color: "text-base-content/60"
       }
     end
   end

@@ -1,10 +1,8 @@
-@import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
-  root: ":root";
-  exclude: rootscrollgutter;
-  logs: false;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DaisyUI é habilitado via tailwind.config.js (Tailwind v3) */
 
 /* Logo customizada para topbar do dashboard */
 .dashboard-logo {

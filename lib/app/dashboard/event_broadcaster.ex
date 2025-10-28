@@ -11,6 +11,7 @@ defmodule App.Dashboard.EventBroadcaster do
   @sales_topic "sales:feed"
   @celebrations_topic "celebrations:new"
   @system_topic "system:status"
+  @returns_topic "returns:new"
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -41,6 +42,10 @@ defmodule App.Dashboard.EventBroadcaster do
     GenServer.cast(__MODULE__, {:broadcast, topic, {:supervisor_updated, supervisor_data}})
   end
 
+  def broadcast_new_returns(returns_data) do
+    GenServer.cast(__MODULE__, {:broadcast, @returns_topic, {:new_returns, returns_data}})
+  end
+
   def subscribe_to_dashboard_updates do
     Phoenix.PubSub.subscribe(App.PubSub, @dashboard_topic)
   end
@@ -58,7 +63,8 @@ defmodule App.Dashboard.EventBroadcaster do
         @dashboard_topic => 0,
         @sales_topic => 0,
         @celebrations_topic => 0,
-        @system_topic => 0
+        @system_topic => 0,
+        @returns_topic => 0
       }
     }
 

@@ -61,13 +61,14 @@ defmodule AppWeb.DashboardState do
 
   @doc """
   Calcula valores de template para métricas mensais.
+  Permite valores acima de 100% para indicar excedente.
   """
   def calculate_monthly_template_values(percentual_sale, monthly_sale_value, monthly_goal_value) do
     remaining = monthly_goal_value - monthly_sale_value
 
     %{
       percentual_sale_display: format_percent(percentual_sale),
-      percentual_sale_capped: min(percentual_sale, 100),
+      percentual_sale_capped: percentual_sale, # Removed cap to allow > 100%
       goal_remaining_display: format_money(abs(remaining)),
       goal_exceeded: remaining < 0,
       show_goal_remaining: monthly_sale_value > 0 and monthly_goal_value > 0

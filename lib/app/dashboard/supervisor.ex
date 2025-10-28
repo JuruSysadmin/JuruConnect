@@ -24,7 +24,8 @@ defmodule App.Dashboard.Supervisor do
       {App.Dashboard.EventBroadcaster, []},
       {App.Dashboard.DataFetcher, []},
       {App.Dashboard.Orchestrator, []},
-      {App.Dashboard.SupervisorMonitor, []}
+      {App.Dashboard.SupervisorMonitor, []},
+      {App.Returns.ReturnsMonitor, []}
     ]
 
     opts = [

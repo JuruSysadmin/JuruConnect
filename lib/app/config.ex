@@ -12,7 +12,8 @@ defmodule App.Config do
       dashboard_sale: "http://10.1.1.212:8065/api/v1/dashboard/sale",
       dashboard_companies: "http://10.1.1.212:8065/api/v1/dashboard/sale/company",
       dashboard_seller: "http://10.1.1.108:8065/api/v1/dashboard/sale",
-      dashboard_schedule: "http://10.1.1.212:8065/api/v1/shipping/schedule"
+      dashboard_schedule: "http://10.1.1.212:8065/api/v1/shipping/schedule",
+      dashboard_returns: "http://10.1.1.168:8065/api/v1/dashboard/returns/by-day"
     }
   end
 

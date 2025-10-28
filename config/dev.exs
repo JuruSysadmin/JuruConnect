@@ -58,6 +58,10 @@ config :app, AppWeb.Endpoint,
     ]
   ]
 
+# Configure LiveDebugger to avoid port conflicts in dev
+config :live_debugger, LiveDebuggerWeb.Endpoint,
+  http: [ip: {127, 0, 0, 1}, port: 4009]
+
 config :app, dev_routes: true
 
 config :logger, :console, format: "[$level] $message\n"

@@ -32,7 +32,7 @@ defmodule AppWeb.DashboardDailyMetrics do
       |> assign(:profit_animate, profit_animate)
 
     ~H"""
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-1.5 sm:gap-2 md:gap-2.5 h-full w-full min-w-0">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2 sm:gap-2.5 md:gap-3 h-full w-full min-w-0">
       <.card title="Meta Dia" value={@objetivo} subtitle=""></.card>
       <.card title="Venda Dia" value={@sale} subtitle="" animate={@animate_sale} animate_type="sale"></.card>
       <.card title="Devolução Dia" value={@devolution} subtitle="" animate={@animate_devolution} animate_type="devolution"></.card>
