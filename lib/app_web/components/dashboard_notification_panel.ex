@@ -18,7 +18,10 @@ defmodule AppWeb.DashboardNotificationPanel do
     ~H"""
     <div class="fixed top-4 right-2 sm:right-4 z-40 space-y-2 w-80 sm:w-auto">
       <%= if @notifications != [] do %>
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-full shadow-lg text-center animate-pulse">
+        <div role="alert" class="alert alert-info shadow-lg animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <span class="text-xs sm:text-sm font-medium">
             Parabéns!
           </span>
@@ -27,32 +30,33 @@ defmodule AppWeb.DashboardNotificationPanel do
 
       <%= for {notification, index} <- Enum.with_index(@notifications) do %>
         <div
-          class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 sm:p-4 rounded-lg shadow-2xl max-w-sm bounce-in transform hover:scale-105 transition-all duration-300"
+          role="alert"
+          class="alert alert-success shadow-2xl max-w-sm animate-fade-in transform hover:scale-105 transition-all duration-300"
           style={"animation-delay: #{index * 0.1}s;"}
           id={"notification-#{notification.celebration_id}"}
         >
-          <div class="flex items-center space-x-3">
-            <div class="flex-shrink-0 relative">
-              <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping">
-              </div>
-            </div>
-            <div class="flex-1">
-              <h4 class="text-sm sm:text-base font-medium animate-bounce">
-                {get_goal_title(notification)}
-                {raw(badge_element(notification))}
-              </h4>
-              <%= if is_seller_goal?(notification) do %>
-                <p class="text-xs sm:text-sm opacity-90 font-medium">Vendedor: {notification.store_name}</p>
-              <% else %>
-                <p class="text-xs sm:text-sm opacity-90 font-medium"> Loja: {notification.store_name}</p>
-              <% end %>
-              <p class="text-xs opacity-75">
-                {AppWeb.DashboardUtils.format_money(notification.achieved)} ({format_percentage(notification.percentage)}%)
-              </p>
-              <p class="text-xs opacity-60 mt-1 mobile-hide">
-                ID: #{notification.celebration_id}
-              </p>
-            </div>
+          <div class="flex-shrink-0 relative">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full animate-ping"></div>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm sm:text-base font-bold animate-bounce">
+              {get_goal_title(notification)}
+              {raw(badge_element(notification))}
+            </h4>
+            <%= if seller_goal?(notification) do %>
+              <p class="text-xs sm:text-sm opacity-90 font-medium">Vendedor: {notification.store_name}</p>
+            <% else %>
+              <p class="text-xs sm:text-sm opacity-90 font-medium">Loja: {notification.store_name}</p>
+            <% end %>
+            <p class="text-xs opacity-75">
+              {AppWeb.DashboardUtils.format_money(notification.achieved)} ({format_percentage(notification.percentage)}%)
+            </p>
+            <p class="text-xs opacity-60 mt-1 mobile-hide">
+              ID: #{notification.celebration_id}
+            </p>
           </div>
         </div>
       <% end %>
@@ -63,13 +67,13 @@ defmodule AppWeb.DashboardNotificationPanel do
   defp badge_element(notification) do
     case get_badge_type(notification) do
       {:daily, label} ->
-        ~s(<span class="text-xs bg-green-400 bg-opacity-30 px-2 py-1 rounded-full ml-2"> #{label}</span>)
+        ~s(<span class="badge badge-success badge-sm ml-2">#{label}</span>)
       {:monthly, label} ->
-        ~s(<span class="text-xs bg-purple-400 bg-opacity-30 px-2 py-1 rounded-full ml-2"> #{label}</span>)
+        ~s(<span class="badge badge-secondary badge-sm ml-2">#{label}</span>)
       {:real, label} ->
-        ~s(<span class="text-xs bg-blue-400 bg-opacity-30 px-2 py-1 rounded-full ml-2"> #{label}</span>)
+        ~s(<span class="badge badge-primary badge-sm ml-2">#{label}</span>)
       {:global, label} ->
-        ~s(<span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full ml-2"> #{label}</span>)
+        ~s(<span class="badge badge-neutral badge-sm ml-2">#{label}</span>)
     end
   end
 
@@ -86,38 +90,20 @@ defmodule AppWeb.DashboardNotificationPanel do
   defp get_level_label("platinum"), do: "PLATINA"
   defp get_level_label(_), do: "CONQUISTA"
 
-  defp is_seller_goal?(%{type: :seller_daily_goal}), do: true
-  defp is_seller_goal?(%{supervisor_id: id}) when not is_nil(id), do: true
-  defp is_seller_goal?(_), do: false
+  defp seller_goal?(%{type: :seller_daily_goal}), do: true
+  defp seller_goal?(%{supervisor_id: id}) when not is_nil(id), do: true
+  defp seller_goal?(_), do: false
 
   defp format_percentage(n) when is_number(n), do: :erlang.float_to_binary(n * 1.0, decimals: 1)
   defp format_percentage(_), do: "0,0"
 
-  defp get_goal_title(notification) do
-    cond do
-      is_seller_goal?(notification) ->
-        "Meta do Vendedor Atingida!"
-
-      Map.has_key?(notification, :type) and notification.type == :daily_goal ->
-        "Meta Diária Atingida!"
-
-      Map.has_key?(notification, :target) and notification.target >= 100_000 ->
-        "Meta Mensal Atingida!"
-
-      Map.has_key?(notification, :type) and notification.type == :hourly_goal ->
-        "Meta Horária Atingida!"
-
-      Map.has_key?(notification, :type) and notification.type == :exceptional_performance ->
-        "Performance Excepcional!"
-
-      Map.has_key?(notification, :type) and notification.type == :top_seller ->
-        "Vendedor Destaque!"
-
-      Map.has_key?(notification, :type) and notification.type == :monthly_milestone ->
-        "Marco Mensal Alcançado!"
-
-      true ->
-        "Meta Atingida!"
-    end
-  end
+  defp get_goal_title(%{type: :seller_daily_goal}), do: "Meta do Vendedor Atingida!"
+  defp get_goal_title(%{supervisor_id: id}) when not is_nil(id), do: "Meta do Vendedor Atingida!"
+  defp get_goal_title(%{type: :daily_goal}), do: "Meta Diária Atingida!"
+  defp get_goal_title(%{target: target}) when target >= 100_000, do: "Meta Mensal Atingida!"
+  defp get_goal_title(%{type: :hourly_goal}), do: "Meta Horária Atingida!"
+  defp get_goal_title(%{type: :exceptional_performance}), do: "Performance Excepcional!"
+  defp get_goal_title(%{type: :top_seller}), do: "Vendedor Destaque!"
+  defp get_goal_title(%{type: :monthly_milestone}), do: "Marco Mensal Alcançado!"
+  defp get_goal_title(_), do: "Meta Atingida!"
 end

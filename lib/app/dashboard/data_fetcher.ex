@@ -44,12 +44,12 @@ defmodule App.Dashboard.DataFetcher do
     GenServer.call(__MODULE__, :fetch_data, App.Config.api_timeout_ms())
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     {:ok, %{}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:fetch_data, _from, state) do
     case fetch_and_merge_dashboard_data() do
       {:ok, data} ->

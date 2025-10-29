@@ -3,8 +3,6 @@ defmodule App.ApiClient do
   Cliente para consumir APIs externas
   """
 
-  require Logger
-
   def fetch_dashboard_summary do
     start_time = System.monotonic_time(:millisecond)
     with {:ok, sale_data} <- fetch_sale_data(),
@@ -32,13 +30,11 @@ defmodule App.ApiClient do
         "ticket_medio_diario" => ticket_medio_diario
       }
       duration = System.monotonic_time(:millisecond) - start_time
-      Logger.info("fetch_dashboard_summary success", api: "dashboard_summary", status: :ok, duration_ms: duration)
       :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :ok})
       {:ok, summary}
     else
       {:error, reason} ->
         duration = System.monotonic_time(:millisecond) - start_time
-        Logger.error("fetch_dashboard_summary error", api: "dashboard_summary", status: :error, duration_ms: duration, error: inspect(reason))
         :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :error, error: inspect(reason)})
         {:error, reason}
     end
@@ -47,9 +43,8 @@ defmodule App.ApiClient do
   defp fetch_sale_data do
     url = App.Config.api_urls().dashboard_sale
 
-    with {:ok, body} <- http_get(url, "dashboard_sale"),
-         {:ok, data} <- decode_json(body) do
-      {:ok, data}
+    with {:ok, body} <- http_get(url, "dashboard_sale") do
+      decode_json(body)
     end
   end
 
@@ -146,9 +141,8 @@ defmodule App.ApiClient do
   def fetch_schedule_data do
     url = App.Config.api_urls().dashboard_schedule
 
-    with {:ok, body} <- http_get(url, "schedule_data", timeout: 5_000),
-         {:ok, data} <- decode_json(body) do
-      {:ok, data}
+    with {:ok, body} <- http_get(url, "schedule_data", timeout: 5_000) do
+      decode_json(body)
     end
   end
 
@@ -161,19 +155,16 @@ defmodule App.ApiClient do
     case HTTPoison.get(url, [], timeout_opts) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         duration = System.monotonic_time(:millisecond) - start_time
-        Logger.info("#{api_name} success", api: api_name, status: :ok, duration_ms: duration)
         :telemetry.execute([:app, :api, String.to_atom(api_name)], %{duration: duration}, %{status: :ok})
         {:ok, body}
 
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
         duration = System.monotonic_time(:millisecond) - start_time
-        Logger.error("#{api_name} status error", api: api_name, status: :error, duration_ms: duration, status_code: status_code)
         :telemetry.execute([:app, :api, String.to_atom(api_name)], %{duration: duration}, %{status: :error, status_code: status_code})
         {:error, "API retornou status #{status_code}"}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
         duration = System.monotonic_time(:millisecond) - start_time
-        Logger.error("#{api_name} http error", api: api_name, status: :error, duration_ms: duration, error: inspect(reason))
         :telemetry.execute([:app, :api, String.to_atom(api_name)], %{duration: duration}, %{status: :error, error: inspect(reason)})
         {:error, "Erro de conexão: #{inspect(reason)}"}
     end

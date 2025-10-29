@@ -79,10 +79,7 @@ defmodule AppWeb.DashboardState do
   Detecta animações baseadas em mudanças de valores.
   """
   def detect_animations(current_value, previous_value) do
-    cond do
-      current_value > previous_value and previous_value > 0 -> true
-      true -> false
-    end
+    current_value > previous_value and previous_value > 0
   end
 
   @doc """
@@ -100,7 +97,7 @@ defmodule AppWeb.DashboardState do
   Obtém timestamp atual no timezone do Brasil.
   """
   def get_brazil_timestamp do
-    DateTime.utc_now() |> Timex.Timezone.convert(@brazil_timezone)
+    Timex.Timezone.convert(DateTime.utc_now(), @brazil_timezone)
   end
 
   @doc """
@@ -115,7 +112,7 @@ defmodule AppWeb.DashboardState do
       profit: format_percent(Map.get(data, :profit, 0.0)),
       percentual: format_percent(Map.get(data, :percentual, 0.0)),
       percentual_num: calculate_percentual_number(data),
-      invoices_count: Map.get(data, :nfs, 0) |> trunc(),
+      invoices_count: trunc(Map.get(data, :nfs, 0)),
       sale_value: Map.get(data, :sale, 0.0),
       goal_value: Map.get(data, :objetivo, 0.0),
       ticket_medio_diario: format_money(Map.get(data, :ticket_medio_diario, 0.0)),
@@ -131,7 +128,7 @@ defmodule AppWeb.DashboardState do
       sale_mensal: format_money(Map.get(data, :sale_mensal, 0.0)),
       objetivo_mensal: format_money(Map.get(data, :objetivo_mensal, 0.0)),
       devolution_mensal: format_money(Map.get(data, :devolution_mensal, 0.0)),
-      monthly_invoices_count: Map.get(data, :nfs_mensal, 0) |> trunc(),
+      monthly_invoices_count: trunc(Map.get(data, :nfs_mensal, 0)),
       percentual_sale: Map.get(data, :percentualSale, 0.0),
       monthly_sale_value: Map.get(data, :sale_mensal, 0.0),
       monthly_goal_value: Map.get(data, :objetivo_mensal, 0.0)
@@ -142,7 +139,7 @@ defmodule AppWeb.DashboardState do
   Cria estrutura de dados padrão para estado de erro.
   """
   def create_error_state_data(previous_values \\ %{}) do
-    %{
+    Map.merge(%{
       sale: "R$ 0,00",
       cost: "R$ 0,00",
       devolution: "R$ 0,00",
@@ -167,7 +164,6 @@ defmodule AppWeb.DashboardState do
       animate_sale: false,
       animate_devolution: false,
       animate_profit: nil
-    }
-    |> Map.merge(previous_values)
+    }, previous_values)
   end
 end

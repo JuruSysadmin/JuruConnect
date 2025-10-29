@@ -11,7 +11,7 @@ defmodule AppWeb.MonthlyMetricsLive do
     import AppWeb.DashboardComponents
     import AppWeb.DashboardState
 
-    @impl true
+    @impl Phoenix.LiveView
     def mount(_params, _session, socket) do
       if connected?(socket) do
         Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
@@ -35,7 +35,7 @@ defmodule AppWeb.MonthlyMetricsLive do
       {:ok, socket}
     end
 
-    @impl true
+    @impl Phoenix.LiveView
     def handle_info({:dashboard_updated, data}, socket) do
       data = convert_keys_to_atoms(data)
 
@@ -49,7 +49,7 @@ defmodule AppWeb.MonthlyMetricsLive do
       {:noreply, socket}
     end
 
-    @impl true
+    @impl Phoenix.LiveView
     def render(assigns) do
       ~H"""
       <div class="w-full flex min-w-0">

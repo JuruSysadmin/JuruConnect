@@ -8,12 +8,12 @@ defmodule AppWeb.DashboardLive do
   """
   use AppWeb, :live_view
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     {:ok, socket}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def render(assigns) do
     ~H"""
     <div class="flex flex-col min-h-screen bg-gray-50">

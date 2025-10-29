@@ -7,7 +7,7 @@ defmodule AppWeb.Router do
   - Áreas protegidas por autenticação
   - Rotas administrativas e super admin
   - Integração de LiveViews
-  - Endpoints de API REST e health check
+  - Endpoints de API REST
 
   Centraliza toda a lógica de roteamento HTTP e LiveView do sistema.
   """
@@ -45,16 +45,10 @@ defmodule AppWeb.Router do
     pipe_through :browser
 
     live "/security", AdminLive.SecurityDashboard, :index
-    live "/health", HealthLive.Dashboard, :index
   end
 
   scope "/api", AppWeb do
     pipe_through :api
-
-    get "/health", HealthController, :index
-    get "/health/detailed", HealthController, :detailed
-    get "/health/api-status", HealthController, :api_status
-    post "/health/check", HealthController, :trigger_check
   end
 
   if Application.compile_env(:app, :dev_routes) do

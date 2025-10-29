@@ -55,7 +55,7 @@ defmodule App.CelebrationManager do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  @impl true
+  @impl GenServer
   def init(_state) do
     schedule_cache_cleanup()
     {:ok, %{
@@ -64,10 +64,10 @@ defmodule App.CelebrationManager do
     }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:cleanup_cache, state) do
     current_time = System.monotonic_time(:millisecond)
-    today = Date.utc_today() |> Date.to_string()
+    today = Date.to_string(Date.utc_today())
 
     cleaned_cache =
       state.celebrations_cache
@@ -90,7 +90,7 @@ defmodule App.CelebrationManager do
     }}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:check_celebration_cache, cache_key}, _from, state) do
     current_time = System.monotonic_time(:millisecond)
 
@@ -108,9 +108,9 @@ defmodule App.CelebrationManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:check_daily_notification, store_name}, _from, state) do
-    today = Date.utc_today() |> Date.to_string()
+    today = Date.to_string(Date.utc_today())
     daily_key = "#{store_name}:#{today}"
 
     case Map.get(state.daily_notifications, daily_key) do
@@ -131,12 +131,10 @@ defmodule App.CelebrationManager do
     celebrations = []
 
     celebrations =
-      celebrations
-      |> check_company_goals(Map.get(api_data, "companies", []))
+      check_company_goals(celebrations, Map.get(api_data, "companies", []))
 
     filtered_celebrations =
-      celebrations
-      |> Enum.filter(&should_send_celebration?/1)
+      Enum.filter(celebrations, &should_send_celebration?/1)
 
     Enum.each(filtered_celebrations, &broadcast_celebration/1)
 
@@ -155,8 +153,7 @@ defmodule App.CelebrationManager do
       |> Enum.flat_map(&check_seller_daily_goal(supervisor_id, &1))
 
     filtered_celebrations =
-      celebrations
-      |> Enum.filter(&should_send_celebration?/1)
+      Enum.filter(celebrations, &should_send_celebration?/1)
 
     Enum.each(filtered_celebrations, &broadcast_celebration/1)
 
@@ -175,43 +172,47 @@ defmodule App.CelebrationManager do
 
   defp should_send_celebration?(celebration) do
     case celebration.type do
-      :daily_goal ->
-        store_name = get_in(celebration.data, [:store_name]) || "unknown"
-
-        case GenServer.call(__MODULE__, {:check_daily_notification, store_name}) do
-          :not_notified -> true
-          :already_notified -> false
-        end
-
-      :seller_daily_goal ->
-        # Para vendedores, verifica se já foi notificado hoje
-        seller_name = get_in(celebration.data, [:store_name]) || "unknown"
-        today = Date.utc_today() |> Date.to_string()
-        cache_key = "seller_daily_goal:#{seller_name}:#{today}"
-
-        case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
-          :not_found -> true
-          :found -> false
-        end
-
-      _ ->
-        cache_key = create_cache_key(celebration)
-
-        case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
-          :not_found -> true
-          :found -> false
-        end
+      :daily_goal -> check_daily_goal_notification(celebration)
+      :seller_daily_goal -> check_seller_goal_cache(celebration)
+      _ -> check_general_cache(celebration)
     end
   rescue
-    _error ->
-      true
+    _error -> true
+  end
+
+  defp check_daily_goal_notification(celebration) do
+    store_name = get_in(celebration.data, [:store_name]) || "unknown"
+
+    case GenServer.call(__MODULE__, {:check_daily_notification, store_name}) do
+      :not_notified -> true
+      :already_notified -> false
+    end
+  end
+
+  defp check_seller_goal_cache(celebration) do
+    seller_name = get_in(celebration.data, [:store_name]) || "unknown"
+    today = Date.to_string(Date.utc_today())
+    cache_key = "seller_daily_goal:#{seller_name}:#{today}"
+
+    case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
+      :not_found -> true
+      :found -> false
+    end
+  end
+
+  defp check_general_cache(celebration) do
+    cache_key = create_cache_key(celebration)
+
+    case GenServer.call(__MODULE__, {:check_celebration_cache, cache_key}) do
+      :not_found -> true
+      :found -> false
+    end
   end
 
   defp create_cache_key(celebration) do
-    today = Date.utc_today() |> Date.to_string()
+    today = Date.to_string(Date.utc_today())
 
-    celebration.type
-    |> create_cache_key_for_type(celebration, today)
+    create_cache_key_for_type(celebration.type, celebration, today)
   end
 
   defp create_cache_key_for_type(:daily_goal, celebration, today) do
@@ -280,8 +281,7 @@ defmodule App.CelebrationManager do
   defp check_company_goals(celebrations, _), do: celebrations
 
   defp check_single_company_goals(company) do
-    []
-    |> check_daily_goal(company)
+    check_daily_goal([], company)
   end
 
   defp check_daily_goal(celebrations, company) do
@@ -336,10 +336,6 @@ defmodule App.CelebrationManager do
   end
 
   defp check_seller_daily_goal(_supervisor_id, _seller, _percentual_objective), do: []
-
-
-
-
 
   defp create_celebration(type, _data, percentage, extra_data) do
     celebration_config = Map.get(@celebration_types, type)

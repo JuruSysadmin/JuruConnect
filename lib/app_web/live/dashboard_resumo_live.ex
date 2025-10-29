@@ -18,10 +18,10 @@ defmodule AppWeb.DashboardResumoLive do
   alias App.Dashboard.Orchestrator
 
   # Constantes
-  @animation_duration_ms 2_000
+  @animation_duration_ms 5_000
   @orchestrator_timeout_ms 5_000
 
-  @impl true
+  @impl Phoenix.LiveView
   @spec mount(map, map, Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -58,7 +58,7 @@ defmodule AppWeb.DashboardResumoLive do
     |> then(&{:ok, &1})
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   @spec handle_info(tuple, Phoenix.LiveView.Socket.t()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def handle_info({:dashboard_updated, data}, socket) do
     now = get_brazil_timestamp()
@@ -78,19 +78,19 @@ defmodule AppWeb.DashboardResumoLive do
     |> then(&{:noreply, &1})
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:devolucao_aumentou, %{devolution: val, diff: diff, sellerName: seller}}, socket) do
     msg = "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{AppWeb.DashboardUtils.format_money(val)} (aumento de R$ #{AppWeb.DashboardUtils.format_money(diff)})"
     {:noreply, put_flash(socket, :error, msg)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:devolucao_aumentou, %{anterior: anterior, atual: atual}}, socket) do
     msg = "Atenção: Houve uma nova devolução registrada. Valor total de devoluções do dia: #{AppWeb.DashboardUtils.format_money(atual)} (anterior: #{AppWeb.DashboardUtils.format_money(anterior)})"
     {:noreply, put_flash(socket, :error, msg)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:new_returns, returns_data}, socket) do
     count = Map.get(returns_data, :count, 0)
     return_ids = Map.get(returns_data, :return_ids, [])
@@ -102,22 +102,22 @@ defmodule AppWeb.DashboardResumoLive do
     |> push_event("new-returns", %{
       count: count,
       return_ids: return_ids,
-      timestamp: DateTime.utc_now() |> DateTime.to_unix(:millisecond)
+      timestamp: DateTime.to_unix(DateTime.utc_now(), :millisecond)
     })
     |> then(&{:noreply, &1})
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info(:clear_sale_animation, socket) do
     {:noreply, assign(socket, animate_sale: false)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info(:clear_devolution_animation, socket) do
     {:noreply, assign(socket, animate_devolution: false)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info(:clear_profit_animation, socket) do
     {:noreply, assign(socket, animate_profit: nil)}
   end
@@ -148,18 +148,24 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   defp handle_data_response({:error, reason}, socket, now) do
-    assign_error_data(socket, reason, now)
-    |> assign(%{api_status: :error, loading: false, last_update: now})
+    assign(
+      assign_error_data(socket, reason, now),
+      %{api_status: :error, loading: false, last_update: now}
+    )
   end
 
   defp handle_data_response({:timeout, reason}, socket, now) do
-    assign_error_data(socket, "Timeout: #{reason}", now)
-    |> assign(%{api_status: :timeout, loading: false, last_update: now})
+    assign(
+      assign_error_data(socket, "Timeout: #{reason}", now),
+      %{api_status: :timeout, loading: false, last_update: now}
+    )
   end
 
   defp handle_data_response(_, socket, now) do
-    assign_error_data(socket, "Resposta inesperada do servidor", now)
-    |> assign(%{api_status: :error, loading: false, last_update: now})
+    assign(
+      assign_error_data(socket, "Resposta inesperada do servidor", now),
+      %{api_status: :error, loading: false, last_update: now}
+    )
   end
 
   @spec assign_daily_data(Phoenix.LiveView.Socket.t(), map, DateTime.t()) :: Phoenix.LiveView.Socket.t()
@@ -234,7 +240,7 @@ defmodule AppWeb.DashboardResumoLive do
     end
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   @spec render(map) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
@@ -261,34 +267,6 @@ defmodule AppWeb.DashboardResumoLive do
     <div id="dashboard-main" class="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200" phx-hook="GoalCelebration">
       <!-- Sistema de Notificações -->
       <%= live_render(@socket, AppWeb.NotificationsLive, id: :notifications) %>
-
-      <!-- Header com Logo -->
-      <div class="sticky top-0 z-40 bg-base-100/70 backdrop-blur-xl border-b border-base-300/50 shadow-lg">
-        <div class="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div class="flex items-center justify-between">
-            <!-- Logo -->
-            <div class="flex items-center space-x-3">
-              <img src={~p"/assets/logo2.svg"} alt="Logo Jurunense" class="h-16 sm:h-20 w-auto" />
-                  </div>
-
-            <!-- Status da API e última atualização -->
-            <div class="flex items-center space-x-3">
-              <%= if @api_status == :ok do %>
-                <div class="flex items-center space-x-2 text-xs sm:text-sm text-base-content">
-                  <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                  <span class="hidden sm:inline">Online</span>
-                </div>
-              <% end %>
-
-              <%= if @last_update do %>
-                <div class="text-xs text-base-content/70 hidden md:block">
-                  Atualizado: <%= Calendar.strftime(@last_update, "%H:%M:%S") %>
-              </div>
-            <% end %>
-          </div>
-              </div>
-              </div>
-            </div>
 
       <!-- Layout principal - Responsivo com max-width -->
       <div class="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-5 md:py-6 space-y-4 sm:space-y-5 md:space-y-6">

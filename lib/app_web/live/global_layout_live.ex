@@ -1,7 +1,7 @@
 defmodule AppWeb.GlobalLayoutLive do
   use AppWeb, :live_view
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:devolucao")
@@ -9,13 +9,13 @@ defmodule AppWeb.GlobalLayoutLive do
     {:ok, socket}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:devolucao_aumentou, %{devolution: val, diff: diff, sellerName: seller}}, socket) do
     msg = "Atenção: Nova devolução registrada para #{seller}! Valor: R$ #{AppWeb.DashboardUtils.format_money(val)} (aumento de R$ #{AppWeb.DashboardUtils.format_money(diff)})"
     {:noreply, put_flash(socket, :error, msg)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def render(assigns) do
     ~H"""
     <%= if @flash[:error] do %>

@@ -13,17 +13,17 @@ defmodule AppWeb.DashboardComponents do
   Suporta animações personalizadas baseadas no tipo de evento.
   """
   def card(assigns) do
-    assigns
-    |> assign_new(:class, fn -> "" end)
-    |> assign_new(:animate, fn -> false end)
-    |> assign_new(:animate_type, fn -> "sale" end)
-    |> assign_animate_class()
-    |> render_card()
-  end
+    assigns =
+      assigns
+      |> assign_new(:class, fn -> "" end)
+      |> assign_new(:animate, fn -> false end)
+      |> assign_new(:animate_type, fn -> "sale" end)
+      |> assign_new(:subtitle, fn -> "" end)
 
-  defp assign_animate_class(assigns) do
-    animate_class = get_animate_class(assigns.animate, assigns.animate_type)
-    assign(assigns, :animate_class, animate_class)
+    assigns
+    |> assign(:animate_class, get_animate_class(assigns.animate, assigns.animate_type))
+    |> assign(:card_style, get_card_style())
+    |> render_card_html()
   end
 
   defp get_animate_class(true, "sale"), do: "animate-pulse-sale"
@@ -31,12 +31,6 @@ defmodule AppWeb.DashboardComponents do
   defp get_animate_class(true, "profit_up"), do: "animate-pulse-profit-up"
   defp get_animate_class(true, "profit_down"), do: "animate-pulse-profit-down"
   defp get_animate_class(_animate, _type), do: ""
-
-  defp render_card(assigns) do
-    assigns
-    |> assign(:card_style, get_card_style(assigns.title))
-    |> then(&render_card_html/1)
-  end
 
   defp render_card_html(assigns) do
     ~H"""
@@ -69,72 +63,14 @@ defmodule AppWeb.DashboardComponents do
     """
   end
 
-  defp get_card_style(title) do
-    case title do
-      "Meta Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "Venda Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "Devolução Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "Margem Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "NFs Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "Ticket Médio Dia" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      "% Realizado Hoje" -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-
-      _ -> %{
-        bg: "bg-base-100",
-        shadow: "shadow-md shadow-black/5",
-        title_color: "text-base-content/70 font-medium",
-        value_color: "text-base-content font-bold",
-        subtitle_color: "text-base-content/60"
-      }
-    end
+  defp get_card_style do
+    %{
+      bg: "bg-base-100",
+      shadow: "shadow-md shadow-black/5",
+      title_color: "text-base-content/70 font-medium",
+      value_color: "text-base-content font-bold",
+      subtitle_color: "text-base-content/60"
+    }
   end
 
   @doc """
@@ -154,10 +90,8 @@ defmodule AppWeb.DashboardComponents do
   defp parse_percentual(n) when is_number(n), do: n
   defp parse_percentual(s) when is_binary(s) do
     s
-    |> String.replace([",", "%"], fn
-      "," -> "."
-      "%" -> ""
-    end)
+    |> String.replace(",", ".")
+    |> String.replace("%", "")
     |> String.to_float()
   end
   defp parse_percentual(_), do: 0.0
@@ -166,10 +100,10 @@ defmodule AppWeb.DashboardComponents do
     ~H"""
     <div class="w-full max-w-xs mx-auto mt-6 sm:mt-8">
       <div class="flex justify-between mb-1">
-        <span class="text-xs sm:text-sm font-bold text-gray-800">Meta: {@objetivo}</span>
-        <span class="text-xs sm:text-sm font-bold text-gray-800">{@percentual}</span>
+        <span class="text-xs sm:text-sm font-bold text-base-content">Meta: {@objetivo}</span>
+        <span class="text-xs sm:text-sm font-bold text-base-content">{@percentual}</span>
       </div>
-      <div class="w-full bg-gray-200 rounded-full h-4 sm:h-6 shadow-inner relative overflow-hidden">
+      <div class="w-full bg-base-300 rounded-full h-4 sm:h-6 shadow-inner relative overflow-hidden">
         <div
           class={"h-4 sm:h-6 rounded-full bg-gradient-to-r transition-all duration-700 ease-in-out absolute left-0 top-0 flex items-center justify-end px-1 sm:px-2 text-xs font-medium text-white shadow " <> @bar_color}
           style={"width: #{min(@percentual_num, 100)}%; min-width: 2rem sm:min-width: 2.5rem;"}
@@ -221,9 +155,9 @@ defmodule AppWeb.DashboardComponents do
         aria-valuemax="100">
         <%= if @label do %>
           <div class="flex flex-col items-center justify-center">
-            <span class="text-xl sm:text-2xl font-bold">{@label}</span>
+            <span class="text-xl sm:text-2xl font-bold text-base-content">{@label}</span>
             <%= if @label_bottom do %>
-              <span class="text-[10px] text-gray-500">{@label_bottom}</span>
+              <span class="text-[10px] text-base-content/60">{@label_bottom}</span>
             <% end %>
           </div>
         <% end %>
@@ -234,7 +168,7 @@ defmodule AppWeb.DashboardComponents do
           style={"--value: 100; --size: #{@size}; --thickness: #{@thickness};"}>
         </div>
         <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-          <span class="text-xs font-bold text-yellow-500 bg-yellow-50 px-2 py-0.5 rounded-full">
+          <span class="text-xs font-bold text-warning-content bg-warning px-2 py-0.5 rounded-full">
             +#{Float.round(@raw_value - 100, 1)}%
           </span>
         </div>

@@ -37,7 +37,7 @@ defmodule App.Dashboard.SupervisorMonitor do
     GenServer.cast(__MODULE__, {:refresh, supervisor_id})
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     schedule_update()
 
@@ -50,7 +50,7 @@ defmodule App.Dashboard.SupervisorMonitor do
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:subscribe, supervisor_id}, state) do
     new_set = MapSet.put(state.subscribed_supervisors, supervisor_id)
     Logger.debug("Subscribed to supervisor: #{supervisor_id}")
@@ -61,25 +61,24 @@ defmodule App.Dashboard.SupervisorMonitor do
     {:noreply, %{state | subscribed_supervisors: new_set}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:unsubscribe, supervisor_id}, state) do
     new_set = MapSet.delete(state.subscribed_supervisors, supervisor_id)
     Logger.debug("Unsubscribed from supervisor: #{supervisor_id}")
     {:noreply, %{state | subscribed_supervisors: new_set}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:refresh, supervisor_id}, state) do
     refresh_supervisor_data(supervisor_id)
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:update_supervisors, state) do
     Logger.debug("Updating #{MapSet.size(state.subscribed_supervisors)} supervisors")
 
-    state.subscribed_supervisors
-    |> Enum.each(&refresh_supervisor_data/1)
+    Enum.each(state.subscribed_supervisors, &refresh_supervisor_data/1)
 
     schedule_update()
 

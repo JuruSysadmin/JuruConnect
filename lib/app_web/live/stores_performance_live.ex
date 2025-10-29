@@ -14,7 +14,7 @@ defmodule AppWeb.StoresPerformanceLive do
 
   alias App.Dashboard.SupervisorMonitor
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:updated")
@@ -33,7 +33,7 @@ defmodule AppWeb.StoresPerformanceLive do
     {:ok, socket}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:dashboard_updated, data}, socket) do
     data = convert_keys_to_atoms(data)
 
@@ -44,34 +44,32 @@ defmodule AppWeb.StoresPerformanceLive do
     {:noreply, socket}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:supervisor_updated, supervisor_data}, socket) do
-    {:noreply, assign(socket, supervisor_data: supervisor_data)}
+    {:noreply, assign(socket,
+      supervisor_data: supervisor_data,
+      supervisor_loading: false
+    )}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("show_supervisor_drawer", %{"supervisor-id" => id}, socket) do
     topic = "supervisor:#{id}"
     Phoenix.PubSub.subscribe(App.PubSub, topic)
 
+    # SupervisorMonitor já busca os dados automaticamente após subscribe
+    # e faz broadcast via PubSub, então não precisamos buscar aqui
     SupervisorMonitor.subscribe_supervisor(id)
 
-    socket = assign(socket, %{
+    {:noreply, assign(socket, %{
       show_drawer: true,
       supervisor_loading: true,
       supervisor_topic: topic,
       supervisor_id: id
-    })
-
-    case fetch_supervisor_data(id) do
-      data when is_list(data) ->
-        {:noreply, assign(socket, supervisor_data: data, supervisor_loading: false)}
-      _ ->
-        {:noreply, assign(socket, supervisor_data: [], supervisor_loading: false)}
-    end
+    })}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_event("close_drawer", _params, socket) do
     if topic = socket.assigns[:supervisor_topic] do
       Phoenix.PubSub.unsubscribe(App.PubSub, topic)
@@ -90,7 +88,7 @@ defmodule AppWeb.StoresPerformanceLive do
     )}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def render(assigns) do
     ~H"""
     <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-4 hover:shadow-xl transition-shadow duration-300 min-w-0">
@@ -138,10 +136,4 @@ defmodule AppWeb.StoresPerformanceLive do
     })
   end
 
-  defp fetch_supervisor_data(id) do
-    case App.ApiClient.fetch_supervisor_data(id) do
-      {:ok, sale_supervisors} -> sale_supervisors
-      {:error, _reason} -> []
-    end
-  end
 end

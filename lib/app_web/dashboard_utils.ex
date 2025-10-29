@@ -97,6 +97,9 @@ defmodule AppWeb.DashboardUtils do
     end
   end
 
+  @spec format_weight_in_tons(any) :: String.t()
+  def format_weight_in_tons(_), do: "0"
+
   defp format_tons_only(value) when is_float(value) or is_integer(value) do
     formatted =
       if value == trunc(value) do
@@ -115,9 +118,6 @@ defmodule AppWeb.DashboardUtils do
   end
 
   defp format_tons_only(_), do: "0"
-
-  @spec format_weight_in_tons(any) :: String.t()
-  def format_weight_in_tons(_), do: "0"
 
   defp add_thousands_separator_to_int(int_str) do
     int_str
@@ -138,20 +138,28 @@ defmodule AppWeb.DashboardUtils do
     case Map.get(data, :percentual, 0.0) do
       value when is_float(value) -> value
       value when is_integer(value) -> value * 1.0
-      value when is_binary(value) ->
-        value
-        |> String.replace(",", ".")
-        |> String.replace("%", "")
-        |> String.trim()
-        |> case do
-          "" -> 0.0
-          clean_value ->
-            case Float.parse(clean_value) do
-              {num, _} -> num
-              :error -> 0.0
-            end
-        end
+      value when is_binary(value) -> parse_percent_string(value)
       _ -> 0.0
+    end
+  end
+
+  defp parse_percent_string(value) do
+    cleaned_value =
+      value
+      |> String.replace(",", ".")
+      |> String.replace("%", "")
+      |> String.trim()
+
+    case cleaned_value do
+      "" -> 0.0
+      clean -> parse_to_float(clean)
+    end
+  end
+
+  defp parse_to_float(str) do
+    case Float.parse(str) do
+      {num, _} -> num
+      :error -> 0.0
     end
   end
 
@@ -178,20 +186,23 @@ defmodule AppWeb.DashboardUtils do
   def get_weekday(date_string) when is_binary(date_string) do
     case DateTime.from_iso8601(date_string) do
       {:ok, date_time, _offset} ->
-        date = DateTime.to_date(date_time)
-        case Date.day_of_week(date) do
-          1 -> "Segunda-feira"
-          2 -> "Terça-feira"
-          3 -> "Quarta-feira"
-          4 -> "Quinta-feira"
-          5 -> "Sexta-feira"
-          6 -> "Sábado"
-          7 -> "Domingo"
-        end
+        date_time
+        |> DateTime.to_date()
+        |> Date.day_of_week()
+        |> weekday_to_portuguese()
       {:error, _} ->
         "Data inválida"
     end
   end
 
   def get_weekday(_), do: "Data inválida"
+
+  defp weekday_to_portuguese(1), do: "Segunda-feira"
+  defp weekday_to_portuguese(2), do: "Terça-feira"
+  defp weekday_to_portuguese(3), do: "Quarta-feira"
+  defp weekday_to_portuguese(4), do: "Quinta-feira"
+  defp weekday_to_portuguese(5), do: "Sexta-feira"
+  defp weekday_to_portuguese(6), do: "Sábado"
+  defp weekday_to_portuguese(7), do: "Domingo"
+  defp weekday_to_portuguese(_), do: "Data inválida"
 end

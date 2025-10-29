@@ -34,7 +34,7 @@ defmodule App.Dashboard.CacheManager do
     GenServer.call(__MODULE__, :stats)
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     schedule_cleanup()
 
@@ -51,11 +51,11 @@ defmodule App.Dashboard.CacheManager do
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call({:get, key}, _from, state) do
     case Map.get(state.cache, key) do
       {value, expires_at} ->
-        if DateTime.utc_now() |> DateTime.before?(expires_at) do
+        if DateTime.before?(DateTime.utc_now(), expires_at) do
           new_stats = update_in(state.stats, [:hits], &(&1 + 1))
           {:reply, {:ok, value}, %{state | stats: new_stats}}
         else
@@ -74,7 +74,7 @@ defmodule App.Dashboard.CacheManager do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:stats, _from, state) do
     total_requests = state.stats.hits + state.stats.misses
     hit_rate = if total_requests > 0 do
@@ -87,7 +87,7 @@ defmodule App.Dashboard.CacheManager do
     {:reply, stats, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:put, key, value, ttl}, state) do
     expires_at = DateTime.add(DateTime.utc_now(), ttl, :millisecond)
     new_cache = Map.put(state.cache, key, {value, expires_at})
@@ -96,19 +96,19 @@ defmodule App.Dashboard.CacheManager do
     {:noreply, %{state | cache: new_cache}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:delete, key}, state) do
     new_cache = Map.delete(state.cache, key)
     {:noreply, %{state | cache: new_cache}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:clear_all, state) do
     Logger.info("Cache cleared")
     {:noreply, %{state | cache: %{}}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:cleanup_expired, state) do
     current_time = DateTime.utc_now()
 

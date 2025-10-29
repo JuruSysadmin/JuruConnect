@@ -5,7 +5,6 @@ defmodule App.Dashboard.EventBroadcaster do
   """
 
   use GenServer
-  require Logger
 
   @dashboard_topic "dashboard:updated"
   @sales_topic "sales:feed"
@@ -54,7 +53,7 @@ defmodule App.Dashboard.EventBroadcaster do
     GenServer.call(__MODULE__, :get_stats)
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     initial_state = %{
       broadcast_count: 0,
@@ -68,11 +67,10 @@ defmodule App.Dashboard.EventBroadcaster do
       }
     }
 
-    Logger.info("Dashboard EventBroadcaster initialized")
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:broadcast, topic, message}, state) do
     case Phoenix.PubSub.broadcast(App.PubSub, topic, message) do
       :ok ->
@@ -83,16 +81,14 @@ defmodule App.Dashboard.EventBroadcaster do
           topic_stats: Map.update(state.topic_stats, topic, 1, &(&1 + 1))
         }
 
-        Logger.debug("Broadcast sent to topic #{topic}: #{inspect(message)}")
         {:noreply, new_state}
 
-      {:error, reason} ->
-        Logger.error("Failed to broadcast to topic #{topic}: #{inspect(reason)}")
+      {:error, _reason} ->
         {:noreply, state}
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_stats, _from, state) do
     stats = %{
       total_broadcasts: state.broadcast_count,

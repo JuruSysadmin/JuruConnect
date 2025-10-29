@@ -1,4 +1,15 @@
 defmodule AppWeb.DashboardStoresTable do
+  @moduledoc """
+  Componente Phoenix para exibir tabela de performance das lojas do dashboard.
+
+  Renderiza uma tabela responsiva com dados de performance das lojas, incluindo:
+  - Versão desktop/tablet: tabela completa com todas as colunas
+  - Versão mobile: cards adaptados para telas pequenas
+
+  Fornece estados de loading, formatação de valores monetários e percentuais,
+  além de indicadores visuais de status baseados no desempenho de cada loja.
+  """
+
   use Phoenix.Component
   import AppWeb.DashboardUtils
 

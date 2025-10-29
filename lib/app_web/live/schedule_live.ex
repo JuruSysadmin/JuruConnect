@@ -10,7 +10,7 @@ defmodule AppWeb.ScheduleLive do
 
   import AppWeb.DashboardSchedule
 
-  @impl true
+  @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     if connected?(socket) do
       Phoenix.PubSub.subscribe(App.PubSub, "dashboard:schedule")
@@ -26,13 +26,13 @@ defmodule AppWeb.ScheduleLive do
     {:ok, socket}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def handle_info({:schedule_updated, schedule_data}, socket) do
     schedule_list = if is_list(schedule_data), do: schedule_data, else: [schedule_data]
     {:noreply, assign(socket, schedule_data: schedule_list)}
   end
 
-  @impl true
+  @impl Phoenix.LiveView
   def render(assigns) do
     ~H"""
     <div class="mb-4 min-w-0">

@@ -15,6 +15,7 @@ defmodule App.Dashboard.Orchestrator do
   alias App.Dashboard.DataStore
   alias App.Dashboard.CacheManager
   alias App.Dashboard.EventBroadcaster
+  alias App.Validators.ApiDataValidator
 
   @fetch_interval 30_000
   @call_timeout App.Config.api_timeout_ms()
@@ -49,7 +50,7 @@ defmodule App.Dashboard.Orchestrator do
     GenServer.call(__MODULE__, :status, 5_000)
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     schedule_next_fetch()
 
@@ -64,14 +65,14 @@ defmodule App.Dashboard.Orchestrator do
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:fetch_data, state) do
     new_state = perform_data_fetch(state)
     schedule_next_fetch()
     {:noreply, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:status, _from, state) do
     status_info = %{
       api_status: DataStore.get_status().api_status,
@@ -127,7 +128,7 @@ defmodule App.Dashboard.Orchestrator do
   end
 
   defp process_and_validate_data(raw_data) do
-    App.Validators.ApiDataValidator.validate_dashboard_data(raw_data)
+    ApiDataValidator.validate_dashboard_data(raw_data)
   rescue
     error ->
       {:error, "Processing error: #{inspect(error)}"}

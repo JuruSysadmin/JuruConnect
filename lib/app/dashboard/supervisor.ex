@@ -16,7 +16,7 @@ defmodule App.Dashboard.Supervisor do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @impl true
+  @impl Supervisor
   def init(_opts) do
     children = [
       {App.Dashboard.DataStore, []},

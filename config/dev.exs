@@ -64,7 +64,9 @@ config :live_debugger, LiveDebuggerWeb.Endpoint,
 
 config :app, dev_routes: true
 
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :console,
+  format: "[$level] $message\n",
+  metadata: [:api, :status, :duration_ms, :status_code, :error]
 
 config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime

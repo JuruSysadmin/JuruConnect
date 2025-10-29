@@ -5,7 +5,6 @@ defmodule App.Dashboard.DataStore do
   """
 
   use GenServer
-  require Logger
 
   @type state :: %{
     data: map() | nil,
@@ -34,7 +33,7 @@ defmodule App.Dashboard.DataStore do
     GenServer.call(__MODULE__, :get_status)
     end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     initial_state = %{
       data: nil,
@@ -43,28 +42,27 @@ defmodule App.Dashboard.DataStore do
       api_error: nil
     }
 
-    Logger.info("Dashboard DataStore initialized")
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_data, _from, %{data: nil, api_status: status} = state)
       when status in [:initializing, :loading] do
     {:reply, {:loading, nil}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_data, _from, %{data: data, api_status: :ok} = state)
       when not is_nil(data) do
     {:reply, {:ok, data}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_data, _from, state) do
     {:reply, {:error, state.api_error || "Dados não disponíveis"}, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_status, _from, state) do
     status_info = %{
       api_status: state.api_status,
@@ -74,7 +72,7 @@ defmodule App.Dashboard.DataStore do
     {:reply, status_info, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:update_data, data}, state) do
     new_state = %{
       state |
@@ -84,11 +82,10 @@ defmodule App.Dashboard.DataStore do
       api_error: nil
     }
 
-    Logger.debug("Dashboard data updated successfully")
     {:noreply, new_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast({:update_status, status, error}, state) do
     new_state = %{
       state |
@@ -97,7 +94,6 @@ defmodule App.Dashboard.DataStore do
       last_update: DateTime.utc_now()
     }
 
-    Logger.debug("Dashboard status updated: #{status}")
     {:noreply, new_state}
   end
 end

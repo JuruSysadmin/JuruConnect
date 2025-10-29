@@ -39,7 +39,7 @@ defmodule App.Returns.ReturnsMonitor do
     GenServer.call(__MODULE__, :get_status)
   end
 
-  @impl true
+  @impl GenServer
   def init(_opts) do
     Logger.info("ReturnsMonitor initialized - starting polling")
 
@@ -57,24 +57,24 @@ defmodule App.Returns.ReturnsMonitor do
     {:ok, initial_state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:start_polling, state) do
-    if not state.polling do
+    if state.polling do
+      {:noreply, state}
+    else
       schedule_check()
       Logger.info("ReturnsMonitor: Polling started")
       {:noreply, %{state | polling: true}}
-    else
-      {:noreply, state}
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_cast(:stop_polling, state) do
     Logger.info("ReturnsMonitor: Polling stopped")
     {:noreply, %{state | polling: false}}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info(:check_returns, state) do
     if state.polling do
       new_state = check_for_new_returns(state)
@@ -85,7 +85,7 @@ defmodule App.Returns.ReturnsMonitor do
     end
   end
 
-  @impl true
+  @impl GenServer
   def handle_call(:get_status, _from, state) do
     status = build_status(state)
     {:reply, status, state}
