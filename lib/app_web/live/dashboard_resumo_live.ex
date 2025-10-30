@@ -39,8 +39,8 @@ defmodule AppWeb.DashboardResumoLive do
       animate_devolution: false,
       previous_profit_value: 0.0,
       animate_profit: nil,
-      previous_excedente_value: 0.0,
-      animate_excedente: false,
+      previous_diff_today_value: 0.0,
+      animate_diff_today: false,
       sale: "R$ 0,00",
       cost: "R$ 0,00",
       devolution: "R$ 0,00",
@@ -54,7 +54,11 @@ defmodule AppWeb.DashboardResumoLive do
       sale_value: 0.0,
       goal_value: 0.0,
       ticket_medio_diario: "R$ 0,00",
-      ticket_medio_mensal: "R$ 0,00"
+      ticket_medio_mensal: "R$ 0,00",
+      percentual_objetivo_hora_formatted: "0,00%",
+      diff_today_formatted: "R$ 0,00",
+      diff_today_title: "Diferença para Meta",
+      show_diff_today: false
     })
     |> fetch_and_assign_data_safe()
     |> then(&{:ok, &1})
@@ -125,8 +129,8 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   @impl Phoenix.LiveView
-  def handle_info(:clear_excedente_animation, socket) do
-    {:noreply, assign(socket, animate_excedente: false)}
+  def handle_info(:clear_diff_today_animation, socket) do
+    {:noreply, assign(socket, animate_diff_today: false)}
   end
 
   @spec assign_loading_state(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
@@ -192,15 +196,30 @@ defmodule AppWeb.DashboardResumoLive do
 
     daily_data = create_daily_metrics_data(data)
 
-    # Excedente mensal em % (com base no mesmo payload utilizado pelo MonthlyMetricsLive)
-    percentual_sale_month = Map.get(data, :percentualSale, 0.0)
-    excedente_percent = max(percentual_sale_month - 100.0, 0.0)
-    show_excedente_mensal = excedente_percent > 0.0
-    excedente_mensal_formatted = if show_excedente_mensal, do: "+" <> AppWeb.DashboardUtils.format_percent(excedente_percent), else: "+0,00%"
+    # Diferença para meta do dia (valores monetários)
+    sale_today = Map.get(data, :sale, 0.0)
+    objetivo_today = Map.get(data, :objetivo, 0.0)
+    diff_today = sale_today - objetivo_today
+    show_diff_today = abs(diff_today) > 0.01  # Mostra se diferença > R$ 0,01
 
-    # Detecta animação do excedente
-    previous_excedente_value = Map.get(socket.assigns, :previous_excedente_value, 0.0)
-    animate_excedente = detect_animations(excedente_percent, previous_excedente_value)
+    # Título dinâmico baseado na diferença
+    diff_today_title = cond do
+      diff_today > 0.01 -> "Excedente da Meta Diária"
+      diff_today < -0.01 -> "Falta para Meta"
+      true -> "Diferença para Meta"
+    end
+
+    # Formata com sinal + para valores positivos
+    diff_today_formatted =
+      if diff_today >= 0 do
+        "+" <> AppWeb.DashboardUtils.format_money(diff_today)
+      else
+        AppWeb.DashboardUtils.format_money(diff_today)
+      end
+
+    # Detecta animação da diferença
+    previous_diff_value = Map.get(socket.assigns, :previous_diff_today_value, 0.0)
+    animate_diff_today = detect_animations(abs(diff_today), abs(previous_diff_value))
 
     assigns = Map.merge(daily_data, %{
       realizado_hoje_percent: percentual,
@@ -215,16 +234,17 @@ defmodule AppWeb.DashboardResumoLive do
       animate_devolution: animate_devolution,
       previous_profit_value: current_profit_value,
       animate_profit: animate_profit,
-      previous_excedente_value: excedente_percent,
-      animate_excedente: animate_excedente,
-      excedente_mensal_formatted: excedente_mensal_formatted,
-      show_excedente_mensal: show_excedente_mensal
+      previous_diff_today_value: diff_today,
+      animate_diff_today: animate_diff_today,
+      diff_today_formatted: diff_today_formatted,
+      diff_today_title: diff_today_title,
+      show_diff_today: show_diff_today
     })
 
     socket = assign(socket, assigns)
 
     # Gerencia animações
-    manage_animations(socket, animate_sale, animate_devolution, animate_profit, animate_excedente)
+    manage_animations(socket, animate_sale, animate_devolution, animate_profit, animate_diff_today)
 
     socket
   end
@@ -235,7 +255,7 @@ defmodule AppWeb.DashboardResumoLive do
       previous_sale_value: Map.get(socket.assigns, :previous_sale_value, 0.0),
       previous_devolution_value: Map.get(socket.assigns, :previous_devolution_value, 0.0),
       previous_profit_value: Map.get(socket.assigns, :previous_profit_value, 0.0),
-      previous_excedente_value: Map.get(socket.assigns, :previous_excedente_value, 0.0)
+      previous_diff_today_value: Map.get(socket.assigns, :previous_diff_today_value, 0.0)
     }
 
     error_data = create_error_state_data(previous_values)
@@ -248,7 +268,7 @@ defmodule AppWeb.DashboardResumoLive do
     }))
   end
 
-  defp manage_animations(_socket, animate_sale, animate_devolution, animate_profit, animate_excedente) do
+  defp manage_animations(_socket, animate_sale, animate_devolution, animate_profit, animate_diff_today) do
     if animate_sale do
       Process.send_after(self(), :clear_sale_animation, @animation_duration_ms)
     end
@@ -261,8 +281,8 @@ defmodule AppWeb.DashboardResumoLive do
       Process.send_after(self(), :clear_profit_animation, @animation_duration_ms)
     end
 
-    if animate_excedente do
-      Process.send_after(self(), :clear_excedente_animation, @animation_duration_ms)
+    if animate_diff_today do
+      Process.send_after(self(), :clear_diff_today_animation, @animation_duration_ms)
     end
   end
 
@@ -319,9 +339,10 @@ defmodule AppWeb.DashboardResumoLive do
               animate_sale={@animate_sale}
               animate_devolution={@animate_devolution}
               animate_profit={@animate_profit}
-              animate_excedente={@animate_excedente}
-              excedente_mensal_formatted={@excedente_mensal_formatted}
-              show_excedente_mensal={@show_excedente_mensal}
+              animate_diff_today={@animate_diff_today}
+              diff_today_formatted={@diff_today_formatted}
+              diff_today_title={@diff_today_title}
+              show_diff_today={@show_diff_today}
             />
               </div>
             </div>

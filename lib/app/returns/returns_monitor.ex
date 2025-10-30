@@ -58,14 +58,15 @@ defmodule App.Returns.ReturnsMonitor do
   end
 
   @impl GenServer
+  def handle_cast(:start_polling, %{polling: true} = state) do
+    {:noreply, state}
+  end
+
+  @impl GenServer
   def handle_cast(:start_polling, state) do
-    if state.polling do
-      {:noreply, state}
-    else
-      schedule_check()
-      Logger.info("ReturnsMonitor: Polling started")
-      {:noreply, %{state | polling: true}}
-    end
+    schedule_check()
+    Logger.info("ReturnsMonitor: Polling started")
+    {:noreply, %{state | polling: true}}
   end
 
   @impl GenServer
@@ -75,14 +76,15 @@ defmodule App.Returns.ReturnsMonitor do
   end
 
   @impl GenServer
+  def handle_info(:check_returns, %{polling: true} = state) do
+    new_state = check_for_new_returns(state)
+    schedule_check()
+    {:noreply, new_state}
+  end
+
+  @impl GenServer
   def handle_info(:check_returns, state) do
-    if state.polling do
-      new_state = check_for_new_returns(state)
-      schedule_check()
-      {:noreply, new_state}
-    else
-      {:noreply, state}
-    end
+    {:noreply, state}
   end
 
   @impl GenServer
@@ -183,7 +185,7 @@ defmodule App.Returns.ReturnsMonitor do
     end)
   end
 
-  defp count_total_returns(_), do: 0
+  defp count_total_returns(_returns_data), do: 0
 
   defp extract_return_ids(returns_data) when is_list(returns_data) and length(returns_data) > 0 do
     returns_data
@@ -193,7 +195,7 @@ defmodule App.Returns.ReturnsMonitor do
     |> MapSet.new()
   end
 
-  defp extract_return_ids(_), do: MapSet.new()
+  defp extract_return_ids(_returns_data), do: MapSet.new()
 
   defp find_new_returns(current_ids, last_ids) do
     MapSet.difference(current_ids, last_ids)
@@ -212,7 +214,8 @@ defmodule App.Returns.ReturnsMonitor do
     EventBroadcaster.broadcast_new_returns(summary)
   end
 
-  defp filter_new_returns(returns_data, new_return_ids) when is_list(returns_data) do
+  defp filter_new_returns(returns_data, new_return_ids)
+       when is_list(returns_data) do
     if MapSet.size(new_return_ids) > 0 do
       returns_data
       |> Enum.flat_map(&Map.get(&1, "returns", []))
@@ -222,13 +225,14 @@ defmodule App.Returns.ReturnsMonitor do
     end
   end
 
-  defp filter_new_returns(_, _), do: []
+  defp filter_new_returns(_returns_data, _new_return_ids), do: []
 
-  defp should_include_return?(return, new_return_ids) do
-    case Map.get(return, "returnId") do
-      return_id when is_integer(return_id) -> MapSet.member?(new_return_ids, return_id)
-      _ -> false
-    end
+  defp should_include_return?(%{"returnId" => return_id}, new_return_ids) when is_integer(return_id) do
+    MapSet.member?(new_return_ids, return_id)
+  end
+
+  defp should_include_return?(_return, _new_return_ids) do
+    false
   end
 
   defp schedule_check do
