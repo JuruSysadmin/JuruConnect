@@ -49,7 +49,7 @@ module.exports = {
   ],
   
   /**
-   * Configurações do tema
+   * Configurações do tema-
    * @type {Object}
    */
   theme: {
@@ -95,7 +95,7 @@ module.exports = {
       "nord",
       "sunset"
     ],
-    // darkTheme removed to prevent automatic dark mode detection
+    darkTheme: false, // Disable automatic dark theme detection
     base: true,
     styled: true,
     utils: true,
