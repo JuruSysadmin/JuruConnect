@@ -83,13 +83,18 @@ defmodule App.ApiClient do
             }
           end)
 
+        perc_list = Enum.map(companies, & &1.perc_hora)
+        avg_percentual_obj_hour =
+          if perc_list == [], do: 0.0, else: Enum.sum(perc_list) / length(perc_list)
+
         result = %{
           companies: companies,
           percentualSale: Map.get(data, "percentualSale", 0.0),
           objetive: Map.get(data, "objetive", 0.0),
           sale: Map.get(data, "sale", 0.0),
           devolution: Map.get(data, "devolution", 0.0),
-          nfs: Map.get(data, "nfs", 0)
+          nfs: Map.get(data, "nfs", 0),
+          percentual_objetivo_hora: avg_percentual_obj_hour
         }
 
         {:ok, result}

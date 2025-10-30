@@ -116,7 +116,8 @@ defmodule AppWeb.DashboardState do
       sale_value: Map.get(data, :sale, 0.0),
       goal_value: Map.get(data, :objetivo, 0.0),
       ticket_medio_diario: format_money(Map.get(data, :ticket_medio_diario, 0.0)),
-      ticket_medio_mensal: format_money(Map.get(data, :ticket_medio_mensal, 0.0))
+      ticket_medio_mensal: format_money(Map.get(data, :ticket_medio_mensal, 0.0)),
+      percentual_objetivo_hora_formatted: format_percent(Map.get(data, :percentual_objetivo_hora, 0.0))
     }
   end
 

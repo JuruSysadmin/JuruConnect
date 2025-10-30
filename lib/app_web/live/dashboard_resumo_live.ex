@@ -185,6 +185,12 @@ defmodule AppWeb.DashboardResumoLive do
 
     daily_data = create_daily_metrics_data(data)
 
+    # Excedente mensal em % (com base no mesmo payload utilizado pelo MonthlyMetricsLive)
+    percentual_sale_month = Map.get(data, :percentualSale, 0.0)
+    excedente_percent = max(percentual_sale_month - 100.0, 0.0)
+    show_excedente_mensal = excedente_percent > 0.0
+    excedente_mensal_formatted = if show_excedente_mensal, do: "+" <> AppWeb.DashboardUtils.format_percent(excedente_percent), else: "+0,00%"
+
     assigns = Map.merge(daily_data, %{
       realizado_hoje_percent: percentual,
       realizado_hoje_formatted: AppWeb.DashboardUtils.format_percent(percentual),
@@ -197,7 +203,9 @@ defmodule AppWeb.DashboardResumoLive do
       previous_devolution_value: current_devolution_value,
       animate_devolution: animate_devolution,
       previous_profit_value: current_profit_value,
-      animate_profit: animate_profit
+      animate_profit: animate_profit,
+      excedente_mensal_formatted: excedente_mensal_formatted,
+      show_excedente_mensal: show_excedente_mensal
     })
 
     socket = assign(socket, assigns)
@@ -289,9 +297,12 @@ defmodule AppWeb.DashboardResumoLive do
               nfs={@invoices_count}
               ticket_medio_diario={@ticket_medio_diario}
               realizado_hoje_formatted={@realizado_hoje_formatted}
+            percentual_objetivo_hora_formatted={@percentual_objetivo_hora_formatted}
               animate_sale={@animate_sale}
               animate_devolution={@animate_devolution}
               animate_profit={@animate_profit}
+              excedente_mensal_formatted={@excedente_mensal_formatted}
+              show_excedente_mensal={@show_excedente_mensal}
             />
               </div>
             </div>

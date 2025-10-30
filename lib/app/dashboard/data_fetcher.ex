@@ -68,13 +68,16 @@ defmodule App.Dashboard.DataFetcher do
          {:ok, company_result} <- ApiClient.fetch_companies_data() do
       companies = Map.get(company_result, :companies, [])
       percentual_sale = Map.get(company_result, :percentualSale, 0.0)
+      percentual_objetivo_hora = Map.get(company_result, :percentual_objetivo_hora, 0.0)
 
       # sale_data já tem ticket_medio calculado por fetch_dashboard_summary
       # Merge dos dados de vendas com dados de empresas para uso em outras partes do dashboard
       merged_data =
         Map.merge(sale_data, %{
           "companies" => companies,
-          "percentualSale" => percentual_sale
+          "percentualSale" => percentual_sale,
+          # chave atômica para ser usada diretamente após convert_keys_to_atoms/1
+          percentual_objetivo_hora: percentual_objetivo_hora
         })
 
       {:ok, merged_data}
