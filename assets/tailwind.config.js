@@ -95,7 +95,7 @@ module.exports = {
       "nord",
       "sunset"
     ],
-    darkTheme: false, // Disable automatic dark theme detection
+    // darkTheme removed to prevent automatic dark mode detection
     base: true,
     styled: true,
     utils: true,

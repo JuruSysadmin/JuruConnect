@@ -36,30 +36,31 @@ defmodule AppWeb.DashboardComponents do
   defp render_card_html(assigns) do
     ~H"""
     <div class={[
+      "card",
       @class,
-      "rounded-lg sm:rounded-xl backdrop-blur-sm flex flex-col items-center justify-center p-2 sm:p-2.5 pb-3 h-full transition-all duration-500 hover:scale-[1.01] min-w-0",
+      "backdrop-blur-sm h-full transition-all duration-500 hover:scale-[1.01] min-w-0",
       @card_style.bg,
       @card_style.shadow,
       @animate_class
     ]}>
-      <!-- Title: 12px (body small) -->
-      <div class="flex items-center mb-0.5 w-full">
-        <span class={["text-xs text-center leading-tight truncate w-full", @card_style.title_color]}>
+      <div class="card-body p-2 sm:p-2.5 pb-3 flex flex-col items-center justify-center h-full">
+        <!-- Title: 12px (body small) -->
+        <h2 class={["card-title text-xs text-center leading-tight truncate w-full mb-0.5", @card_style.title_color]}>
           {@title}
-        </span>
-      </div>
+        </h2>
 
-      <!-- Value: 24px (h2) on all screens -->
-      <div class={["text-xl w-full text-center truncate drop-shadow-sm", @card_style.value_color]}>
-        {@value}
-      </div>
-
-      <%= if @subtitle != "" do %>
-        <!-- Subtitle: 10px (caption) -->
-        <div class={["text-[10px] truncate w-full text-center mt-0.5", @card_style.subtitle_color]}>
-          {@subtitle}
+        <!-- Value: 24px (h2) on all screens -->
+        <div class={["text-xl w-full text-center truncate drop-shadow-sm", @card_style.value_color]}>
+          {@value}
         </div>
-      <% end %>
+
+        <%= if @subtitle != "" do %>
+          <!-- Subtitle: 10px (caption) -->
+          <div class={["text-[10px] truncate w-full text-center mt-0.5", @card_style.subtitle_color]}>
+            {@subtitle}
+          </div>
+        <% end %>
+      </div>
     </div>
     """
   end
