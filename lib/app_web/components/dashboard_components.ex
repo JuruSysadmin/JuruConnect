@@ -30,6 +30,7 @@ defmodule AppWeb.DashboardComponents do
   defp get_animate_class(true, "devolution"), do: "animate-pulse-devolution"
   defp get_animate_class(true, "profit_up"), do: "animate-pulse-profit-up"
   defp get_animate_class(true, "profit_down"), do: "animate-pulse-profit-down"
+  defp get_animate_class(true, "excedente"), do: "animate-pulse-sale"
   defp get_animate_class(_animate, _type), do: ""
 
   defp render_card_html(assigns) do

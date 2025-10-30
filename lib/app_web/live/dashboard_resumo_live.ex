@@ -39,6 +39,8 @@ defmodule AppWeb.DashboardResumoLive do
       animate_devolution: false,
       previous_profit_value: 0.0,
       animate_profit: nil,
+      previous_excedente_value: 0.0,
+      animate_excedente: false,
       sale: "R$ 0,00",
       cost: "R$ 0,00",
       devolution: "R$ 0,00",
@@ -122,6 +124,11 @@ defmodule AppWeb.DashboardResumoLive do
     {:noreply, assign(socket, animate_profit: nil)}
   end
 
+  @impl Phoenix.LiveView
+  def handle_info(:clear_excedente_animation, socket) do
+    {:noreply, assign(socket, animate_excedente: false)}
+  end
+
   @spec assign_loading_state(Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
   defp assign_loading_state(socket), do:
     assign(socket, %{loading: true, api_status: :loading, api_error: nil, last_update: nil})
@@ -191,6 +198,10 @@ defmodule AppWeb.DashboardResumoLive do
     show_excedente_mensal = excedente_percent > 0.0
     excedente_mensal_formatted = if show_excedente_mensal, do: "+" <> AppWeb.DashboardUtils.format_percent(excedente_percent), else: "+0,00%"
 
+    # Detecta animação do excedente
+    previous_excedente_value = Map.get(socket.assigns, :previous_excedente_value, 0.0)
+    animate_excedente = detect_animations(excedente_percent, previous_excedente_value)
+
     assigns = Map.merge(daily_data, %{
       realizado_hoje_percent: percentual,
       realizado_hoje_formatted: AppWeb.DashboardUtils.format_percent(percentual),
@@ -204,6 +215,8 @@ defmodule AppWeb.DashboardResumoLive do
       animate_devolution: animate_devolution,
       previous_profit_value: current_profit_value,
       animate_profit: animate_profit,
+      previous_excedente_value: excedente_percent,
+      animate_excedente: animate_excedente,
       excedente_mensal_formatted: excedente_mensal_formatted,
       show_excedente_mensal: show_excedente_mensal
     })
@@ -211,7 +224,7 @@ defmodule AppWeb.DashboardResumoLive do
     socket = assign(socket, assigns)
 
     # Gerencia animações
-    manage_animations(socket, animate_sale, animate_devolution, animate_profit)
+    manage_animations(socket, animate_sale, animate_devolution, animate_profit, animate_excedente)
 
     socket
   end
@@ -221,7 +234,8 @@ defmodule AppWeb.DashboardResumoLive do
     previous_values = %{
       previous_sale_value: Map.get(socket.assigns, :previous_sale_value, 0.0),
       previous_devolution_value: Map.get(socket.assigns, :previous_devolution_value, 0.0),
-      previous_profit_value: Map.get(socket.assigns, :previous_profit_value, 0.0)
+      previous_profit_value: Map.get(socket.assigns, :previous_profit_value, 0.0),
+      previous_excedente_value: Map.get(socket.assigns, :previous_excedente_value, 0.0)
     }
 
     error_data = create_error_state_data(previous_values)
@@ -234,7 +248,7 @@ defmodule AppWeb.DashboardResumoLive do
     }))
   end
 
-  defp manage_animations(_socket, animate_sale, animate_devolution, animate_profit) do
+  defp manage_animations(_socket, animate_sale, animate_devolution, animate_profit, animate_excedente) do
     if animate_sale do
       Process.send_after(self(), :clear_sale_animation, @animation_duration_ms)
     end
@@ -245,6 +259,10 @@ defmodule AppWeb.DashboardResumoLive do
 
     if animate_profit do
       Process.send_after(self(), :clear_profit_animation, @animation_duration_ms)
+    end
+
+    if animate_excedente do
+      Process.send_after(self(), :clear_excedente_animation, @animation_duration_ms)
     end
   end
 
@@ -301,6 +319,7 @@ defmodule AppWeb.DashboardResumoLive do
               animate_sale={@animate_sale}
               animate_devolution={@animate_devolution}
               animate_profit={@animate_profit}
+              animate_excedente={@animate_excedente}
               excedente_mensal_formatted={@excedente_mensal_formatted}
               show_excedente_mensal={@show_excedente_mensal}
             />

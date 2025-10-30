@@ -17,6 +17,7 @@ defmodule AppWeb.DashboardDailyMetrics do
     assigns = assign_new(assigns, :animate_sale, fn -> false end)
     assigns = assign_new(assigns, :animate_devolution, fn -> false end)
     assigns = assign_new(assigns, :animate_profit, fn -> nil end)
+    assigns = assign_new(assigns, :animate_excedente, fn -> false end)
     assigns = assign_new(assigns, :excedente_mensal_formatted, fn -> "+0,00%" end)
     assigns = assign_new(assigns, :show_excedente_mensal, fn -> false end)
 
@@ -38,12 +39,12 @@ defmodule AppWeb.DashboardDailyMetrics do
       <.card title="Meta Dia" value={@objetivo} subtitle=""></.card>
       <.card title="Venda Dia" value={@sale} subtitle="" animate={@animate_sale} animate_type="sale"></.card>
       <.card title="Devolução Dia" value={@devolution} subtitle="" animate={@animate_devolution} animate_type="devolution"></.card>
-      <.card title="Margem Dia" value={@profit} subtitle="" animate={@profit_animate} animate_type={@profit_animate_class}></.card>
-      <.card title="% Realizado Dia" value={@realizado_hoje_formatted} subtitle=""></.card>
-      <.card title="% Objetivo Hora" value={@percentual_objetivo_hora_formatted} subtitle=""></.card>
       <%= if @show_excedente_mensal do %>
-        <.card title="Excedente Meta Mês" value={@excedente_mensal_formatted} subtitle=""></.card>
+        <.card title="Excedente Meta Mês" value={@excedente_mensal_formatted} subtitle="" animate={@animate_excedente} animate_type="excedente"></.card>
       <% end %>
+      <.card title="% Realizado Dia" value={@realizado_hoje_formatted} subtitle=""></.card>
+      <.card title="% Objetivo Hora Dia" value={@percentual_objetivo_hora_formatted} subtitle=""></.card>
+      <.card title="Margem Dia" value={@profit} subtitle="" animate={@profit_animate} animate_type={@profit_animate_class}></.card>
       <.card title="NFs Dia " value={@nfs} subtitle=""></.card>
       <.card title="Ticket Médio Dia" value={@ticket_medio_diario} subtitle=""></.card>
     </div>
