@@ -10,6 +10,19 @@
       <%= assigns[:page_title] || "" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script>
+      // Force light theme on page load and prevent dark mode detection
+      document.documentElement.setAttribute('data-theme', 'light');
+      // Override prefers-color-scheme media query
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mediaQuery.matches) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      // Prevent theme changes from system preferences
+      mediaQuery.addEventListener('change', function() {
+        document.documentElement.setAttribute('data-theme', 'light');
+      });
+    </script>
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
 
