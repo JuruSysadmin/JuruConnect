@@ -18,8 +18,12 @@ defmodule AppWeb.DashboardStoresTable do
   Props:
     - lojas_data: lista de lojas
     - loading: boolean
+    - sort_by: campo atual de ordenação (atom)
+    - sort_order: ordem atual (:asc ou :desc)
   """
   def stores_table(assigns) do
+    assigns = assign_new(assigns, :sort_by, fn -> :perc_hora end)
+    assigns = assign_new(assigns, :sort_order, fn -> :desc end)
     ~H"""
     <div class="overflow-x-auto -mx-3 sm:mx-0">
       <table class="w-full animate-fade-in-scale text-xs hidden sm:table min-w-[800px]">
@@ -30,7 +34,20 @@ defmodule AppWeb.DashboardStoresTable do
             <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap">Meta Hora</th>
             <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">NFs</th>
             <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Venda Dia</th>
-            <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap">% Hora</th>
+            <th
+              phx-click="sort_table"
+              phx-value-sort-by="perc_hora"
+              class={[
+                "text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 tablet-hide border-r border-gray-300 whitespace-nowrap",
+                "cursor-pointer hover:bg-gray-200 transition-colors duration-150 select-none",
+                (@sort_by == :perc_hora && "bg-gray-100") || ""
+              ]}
+            >
+              <div class="flex items-center justify-center gap-1">
+                <span>% Hora</span>
+                <%= render_sort_icon(@sort_by, @sort_order, assigns) %>
+              </div>
+            </th>
             <th class="text-center py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">% Dia</th>
             <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Ticket</th>
             <th class="text-right py-2 px-2 sm:px-3 text-xs font-medium text-gray-600 border-r border-gray-300 whitespace-nowrap">Devolução</th>
@@ -38,25 +55,13 @@ defmodule AppWeb.DashboardStoresTable do
           </tr>
         </thead>
         <tbody>
-          <%= if @loading do %>
-            <.loading_rows />
-          <% else %>
-            <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
-              <.store_row loja={loja} index={index} />
-            <% end %>
-          <% end %>
+          <%= render_table_body(assigns) %>
         </tbody>
       </table>
 
       <!-- Versão Mobile da Tabela (Cards) -->
       <div class="block sm:hidden space-y-2">
-        <%= if @loading do %>
-          <.loading_cards />
-        <% else %>
-          <%= for loja <- @lojas_data do %>
-            <.store_card loja={loja} />
-          <% end %>
-        <% end %>
+        <%= render_mobile_cards(assigns) %>
       </div>
     </div>
     """
@@ -66,7 +71,7 @@ defmodule AppWeb.DashboardStoresTable do
   defp loading_rows(assigns) do
     ~H"""
     <%= for {_i, index} <- Enum.with_index(1..5) do %>
-      <tr class={["animate-pulse", if(rem(index, 2) == 0, do: "bg-white", else: "bg-gray-50")]}>
+      <tr class={["animate-pulse", get_row_color(index)]}>
         <td class="py-2.5 px-3 border-r border-gray-200">
           <div class="flex items-center space-x-2">
             <div class="w-3 h-3 bg-gray-300 rounded-full shimmer-effect"></div>
@@ -134,14 +139,7 @@ defmodule AppWeb.DashboardStoresTable do
         <span class="text-xs text-gray-800 font-medium">{@loja.qtde_nfs}</span>
       </td>
       <td class="text-right py-2.5 px-2 sm:px-3 border-r border-gray-200 whitespace-nowrap">
-        <%= if @animate_venda_dia do %>
-          <div class="flex flex-col items-end gap-0.5">
-            <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia - @increment_value)}</span>
-            <span class="font-mono text-xs font-bold text-green-600 animate-pulse bg-green-100 px-2 py-0.5 rounded-full">+{format_money(@increment_value)}</span>
-          </div>
-        <% else %>
-          <span class={["font-mono text-xs font-medium", @sale_color]}>{format_money(@loja.venda_dia)}</span>
-        <% end %>
+        <%= render_venda_dia(assigns) %>
       </td>
       <td class="text-center py-2.5 px-2 sm:px-3 tablet-hide border-r border-gray-200 whitespace-nowrap">
         <span class="text-xs text-gray-800 font-medium">{@perc_hora_formatted}%</span>
@@ -261,4 +259,73 @@ defmodule AppWeb.DashboardStoresTable do
     end
   end
   defp convert_to_float(_), do: 0.0
+
+  # Funções auxiliares para evitar if/else
+
+  defp render_sort_icon(:perc_hora, :desc, assigns) do
+    ~H"""
+    <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+    """
+  end
+
+  defp render_sort_icon(:perc_hora, :asc, assigns) do
+    ~H"""
+    <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+    </svg>
+    """
+  end
+
+  defp render_sort_icon(_sort_by, _sort_order, assigns) do
+    ~H"""
+    <svg class="w-3 h-3 text-gray-400 opacity-0 hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+    </svg>
+    """
+  end
+
+  defp render_table_body(%{loading: true} = assigns) do
+    ~H"""
+    <.loading_rows />
+    """
+  end
+
+  defp render_table_body(%{loading: false} = assigns) do
+    ~H"""
+    <%= for {loja, index} <- Enum.with_index(@lojas_data) do %>
+      <.store_row loja={loja} index={index} />
+    <% end %>
+    """
+  end
+
+  defp render_mobile_cards(%{loading: true} = assigns) do
+    ~H"""
+    <.loading_cards />
+    """
+  end
+
+  defp render_mobile_cards(%{loading: false} = assigns) do
+    ~H"""
+    <%= for loja <- @lojas_data do %>
+      <.store_card loja={loja} />
+    <% end %>
+    """
+  end
+
+  defp render_venda_dia(%{animate_venda_dia: true} = assigns) do
+    ~H"""
+    <div class="flex flex-col items-end gap-0.5">
+      <span class={["font-mono text-xs font-medium", assigns.sale_color]}>{format_money(assigns.loja.venda_dia - assigns.increment_value)}</span>
+      <span class="font-mono text-xs font-bold text-green-600 animate-pulse bg-green-100 px-2 py-0.5 rounded-full">+{format_money(assigns.increment_value)}</span>
+    </div>
+    """
+  end
+
+  defp render_venda_dia(assigns) do
+    ~H"""
+    <span class={["font-mono text-xs font-medium", assigns.sale_color]}>{format_money(assigns.loja.venda_dia)}</span>
+    """
+  end
 end
