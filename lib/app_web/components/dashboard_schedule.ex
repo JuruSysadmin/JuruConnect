@@ -83,11 +83,11 @@ defmodule AppWeb.DashboardSchedule do
     <div class="flex items-center gap-4 flex-wrap sm:flex-nowrap">
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-green-700 whitespace-nowrap">Peso Vendido:</div>
-        <div class="text-sm font-semibold text-green-900 whitespace-nowrap">{@formatted_sale_weight} kg</div>
+        <div class="text-sm font-semibold text-green-900 whitespace-nowrap">{@formatted_sale_weight} t</div>
       </div>
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-blue-700 whitespace-nowrap">Disponível:</div>
-        <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} kg</div>
+        <div class="text-sm font-semibold text-blue-900 whitespace-nowrap">{@formatted_available} t</div>
       </div>
       <div class="bg-gray-50 rounded-lg shadow-sm px-3 py-2 flex items-center gap-2 min-w-0">
         <div class="text-xs font-medium text-purple-700 whitespace-nowrap">Capacidade:</div>
