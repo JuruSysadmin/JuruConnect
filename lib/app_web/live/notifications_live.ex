@@ -39,6 +39,24 @@ defmodule AppWeb.NotificationsLive do
     handle_daily_goal_achieved(build_legacy_notification(data), data, socket)
   end
 
+  def handle_info({:goal_achieved_real, data}, socket) do
+    handle_goal_achieved_real(build_real_notification(data), data, socket)
+  end
+
+  def handle_info(:hide_celebration, socket) do
+    {:noreply, assign(socket, show_celebration: false)}
+  end
+
+  def handle_info({:hide_specific_notification, id}, socket) do
+    updated_notifications = Enum.reject(socket.assigns.notifications, &(&1.celebration_id == id))
+    has_notifications = updated_notifications != []
+
+    {:noreply, assign(socket,
+      notifications: updated_notifications,
+      show_celebration: has_notifications
+    )}
+  end
+
   defp handle_daily_goal_achieved({:ok, notification}, data, socket) do
     {:ok, event_data} = build_legacy_event_data(data, notification)
     add_notification_to_socket(socket, notification, "goal-achieved-multiple", event_data)
@@ -48,11 +66,6 @@ defmodule AppWeb.NotificationsLive do
     {:noreply, socket}
   end
 
-  @impl Phoenix.LiveView
-  def handle_info({:goal_achieved_real, data}, socket) do
-    handle_goal_achieved_real(build_real_notification(data), data, socket)
-  end
-
   defp handle_goal_achieved_real({:ok, notification}, data, socket) do
     {:ok, event_data} = build_real_event_data(data, notification)
     add_notification_to_socket(socket, notification, "goal-achieved-real", event_data)
@@ -60,22 +73,6 @@ defmodule AppWeb.NotificationsLive do
 
   defp handle_goal_achieved_real({:error, _}, _data, socket) do
     {:noreply, socket}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_info(:hide_celebration, socket) do
-    {:noreply, assign(socket, show_celebration: false)}
-  end
-
-  @impl Phoenix.LiveView
-  def handle_info({:hide_specific_notification, id}, socket) do
-    updated_notifications = Enum.reject(socket.assigns.notifications, &(&1.celebration_id == id))
-    has_notifications = updated_notifications != []
-
-    {:noreply, assign(socket,
-      notifications: updated_notifications,
-      show_celebration: has_notifications
-    )}
   end
 
   @impl Phoenix.LiveView
@@ -163,12 +160,7 @@ defmodule AppWeb.NotificationsLive do
 
   defp add_notification_to_socket(socket, notification, event_name, event_data) do
     current_notifications = socket.assigns.notifications
-    updated_notifications =
-      if length(current_notifications) >= @max_notifications do
-        Enum.take([notification | current_notifications], @max_notifications)
-      else
-        [notification | current_notifications]
-      end
+    updated_notifications = add_notification_with_limit(notification, current_notifications)
 
     socket
     |> assign(%{
@@ -177,6 +169,15 @@ defmodule AppWeb.NotificationsLive do
     })
     |> push_event(event_name, event_data)
     |> schedule_notification_removal(notification.celebration_id)
+  end
+
+  defp add_notification_with_limit(notification, current_notifications)
+       when length(current_notifications) >= @max_notifications do
+    Enum.take([notification | current_notifications], @max_notifications)
+  end
+
+  defp add_notification_with_limit(notification, current_notifications) do
+    [notification | current_notifications]
   end
 
   defp schedule_notification_removal(socket, celebration_id) do

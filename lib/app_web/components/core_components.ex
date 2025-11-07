@@ -221,20 +221,6 @@ defmodule AppWeb.CoreComponents do
     |> input()
   end
 
-  defp get_field_errors(field) do
-    case Phoenix.Component.used_input?(field) do
-      true -> field.errors
-      false -> []
-    end
-  end
-
-  defp get_field_name(assigns, field) do
-    case assigns.multiple do
-      true -> field.name <> "[]"
-      _ -> field.name
-    end
-  end
-
   def input(%{type: "checkbox"} = assigns) do
     assigns =
       assign_new(assigns, :checked, fn ->
@@ -319,6 +305,20 @@ defmodule AppWeb.CoreComponents do
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
+  end
+
+  defp get_field_errors(field) do
+    case Phoenix.Component.used_input?(field) do
+      true -> field.errors
+      false -> []
+    end
+  end
+
+  defp get_field_name(assigns, field) do
+    case assigns.multiple do
+      true -> field.name <> "[]"
+      _ -> field.name
+    end
   end
 
   attr :for, :string, default: nil

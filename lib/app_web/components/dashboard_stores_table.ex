@@ -258,7 +258,6 @@ defmodule AppWeb.DashboardStoresTable do
       :error -> 0.0
     end
   end
-  defp convert_to_float(_n), do: 0.0
 
 
   defp render_sort_icon(:perc_hora, :desc, assigns) do
