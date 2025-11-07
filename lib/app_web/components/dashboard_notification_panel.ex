@@ -65,17 +65,20 @@ defmodule AppWeb.DashboardNotificationPanel do
   end
 
   defp badge_element(notification) do
-    case get_badge_type(notification) do
-      {:daily, label} ->
-        ~s(<span class="badge badge-success badge-sm ml-2">#{label}</span>)
-      {:monthly, label} ->
-        ~s(<span class="badge badge-secondary badge-sm ml-2">#{label}</span>)
-      {:real, label} ->
-        ~s(<span class="badge badge-primary badge-sm ml-2">#{label}</span>)
-      {:global, label} ->
-        ~s(<span class="badge badge-neutral badge-sm ml-2">#{label}</span>)
-    end
+    render_badge(get_badge_type(notification))
   end
+
+  defp render_badge({:daily, label}),
+    do: ~s(<span class="badge badge-success badge-sm ml-2">#{label}</span>)
+
+  defp render_badge({:monthly, label}),
+    do: ~s(<span class="badge badge-secondary badge-sm ml-2">#{label}</span>)
+
+  defp render_badge({:real, label}),
+    do: ~s(<span class="badge badge-primary badge-sm ml-2">#{label}</span>)
+
+  defp render_badge({:global, label}),
+    do: ~s(<span class="badge badge-neutral badge-sm ml-2">#{label}</span>)
 
   defp get_badge_type(%{type: "real", level: level}), do: {:real, get_level_label(level)}
   defp get_badge_type(%{type: "real"}), do: {:real, "CONQUISTA"}

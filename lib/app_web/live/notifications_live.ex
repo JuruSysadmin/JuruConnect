@@ -36,24 +36,30 @@ defmodule AppWeb.NotificationsLive do
 
   @impl Phoenix.LiveView
   def handle_info({:daily_goal_achieved, data}, socket) do
-    with {:ok, notification} <- build_legacy_notification(data),
-         {:ok, event_data} <- build_legacy_event_data(data, notification) do
-      add_notification_to_socket(socket, notification, "goal-achieved-multiple", event_data)
-    else
-      _error ->
-        {:noreply, socket}
-    end
+    handle_daily_goal_achieved(build_legacy_notification(data), data, socket)
+  end
+
+  defp handle_daily_goal_achieved({:ok, notification}, data, socket) do
+    {:ok, event_data} = build_legacy_event_data(data, notification)
+    add_notification_to_socket(socket, notification, "goal-achieved-multiple", event_data)
+  end
+
+  defp handle_daily_goal_achieved({:error, _}, _data, socket) do
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView
   def handle_info({:goal_achieved_real, data}, socket) do
-    with {:ok, notification} <- build_real_notification(data),
-         {:ok, event_data} <- build_real_event_data(data, notification) do
-      add_notification_to_socket(socket, notification, "goal-achieved-real", event_data)
-    else
-      _error ->
-        {:noreply, socket}
-    end
+    handle_goal_achieved_real(build_real_notification(data), data, socket)
+  end
+
+  defp handle_goal_achieved_real({:ok, notification}, data, socket) do
+    {:ok, event_data} = build_real_event_data(data, notification)
+    add_notification_to_socket(socket, notification, "goal-achieved-real", event_data)
+  end
+
+  defp handle_goal_achieved_real({:error, _}, _data, socket) do
+    {:noreply, socket}
   end
 
   @impl Phoenix.LiveView

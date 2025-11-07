@@ -203,19 +203,10 @@ defmodule AppWeb.DashboardResumoLive do
     show_diff_today = abs(diff_today) > 0.01  # Mostra se diferença > R$ 0,01
 
     # Título dinâmico baseado na diferença
-    diff_today_title = cond do
-      diff_today > 0.01 -> "Excedente da Meta Diária"
-      diff_today < -0.01 -> "Falta para Meta"
-      true -> "Diferença para Meta"
-    end
+    diff_today_title = get_diff_today_title(diff_today)
 
     # Formata com sinal + para valores positivos
-    diff_today_formatted =
-      if diff_today >= 0 do
-        "+" <> AppWeb.DashboardUtils.format_money(diff_today)
-      else
-        AppWeb.DashboardUtils.format_money(diff_today)
-      end
+    diff_today_formatted = format_diff_today(diff_today)
 
     # Detecta animação da diferença
     previous_diff_value = Map.get(socket.assigns, :previous_diff_today_value, 0.0)
@@ -269,21 +260,28 @@ defmodule AppWeb.DashboardResumoLive do
   end
 
   defp manage_animations(_socket, animate_sale, animate_devolution, animate_profit, animate_diff_today) do
-    if animate_sale do
-      Process.send_after(self(), :clear_sale_animation, @animation_duration_ms)
-    end
+    schedule_animation_if_needed(animate_sale, :clear_sale_animation)
+    schedule_animation_if_needed(animate_devolution, :clear_devolution_animation)
+    schedule_animation_if_needed(animate_profit, :clear_profit_animation)
+    schedule_animation_if_needed(animate_diff_today, :clear_diff_today_animation)
+  end
 
-    if animate_devolution do
-      Process.send_after(self(), :clear_devolution_animation, @animation_duration_ms)
-    end
+  defp schedule_animation_if_needed(true, message) do
+    Process.send_after(self(), message, @animation_duration_ms)
+  end
 
-    if animate_profit do
-      Process.send_after(self(), :clear_profit_animation, @animation_duration_ms)
-    end
+  defp schedule_animation_if_needed(_value, _message), do: :ok
 
-    if animate_diff_today do
-      Process.send_after(self(), :clear_diff_today_animation, @animation_duration_ms)
-    end
+  defp get_diff_today_title(diff) when diff > 0.01, do: "Excedente da Meta Diária"
+  defp get_diff_today_title(diff) when diff < -0.01, do: "Falta para Meta"
+  defp get_diff_today_title(_diff), do: "Diferença para Meta"
+
+  defp format_diff_today(diff) when diff >= 0 do
+    "+" <> AppWeb.DashboardUtils.format_money(diff)
+  end
+
+  defp format_diff_today(diff) do
+    AppWeb.DashboardUtils.format_money(diff)
   end
 
   @impl Phoenix.LiveView

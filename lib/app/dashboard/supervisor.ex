@@ -60,11 +60,7 @@ defmodule App.Dashboard.Supervisor do
     children = which_children()
     case List.keyfind(children, child_id, 0) do
       {^child_id, pid, _type, _modules} when is_pid(pid) ->
-        if Process.alive?(pid) do
-          {:ok, :running, pid}
-        else
-          {:ok, :not_running, nil}
-        end
+        get_pid_status(pid)
       {^child_id, :restarting, _type, _modules} ->
         {:ok, :restarting, nil}
       {^child_id, :undefined, _type, _modules} ->
@@ -74,26 +70,40 @@ defmodule App.Dashboard.Supervisor do
     end
   end
 
+  defp get_pid_status(pid) when is_pid(pid) do
+    case Process.alive?(pid) do
+      true -> {:ok, :running, pid}
+      false -> {:ok, :not_running, nil}
+    end
+  end
+
   def health_check do
     children = which_children()
 
     health_status =
       Enum.map(children, fn {id, pid, _type, _modules} ->
-        status = if is_pid(pid) and Process.alive?(pid) do
-          :healthy
-        else
-          :unhealthy
-        end
-
+        status = get_child_health_status(pid)
         {id, status}
       end)
 
     all_healthy = Enum.all?(health_status, fn {_id, status} -> status == :healthy end)
 
     %{
-      overall_status: if(all_healthy, do: :healthy, else: :unhealthy),
+      overall_status: get_overall_status(all_healthy),
       children: health_status,
       timestamp: DateTime.utc_now()
     }
   end
+
+  defp get_child_health_status(pid) when is_pid(pid) do
+    case Process.alive?(pid) do
+      true -> :healthy
+      false -> :unhealthy
+    end
+  end
+
+  defp get_child_health_status(_), do: :unhealthy
+
+  defp get_overall_status(true), do: :healthy
+  defp get_overall_status(false), do: :unhealthy
 end

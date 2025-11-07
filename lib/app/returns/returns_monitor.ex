@@ -142,11 +142,13 @@ defmodule App.Returns.ReturnsMonitor do
   defp maybe_notify_new_returns(_state, _current_count, _current_ids, _returns_data), do: :ok
 
   defp maybe_send_notification(new_returns, returns_data) do
-    if MapSet.size(new_returns) > 0 do
-      Logger.info("New returns detected: #{MapSet.size(new_returns)} new return(s)")
-      notify_new_returns(returns_data, new_returns)
-    else
-      :ok
+    case MapSet.size(new_returns) do
+      size when size > 0 ->
+        Logger.info("New returns detected: #{size} new return(s)")
+        notify_new_returns(returns_data, new_returns)
+
+      _ ->
+        :ok
     end
   end
 
@@ -163,18 +165,24 @@ defmodule App.Returns.ReturnsMonitor do
     url = "#{Config.api_urls().dashboard_returns}?days=#{@default_days}"
     timeout_opts = [timeout: Config.api_timeout_ms(), recv_timeout: Config.api_timeout_ms()]
 
-    with {:ok, %HTTPoison.Response{status_code: 200, body: body}} <- HTTPoison.get(url, [], timeout_opts),
-         {:ok, data} <- Jason.decode(body) do
-      {:ok, data}
-    else
+    case HTTPoison.get(url, [], timeout_opts) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        case Jason.decode(body) do
+          {:ok, data} ->
+            {:ok, data}
+
+          {:error, reason} ->
+            {:error, "JSON decode error: #{inspect(reason)}"}
+        end
+
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
         {:error, "API returned status #{status_code}"}
 
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, "Connection error: #{inspect(reason)}"}
 
-      {:error, reason} ->
-        {:error, "JSON decode error: #{inspect(reason)}"}
+      error ->
+        {:error, "Unexpected error: #{inspect(error)}"}
     end
   end
 
@@ -216,16 +224,18 @@ defmodule App.Returns.ReturnsMonitor do
 
   defp filter_new_returns(returns_data, new_return_ids)
        when is_list(returns_data) do
-    if MapSet.size(new_return_ids) > 0 do
-      returns_data
-      |> Enum.flat_map(&Map.get(&1, "returns", []))
-      |> Enum.filter(&should_include_return?(&1, new_return_ids))
-    else
-      []
-    end
+    filter_returns_by_size(returns_data, new_return_ids, MapSet.size(new_return_ids))
   end
 
   defp filter_new_returns(_returns_data, _new_return_ids), do: []
+
+  defp filter_returns_by_size(returns_data, new_return_ids, size) when size > 0 do
+    returns_data
+    |> Enum.flat_map(&Map.get(&1, "returns", []))
+    |> Enum.filter(&should_include_return?(&1, new_return_ids))
+  end
+
+  defp filter_returns_by_size(_returns_data, _new_return_ids, _size), do: []
 
   defp should_include_return?(%{"returnId" => return_id}, new_return_ids) when is_integer(return_id) do
     MapSet.member?(new_return_ids, return_id)

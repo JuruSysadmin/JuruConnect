@@ -6,12 +6,15 @@ defmodule App.Validators.ApiDataValidator do
 
 
   def validate_dashboard_data(data) when is_map(data) do
-    if Map.has_key?(data, "companies") or Map.has_key?(data, :companies) do
-      {:ok, data}
-    else
-      {:error, "Invalid dashboard data structure"}
-    end
+    validate_companies_key(data)
   end
 
   def validate_dashboard_data(_), do: {:error, "Invalid dashboard data format"}
+
+  defp validate_companies_key(data) do
+    case Map.has_key?(data, "companies") or Map.has_key?(data, :companies) do
+      true -> {:ok, data}
+      false -> {:error, "Invalid dashboard data structure"}
+    end
+  end
 end

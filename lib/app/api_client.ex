@@ -5,39 +5,56 @@ defmodule App.ApiClient do
 
   def fetch_dashboard_summary do
     start_time = System.monotonic_time(:millisecond)
-    with {:ok, sale_data} <- fetch_sale_data(),
-         {:ok, company_result} <- fetch_companies_data() do
-      # Calcula ticket médio mensal de todas as lojas
-      ticket_medio_mensal = calculate_average_ticket(company_result)
 
-      # Calcula ticket médio diário (baseado em vendas e NF's do dia)
-      ticket_medio_diario = calculate_daily_ticket(company_result)
+    case fetch_sale_data() do
+      {:ok, sale_data} ->
+        case fetch_companies_data() do
+          {:ok, company_result} ->
+            # Calcula ticket médio mensal de todas as lojas
+            ticket_medio_mensal = calculate_average_ticket(company_result)
 
-      summary = %{
-        "sale" => Map.get(sale_data, "sale", 0.0),
-        "cost" => Map.get(sale_data, "cost", 0.0),
-        "devolution" => Map.get(sale_data, "devolution", 0.0),
-        "objetivo" => Map.get(sale_data, "objetivo", 0.0),
-        "profit" => Map.get(sale_data, "profit", 0.0),
-        "percentual" => Map.get(sale_data, "percentual", 0.0),
-        "nfs" => Map.get(sale_data, "nfs", 0),
-        "percentualSale" => Map.get(company_result, :percentualSale, 0.0),
-        "sale_mensal" => Map.get(company_result, :sale, 0.0),
-        "objetivo_mensal" => Map.get(company_result, :objetive, 0.0),
-        "devolution_mensal" => Map.get(company_result, :devolution, 0.0),
-        "nfs_mensal" => Map.get(company_result, :nfs, 0),
-        "ticket_medio_mensal" => ticket_medio_mensal,
-        "ticket_medio_diario" => ticket_medio_diario
-      }
-      duration = System.monotonic_time(:millisecond) - start_time
-      :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :ok})
-      {:ok, summary}
-    else
-      {:error, reason} ->
-        duration = System.monotonic_time(:millisecond) - start_time
-        :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :error, error: inspect(reason)})
-        {:error, reason}
+            # Calcula ticket médio diário (baseado em vendas e NF's do dia)
+            ticket_medio_diario = calculate_daily_ticket(company_result)
+
+            summary = %{
+              "sale" => Map.get(sale_data, "sale", 0.0),
+              "cost" => Map.get(sale_data, "cost", 0.0),
+              "devolution" => Map.get(sale_data, "devolution", 0.0),
+              "objetivo" => Map.get(sale_data, "objetivo", 0.0),
+              "profit" => Map.get(sale_data, "profit", 0.0),
+              "percentual" => Map.get(sale_data, "percentual", 0.0),
+              "nfs" => Map.get(sale_data, "nfs", 0),
+              "percentualSale" => Map.get(company_result, :percentualSale, 0.0),
+              "sale_mensal" => Map.get(company_result, :sale, 0.0),
+              "objetivo_mensal" => Map.get(company_result, :objetive, 0.0),
+              "devolution_mensal" => Map.get(company_result, :devolution, 0.0),
+              "nfs_mensal" => Map.get(company_result, :nfs, 0),
+              "ticket_medio_mensal" => ticket_medio_mensal,
+              "ticket_medio_diario" => ticket_medio_diario
+            }
+            duration = System.monotonic_time(:millisecond) - start_time
+            :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :ok})
+            {:ok, summary}
+
+          error ->
+            log_and_return_error(start_time, error)
+        end
+
+      error ->
+        log_and_return_error(start_time, error)
     end
+  end
+
+  defp log_and_return_error(start_time, {:error, reason}) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :error, error: inspect(reason)})
+    {:error, reason}
+  end
+
+  defp log_and_return_error(start_time, other) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    :telemetry.execute([:app, :api, :dashboard_summary], %{duration: duration}, %{status: :error, error: inspect(other)})
+    {:error, "Erro inesperado: #{inspect(other)}"}
   end
 
   defp fetch_sale_data do
@@ -84,8 +101,7 @@ defmodule App.ApiClient do
           end)
 
         perc_list = Enum.map(companies, & &1.perc_hora)
-        avg_percentual_obj_hour =
-          if perc_list == [], do: 0.0, else: Enum.sum(perc_list) / length(perc_list)
+        avg_percentual_obj_hour = calculate_average_percentage(perc_list)
 
         result = %{
           companies: companies,
@@ -133,10 +149,19 @@ defmodule App.ApiClient do
     base_url = App.Config.api_urls().dashboard_seller
     url = "#{base_url}/#{supervisor_id}"
 
-    with {:ok, body} <- http_get(url, "supervisor_data", timeout: 5_000),
-         {:ok, data} <- decode_json(body) do
-      sale_supervisors = Map.get(data, "saleSupervisor", [])
-      {:ok, sale_supervisors}
+    case http_get(url, "supervisor_data", timeout: 5_000) do
+      {:ok, body} ->
+        case decode_json(body) do
+          {:ok, data} ->
+            sale_supervisors = Map.get(data, "saleSupervisor", [])
+            {:ok, sale_supervisors}
+
+          error ->
+            error
+        end
+
+      error ->
+        error
     end
   end
 
@@ -146,8 +171,12 @@ defmodule App.ApiClient do
   def fetch_schedule_data do
     url = App.Config.api_urls().dashboard_schedule
 
-    with {:ok, body} <- http_get(url, "schedule_data", timeout: 5_000) do
-      decode_json(body)
+    case http_get(url, "schedule_data", timeout: 5_000) do
+      {:ok, body} ->
+        decode_json(body)
+
+      error ->
+        error
     end
   end
 
@@ -195,13 +224,12 @@ defmodule App.ApiClient do
           acc + ticket
         end)
 
-        if length(companies) > 0 do
-          total_tickets / length(companies)
-        else
-          0.0
-        end
+        calculate_average(total_tickets, length(companies))
     end
   end
+
+  defp calculate_average(_total, 0), do: 0.0
+  defp calculate_average(total, count), do: total / count
 
   # Calcula o ticket médio diário baseado em vendas e NF's do dia
   defp calculate_daily_ticket(company_result) do
@@ -216,12 +244,14 @@ defmodule App.ApiClient do
           {vendas_acc + venda_dia, nfs_acc + qtde_nfs}
         end)
 
-        if total_nfs > 0 do
-          total_vendas / total_nfs
-        else
-          0.0
-        end
+        calculate_daily_average(total_vendas, total_nfs)
     end
   end
+
+  defp calculate_daily_average(_total_vendas, total_nfs) when total_nfs <= 0, do: 0.0
+  defp calculate_daily_average(total_vendas, total_nfs), do: total_vendas / total_nfs
+
+  defp calculate_average_percentage([]), do: 0.0
+  defp calculate_average_percentage(perc_list), do: Enum.sum(perc_list) / length(perc_list)
 
 end

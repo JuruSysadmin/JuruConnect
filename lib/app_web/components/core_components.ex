@@ -48,7 +48,7 @@ defmodule AppWeb.CoreComponents do
           <!-- Cabeçalho -->
           <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50 rounded-t-2xl sticky top-0 z-10">
             <h2 id={"#{@id}-title"} class="text-lg font-semibold text-gray-900 truncate">
-              <%= if assigns[:title], do: assigns[:title], else: "" %>
+              <%= Map.get(assigns, :title, "") %>
             </h2>
             <button phx-click={@on_close} class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Fechar">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -211,14 +211,28 @@ defmodule AppWeb.CoreComponents do
                 multiple pattern placeholder readonly required rows size step)
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
-    errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
+    errors = get_field_errors(field)
 
     assigns
     |> assign(field: nil, id: assigns.id || field.id)
     |> assign(:errors, Enum.map(errors, &translate_error(&1)))
-    |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
+    |> assign_new(:name, fn -> get_field_name(assigns, field) end)
     |> assign_new(:value, fn -> field.value end)
     |> input()
+  end
+
+  defp get_field_errors(field) do
+    case Phoenix.Component.used_input?(field) do
+      true -> field.errors
+      false -> []
+    end
+  end
+
+  defp get_field_name(assigns, field) do
+    case assigns.multiple do
+      true -> field.name <> "[]"
+      _ -> field.name
+    end
   end
 
   def input(%{type: "checkbox"} = assigns) do
@@ -514,10 +528,12 @@ defmodule AppWeb.CoreComponents do
     # dynamically, so we need to translate them by calling Gettext
     # with our gettext backend as first argument. Translations are
     # available in the errors.po file (as we use the "errors" domain).
-    if count = opts[:count] do
-      Gettext.dngettext(AppWeb.Gettext, "errors", msg, msg, count, opts)
-    else
-      Gettext.dgettext(AppWeb.Gettext, "errors", msg, opts)
+    case opts[:count] do
+      count when not is_nil(count) ->
+        Gettext.dngettext(AppWeb.Gettext, "errors", msg, msg, count, opts)
+
+      _ ->
+        Gettext.dgettext(AppWeb.Gettext, "errors", msg, opts)
     end
   end
 

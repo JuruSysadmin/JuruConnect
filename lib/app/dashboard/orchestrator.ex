@@ -28,17 +28,20 @@ defmodule App.Dashboard.Orchestrator do
     timeout = Keyword.get(opts, :timeout, @call_timeout)
     cache_key = "dashboard_data"
 
-    with {:error, _} <- CacheManager.get(cache_key),
-         {:ok, data} <- DataStore.get_data(timeout) do
-      CacheManager.put(cache_key, data, 30_000)
-      {:ok, data}
-    else
+    case CacheManager.get(cache_key) do
       {:ok, cached_data} ->
         Logger.debug("Dashboard data served from cache")
         {:ok, cached_data}
 
-      other ->
-        other
+      {:error, _} ->
+        case DataStore.get_data(timeout) do
+          {:ok, data} ->
+            CacheManager.put(cache_key, data, 30_000)
+            {:ok, data}
+
+          error ->
+            error
+        end
     end
   end
 

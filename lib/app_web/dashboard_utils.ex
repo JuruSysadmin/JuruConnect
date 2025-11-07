@@ -101,23 +101,29 @@ defmodule AppWeb.DashboardUtils do
   def format_weight_in_tons(_), do: "0"
 
   defp format_tons_only(value) when is_float(value) or is_integer(value) do
-    formatted =
-      if value == trunc(value) do
-        value |> trunc() |> Integer.to_string()
-      else
-        value |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")
-      end
-
-    if String.contains?(formatted, ",") do
-      [int, frac] = String.split(formatted, ",")
-      int = add_thousands_separator_to_int(int)
-      int <> "," <> frac
-    else
-      add_thousands_separator_to_int(formatted)
-    end
+    formatted = format_tons_value(value)
+    format_tons_with_separator(formatted)
   end
 
   defp format_tons_only(_), do: "0"
+
+  defp format_tons_value(value) when value == trunc(value) do
+    value |> trunc() |> Integer.to_string()
+  end
+
+  defp format_tons_value(value) do
+    value |> :erlang.float_to_binary(decimals: 2) |> String.replace(".", ",")
+  end
+
+  defp format_tons_with_separator(formatted) do
+    case String.split(formatted, ",") do
+      [int, frac] ->
+        int = add_thousands_separator_to_int(int)
+        int <> "," <> frac
+      [int] ->
+        add_thousands_separator_to_int(int)
+    end
+  end
 
   defp add_thousands_separator_to_int(int_str) do
     int_str
@@ -150,11 +156,11 @@ defmodule AppWeb.DashboardUtils do
       |> String.replace("%", "")
       |> String.trim()
 
-    case cleaned_value do
-      "" -> 0.0
-      clean -> parse_to_float(clean)
-    end
+    parse_cleaned_percent(cleaned_value)
   end
+
+  defp parse_cleaned_percent(""), do: 0.0
+  defp parse_cleaned_percent(clean), do: parse_to_float(clean)
 
   defp parse_to_float(str) do
     case Float.parse(str) do
